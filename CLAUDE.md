@@ -44,6 +44,8 @@ npm run dist:win         # an unsigned NSIS installer in dist/, for internal use
 npm run contracts:sync   # copy the backend's contracts/sotto-contracts.ts; contracts:check fails if they differ
 ```
 
+**Launching from a tool hosted in VS Code** (an agent's shell, a task runner) inherits `ELECTRON_RUN_AS_NODE=1` from VS Code's extension host. Electron then runs as plain Node, and main fails at `app.isPackaged`. Start it with `env -u ELECTRON_RUN_AS_NODE npm run dev`. A normal terminal doesn't have the variable.
+
 **Development runs a preview, not the server.** Until the live connection exists (1.12), `npm run dev` plays a scripted interview:
 - open Home, tick the consent box, and press Start session;
 - the overlay opens and plays it;
