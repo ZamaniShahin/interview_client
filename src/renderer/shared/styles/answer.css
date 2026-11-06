@@ -1,0 +1,76 @@
+/* An answer's rendered Markdown (src/renderer/shared/markdown.ts). Global, because it styles HTML the renderer
+   produced, not a component's template. Written to be said aloud: short paragraphs, key words in amber. */
+
+.answer {
+  color: var(--text-1);
+  font: 400 var(--answer-size) / var(--answer-line) var(--font-sans);
+  user-select: text;
+}
+
+.answer p,
+.answer ul,
+.answer ol {
+  margin: 0 0 10px;
+}
+
+.answer ul,
+.answer ol {
+  padding-left: 20px;
+}
+
+.answer li {
+  margin: 0 0 4px;
+}
+
+.answer strong {
+  color: var(--text-0);
+  font-weight: 600;
+}
+
+/* Key words: the Markdown's ***bold italic***, amber, semibold and upright, so the eye finds them while talking. */
+.answer .kw {
+  color: var(--key);
+  font-weight: 600;
+  font-style: normal;
+}
+
+.answer code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-0);
+  font: 400 0.875em/1.4 var(--font-mono);
+}
+
+/* Code blocks never wrap: a long line scrolls inside its block. No amber in code. */
+.answer .code {
+  margin: 0 0 10px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--code);
+}
+
+.answer .code-head {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+  font: 500 11px/16px var(--font-sans);
+}
+
+.answer .code pre {
+  margin: 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.answer .code pre code {
+  padding: 0;
+  background: none;
+  color: var(--text-1);
+  font: 400 13px/20px var(--font-mono);
+}

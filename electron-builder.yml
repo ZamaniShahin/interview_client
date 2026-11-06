@@ -1,0 +1,21 @@
+# Packaging, Windows first (NSIS, x64). For internal builds until launch hardening: signing (cloud HSM), automatic
+# updates and Electron fuses come with Phase 4 (4.1, 4.2), and macOS with Phase 5.
+# The appId is a placeholder until the domain is chosen (backend decisions.md, Q4).
+appId: com.sotto.desktop
+productName: Sotto
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**/*
+  - package.json
+asar: true
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true

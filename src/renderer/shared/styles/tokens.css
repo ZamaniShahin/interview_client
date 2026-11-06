@@ -1,0 +1,85 @@
+/* Design tokens: the neutral placeholder (backend decisions.md, 2026-11-06), until Sotto has a brand (Q14).
+   The same values as the UI canvas (docs/design.md). Dark is the default; Settings switches the <html> class.
+   Contrast is measured against surface-1, where answers and fields sit: text 4.5:1, control edges 3:1. */
+
+:root,
+:root.theme-dark {
+  --surface-0: #111113; /* the window */
+  --surface-1: #1a1a1d; /* regions, cards, fields */
+  --surface-2: #242428; /* raised: menus, banners, chips */
+  --surface-3: #2f2f34; /* selected, hover */
+  --selected: #3a3a41; /* the chosen option of a segmented control */
+  --line: rgb(255 255 255 / 8%);
+  --line-2: rgb(255 255 255 / 14%);
+  --edge: #76767f; /* control edges: 3.4:1 or more on surfaces 0-2 */
+  --text-0: #f4f4f5; /* 15.8:1 */
+  --text-1: #e4e4e7; /* 13.7:1 */
+  --text-2: #a1a1aa; /* 6.8:1 */
+  --text-3: #8e8e97; /* 5.4:1; hints and the live phrase, never on surface-3 */
+  --text-off: #5c5c64; /* disabled only */
+  --key: #fbbf24; /* key words, and nothing else: 10.4:1 */
+  --ok: #4ade80; /* dots and meters only, never text */
+  --danger: #fca5a5; /* deleting and removing, outside a session */
+  --primary: #f4f4f5;
+  --primary-hover: #d4d4d8;
+  --on-primary: #111113;
+  --focus: #f4f4f5;
+  --code: #0c0c0e;
+  --syn-key: #93c5fd;
+  --syn-type: #c4b5fd;
+  --syn-str: #86efac;
+  --syn-com: #8e8e97;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-2: 0 8px 24px rgb(0 0 0 / 45%);
+  color-scheme: dark;
+}
+
+:root.theme-light {
+  --surface-0: #f1f1f3;
+  --surface-1: #ffffff;
+  --surface-2: #f7f7f8;
+  --surface-3: #e6e6e9;
+  --selected: #ffffff;
+  --line: rgb(24 24 27 / 8%);
+  --line-2: rgb(24 24 27 / 14%);
+  --edge: #8a8a93;
+  --text-0: #18181b;
+  --text-1: #27272a;
+  --text-2: #52525b;
+  --text-3: #63636b;
+  --text-off: #a1a1aa;
+  --key: #a15c07; /* 5.2:1 on surface-1 only */
+  --ok: #15803d;
+  --danger: #b91c1c;
+  --primary: #18181b;
+  --primary-hover: #3f3f46;
+  --on-primary: #ffffff;
+  --focus: #18181b;
+  --code: #f4f4f6;
+  --syn-key: #1d4ed8;
+  --syn-type: #6d28d9;
+  --syn-str: #15803d;
+  --syn-com: #63636b;
+  --shadow-1: 0 1px 2px rgb(24 24 27 / 8%);
+  --shadow-2: 0 8px 24px rgb(24 24 27 / 12%);
+  color-scheme: light;
+}
+
+:root {
+  /* Windows 11's own fonts: nothing is fetched at runtime, nothing needs bundling. macOS gets its system font. */
+  --font-sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, ui-monospace, 'SF Mono', monospace;
+  /* The answer's size, from Settings: S 15/22, M 16/24, L 18/28. */
+  --answer-size: 16px;
+  --answer-line: 24px;
+}
+
+:root.text-s {
+  --answer-size: 15px;
+  --answer-line: 22px;
+}
+
+:root.text-l {
+  --answer-size: 18px;
+  --answer-line: 28px;
+}

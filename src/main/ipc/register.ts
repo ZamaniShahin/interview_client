@@ -1,0 +1,92 @@
+// Every IPC handler, in one place. Each checks who sent the message (only our own windows) and what it carries
+// (the zod schemas in src/shared/ipc.ts) before anything happens: a renderer is untrusted input.
+import { ipcMain, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
+import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
+import type { AccountView } from '../../shared/account';
+import {
+  appWindowActionSchema,
+  IpcChannels,
+  overlayCommandSchema,
+  overlayWindowActionSchema,
+  startSessionSchema,
+  type AppWindowAction,
+  type CommandResult,
+  type OverlayWindowAction,
+  type StartSessionRequest,
+} from '../../shared/ipc';
+import { settingsPatchSchema } from '../../shared/settings';
+import type { SessionController } from '../session/session-controller';
+import type { SettingsStore } from '../settings-store';
+
+export interface IpcDependencies {
+  overlayWindow: () => BrowserWindow | null;
+  appWindow: () => BrowserWindow | null;
+  session: SessionController;
+  settings: SettingsStore;
+  account: () => AccountView | null;
+  startSession: (request: StartSessionRequest) => Promise<CommandResult>;
+  onOverlayWindow: (action: OverlayWindowAction) => void;
+  onAppWindow: (action: AppWindowAction) => void;
+}
+
+const invalid: CommandResult = { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'That request was not valid.' };
+
+function isFrom(event: IpcMainEvent | IpcMainInvokeEvent, win: BrowserWindow | null): boolean {
+  return win !== null && !win.isDestroyed() && event.sender.id === win.webContents.id;
+}
+
+export function registerIpc(deps: IpcDependencies): void {
+  const fromOverlay = (event: IpcMainEvent | IpcMainInvokeEvent) => isFrom(event, deps.overlayWindow());
+  const fromApp = (event: IpcMainEvent | IpcMainInvokeEvent) => isFrom(event, deps.appWindow());
+  const fromEither = (event: IpcMainEvent | IpcMainInvokeEvent) => fromOverlay(event) || fromApp(event);
+
+  ipcMain.handle(IpcChannels.overlayGetState, (event) => {
+    if (!fromOverlay(event)) throw new Error('Refused: not the overlay.');
+    return deps.session.current;
+  });
+
+  ipcMain.handle(IpcChannels.overlayCommand, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromOverlay(event)) return invalid;
+    const parsed = overlayCommandSchema.safeParse(payload);
+    if (!parsed.success) return invalid;
+    return deps.session.command(parsed.data);
+  });
+
+  ipcMain.on(IpcChannels.overlayWindow, (event, payload: unknown) => {
+    if (!fromOverlay(event)) return;
+    const parsed = overlayWindowActionSchema.safeParse(payload);
+    if (parsed.success) deps.onOverlayWindow(parsed.data);
+  });
+
+  ipcMain.on(IpcChannels.appWindow, (event, payload: unknown) => {
+    if (!fromApp(event)) return;
+    const parsed = appWindowActionSchema.safeParse(payload);
+    if (parsed.success) deps.onAppWindow(parsed.data);
+  });
+
+  ipcMain.handle(IpcChannels.appGetAccount, (event) => {
+    if (!fromApp(event)) throw new Error('Refused: not the app window.');
+    return deps.account();
+  });
+
+  ipcMain.handle(IpcChannels.appStartSession, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = startSessionSchema.safeParse(payload);
+    if (!parsed.success) {
+      return { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'Tick the consent box to start.' };
+    }
+    return deps.startSession(parsed.data);
+  });
+
+  ipcMain.handle(IpcChannels.settingsGet, (event) => {
+    if (!fromEither(event)) throw new Error('Refused: not a Sotto window.');
+    return deps.settings.get();
+  });
+
+  ipcMain.handle(IpcChannels.settingsSet, (event, payload: unknown) => {
+    if (!fromEither(event)) throw new Error('Refused: not a Sotto window.');
+    const parsed = settingsPatchSchema.safeParse(payload);
+    if (!parsed.success) throw new Error('Refused: not a valid settings change.');
+    return deps.settings.update(parsed.data);
+  });
+}

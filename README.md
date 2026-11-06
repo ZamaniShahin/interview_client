@@ -1,0 +1,173 @@
+# Sotto: desktop client
+
+The desktop app for Sotto. It's a **terminal**:
+- it signs the user in;
+- it captures the interviewer's audio and screenshots;
+- it shows answers in an overlay that screen shares can't see;
+- it keeps the user's history on the device.
+
+All the intelligence (prompts, AI keys, question detection, licensing) is on the server ([backend docs](../backend/interview_backend/docs/README.md)).
+
+**Never in this repo or the built app:** prompts, AI provider keys, model ids, end-of-question rules, plan limits used for enforcement. If a change needs one of these, it belongs on the server.
+
+> Moved here on 2026-11-06 from the backend's `docs/client/README.md`, where it was staged. That copy is kept in sync until it is deleted. Agents: read [CLAUDE.md](CLAUDE.md) first.
+
+## Getting started
+
+```bash
+npm install
+npm run dev     # the first run downloads Electron's binary (about 100 MB), checked against its checksums
+npm run check   # type-check, lint, test
+```
+
+Node 24 runs everything. Node 24.15 or later also avoids an engine warning from a build tool (`nopt`, via electron-builder).
+
+Until the live connection exists (1.12), `npm run dev` plays a scripted interview instead of the server:
+- tick the consent box on Home and press **Start session**;
+- the overlay plays the interview, and answers what you type with a canned reply;
+- while it runs, the session hotkeys are global (Ctrl+Enter answers; Ctrl+Shift+H hides the overlay).
+
+A packaged build never runs the preview.
+
+## Where it stands
+
+**The skeleton, 2026-11-06** ([docs/roadmap.md](docs/roadmap.md)):
+- **The two windows**, each with its own chrome:
+  - the overlay, frameless, always on top, out of captures, shown without focus;
+  - the window for outside sessions.
+- **The session controller in main.** It runs the reducer that turns the hub's events into what the overlay shows.
+- **IPC:** fixed channels, checked with zod, sender-checked.
+- **Settings**, owned by main.
+- **The UI's components**, on the placeholder design tokens ([docs/design.md](docs/design.md)), and the safe answer renderer.
+- **The hub connection**, built over the generated contract but not yet driven: that is 1.12.
+- **The checks:** typecheck, lint with the stealth rules, unit, renderer and stealth tests, and a build whose preloads are single sandbox-safe files.
+
+**Not yet:** sign-in (1.10), audio capture (1.11), the live connection (1.12), Mermaid and syntax colors in answers (1.13), the first run (1.14), the local database, packaging hardening.
+
+## Tech decisions
+
+"Added" means the package is in `package.json` now. The rest arrive with the checkpoint that needs them.
+
+| Area | Decision | Why | Not chosen | Status |
+|---|---|---|---|---|
+| Shell | **Electron**, the latest supported major version; Chromium security updates within 2 weeks | v1's stealth behavior is proven on Electron (`setContentProtection`, the window levels); Chromium's audio stack | Tauri (WebView2 differences; v1's stealth work would have to be redone) | added (45) |
+| Language | **TypeScript** (strict) everywhere: main, preloads, renderers | one language with the generated server contracts | JavaScript (v1) | added (5.9: typescript-eslint supports below 6.1) |
+| Build | **electron-vite** (Vite for main, preload and renderer) | fast dev server and HMR; one config | webpack, Electron Forge's bundlers | added |
+| UI framework | **Vue 3** (Composition API) + **Pinia** for state | the team's framework | React | added |
+| Component library | **none inside overlay windows**; small custom components | every control must follow the stealth rules (no `title`, no native `<select>` popup, no cursor changes); a library fights them | Vuetify in the overlay (fine for a future web admin) | built |
+| Server connection | **@microsoft/signalr** + MessagePack protocol, **in the main process** | tokens never reach a renderer; an overlay reload doesn't drop the session | the connection in the renderer | added, wired at 1.12 |
+| Contracts | TypeScript types **generated** from the server's C# hub interfaces (`src/shared/contracts/`, never hand-edited), copied from the backend's `contracts/sotto-contracts.ts` by `npm run contracts:sync`. Field keys are the C# names, as on the wire | a misspelled message or field fails at compile time | v1's hand-matched strings | built |
+| Login | **OIDC auth code + PKCE in the system browser** with a loopback redirect, via **openid-client** (panva) in main | RFC 8252; no password form inside the app | an embedded login window | 1.10 |
+| Token storage | refresh token + device private key encrypted with Electron **safeStorage**; access token in memory only. Refresh tokens rotate, and **sending an old one ends the sign-in** (checked on Keycloak 26.6.4, backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §10): refresh one request at a time, store each new refresh token before using it, and treat `invalid_grant` as "sign in again" | OS-user-bound encryption (DPAPI or Keychain) | keytar (archived), plain files | 1.10 |
+| Device key | ECDSA P-256 made with Node `crypto`; device proof = a compact JWS per request (backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §6) | binds tokens to this installation | — | 1.10 |
+| Audio capture | hidden **capture window**: Windows system audio via `setDisplayMediaRequestHandler({audio: 'loopback'})`, mic via `getUserMedia`; an **AudioWorklet** mixes down, resamples to 24 kHz and makes PCM16 100 ms frames | no Python sidecar; Chromium handles devices | v1's Python `soundcard` | 1.11 |
+| macOS audio | **open (Q6)**: Electron's own loopback support if enough, otherwise a small native helper | — | — | Phase 5 |
+| Coach transcription | **on the device**: sherpa-onnx or Vosk, picked by a spike (Q5); the mic never leaves the machine | privacy, zero server cost | cloud STT for the mic | 3.7 |
+| Markdown | **markdown-it** (`html: false`) + **DOMPurify**; **highlight.js**; **Mermaid** (lazy, `securityLevel: "strict"`) | a safe, standard renderer for model output | v1's hand-written renderer | markdown-it and DOMPurify added; highlight.js and Mermaid at 1.13 |
+| Documents | **pdfjs-dist** (PDF text) + **mammoth** (`.docx`, tables included: v1 KNOWN_ISSUES #11); only the extracted text is sent | no PDF parser on the server | parsing on the server | 3.10 |
+| Local data | **SQLite**, encrypted (**better-sqlite3-multiple-ciphers**, SQLCipher-compatible), in main; key in safeStorage. Schema in backend [07](../backend/interview_backend/docs/07-data-model.md) §5 | history and answer bank stay on the device, encrypted | plain JSON / SQLite (v1) | with the first stored data (1.14) |
+| Validation | **zod** schemas for every IPC payload and local settings | untrusted renderer input | — | added |
+| Packaging | **electron-builder**: NSIS (Windows x64) first, DMG next | used by v1; mature | — | added (unsigned) |
+| Updates | **electron-updater** from our CDN bucket, staged rollout; the server's `minClientVersion` forces upgrades | patched or old builds stop working | manual installers (v1) | 4.2 |
+| Signing | Windows **Authenticode** through a cloud HSM signing service; macOS **Developer ID + notarization** | trust, SmartScreen, Gatekeeper; required for updates | unsigned (v1) | 4.2 |
+| Hardening | **@electron/fuses**, ASAR integrity, `app://` protocol, CSP, sandbox (backend [08](../backend/interview_backend/docs/08-security.md) §4) | the client can't be turned against its user | obfuscation as a control | CSP and sandbox built; the rest at 4.1 |
+| Errors | **Sentry** Electron SDK, PII scrubbing, no content | crash visibility | — | Phase 4 |
+| Tests | **Vitest** (unit), **Playwright** for Electron (end to end), v1's stealth checks ported | v1's renderer/selector tests encode the stealth rules | — | Vitest added; Playwright at 1.13 |
+| Lint / format | ESLint (typescript-eslint, eslint-plugin-vue) + Prettier; custom lint rules: no `title` attribute, no `<select>`, no `cursor` CSS | the stealth rules are checked as the code is written | — | added; the cursor check is a test |
+
+## Processes and windows
+
+```
+main process (Node, TypeScript)
+├─ auth: openid-client, loopback server, token refresh, safeStorage, device key + proofs          (1.10)
+├─ connection: SignalR hub (MessagePack), REST client, reconnect + ResumeSession                  (1.12)
+├─ session: the controller, owning the overlay's view state; its driver is the hub (1.12), or the
+│           scripted preview in development
+├─ windows: overlay, app window, selector (3.6), capture (hidden, 1.11); global hotkeys while a session runs
+├─ local DB: encrypted SQLite (history, answer bank, documents, settings)
+├─ coach: on-device STT + metrics (or in a utilityProcess if the CPU cost shows)                   (3.7)
+└─ updater, Sentry                                                                                 (Phase 4)
+      │ IPC (fixed channels, zod-validated, sender-checked)        │ MessagePort (audio frames)
+overlay window (Vue): Heard, Answer, history ‹ ›, ask bar,     capture window (hidden, never shown):
+  status, More, practice panel, coach strip — NO network,        loopback + mic → AudioWorklet → frames
+  NO Node
+app window (Vue): Home, Prepare, Practice, History, Account,   selector window: v1's region selector, its own
+  Settings, Help — outside sessions; NO network, NO Node          least-privilege preload
+```
+
+- **The main process owns every network connection.** Renderers have `connect-src 'none'` (the build sets the Content Security Policy). Events arrive from the hub in main and go to the overlay over IPC. Audio frames go from the capture window to main through a `MessagePort` (transferable buffers), then up the hub stream.
+- **Only the interviewer's (loopback) audio is uploaded.** The mic feeds only the on-device coach, the echo gate, the local recording, and practice answers (as text).
+- **The app window** is the UI canvas's proposal for the handoff's open point (backend decisions.md, Q15): outside a session the app gets a roomier window; during one it steps aside for the overlay.
+
+## Stealth rules: requirements, each with a test
+
+Ported from v1 (`ui/main.js`, KNOWN_ISSUES #12–#13). Break one and the overlay shows up in the interviewer's screen share.
+
+1. **Out of captures.** Every window goes through `keepOutOfCapture(w)`: `setContentProtection(true)` now **and on every `show` event** (Windows resets it on each show).
+   - Built in `src/main/windows/stealth.ts`; unit-tested, and the source check finds every window.
+   - At 1.13: read `GetWindowDisplayAffinity` = `0x11` after hide/show.
+2. **No `title` attributes anywhere** (tooltips are separate, capturable windows). Use `aria-label`.
+   - Lint forbids `title` in templates, components included.
+   - A MutationObserver strips any that appear (`src/renderer/shared/no-titles.ts`).
+3. **No native dropdowns.** No `<select>` (its popup list is a separate window): segmented controls and in-window lists instead. Lint forbids it.
+4. **The pointer never changes over the app:** one global `cursor: default !important` in `base.css`, no other `cursor` rule. A source test keeps it the only one.
+5. **No OS resize border** on the overlay (`resizable: false`); a ◢ grip resizes it through main.
+6. **Always on top** at the `"screen-saver"` level, shown with `showInactive()`, so it never takes focus from the call app.
+7. **Nothing opens outside the protected windows during a session.**
+   - No new windows, no navigation away, no native menus, no spell-check menus.
+   - Native dialogs only during setup, with always-on-top dropped.
+8. **Global hotkeys**, registered only while a session runs.
+   - Ctrl+Enter is settled; the others are the canvas's proposal ([Settings](docs/design.md)).
+   - v1's PROTOCOL.md §3 and its collision notes apply once at hand.
+
+## Audio capture details (1.11)
+
+- AudioWorklet: take the first channel, resample to 24 kHz, convert float → PCM16, cut 100 ms frames (4,800 bytes), stamp each with `seq` and a timestamp.
+- Keep the newest ~10 s in a ring buffer; after a reconnect, re-send it (the server drops frames it has seen).
+- Device switched or unplugged → reopen after 1.5 s (v1 behavior), with status shown.
+- **Echo gate (for the coach):** while the loopback level is above the threshold (v1 `COACH_ECHO_RMS` 0.008, hold 0.6 s), feed silence to the coach. During practice read-aloud, gate up to 60 s (v1 `MOCK_TTS_MAX_S`).
+- A level meter plus a warning after ~20 s of no interviewer audio (v1 roadmap Q1: "no captions and no errors" was v1's silent failure). The meter is drawn (`ListeningMeter.vue`); it moves once capture reports levels.
+
+## Features that run on the device
+
+- **Coach:** port `coach.py` + `textnorm.py`: talk time, wpm (after 10 s), fillers, key-term coverage from the answer's `***bold italic***` words, a wrap-up nudge at 90 s. Turn reset rules as in v1.
+- **Prepared-answer match:** port `answer_bank.best_match` (content stems, F1 ≥ 0.6, coverage ≥ 60%). It runs on `AnswerStart` for spoken, typed and trigger questions, and shows the 📌 card.
+- **History:** interviews, Q&A, optional transcripts, debrief results; an HTML report export (port `history.py`).
+- **Documents:** parse, clip the prep doc at 100k characters at a line break (v1 `clip_prep_doc`), and send the text with `SetContext` / `SetPrepDoc`.
+- **Recording** (opt-in, after the consent checkbox): local WAV of loopback + mic, as v1's `recorder.py`.
+- **First run:** v1's setup wizard (its ARCHITECTURE.md "Setup wizard", PROTOCOL.md "First-run setup wizard"), re-made for v2. It opens by itself on first use and can be re-run from Help. Its steps:
+  1. **What is recorded and sent where**, now including what goes to OpenAI and how long OpenAI may keep it (backend [06](../backend/interview_backend/docs/06-ai-gateway.md) §10 rule 7). The user acknowledges it once, and again when the text changes. This step is needed before any outside user.
+  2. **Sign in and register this device.** This replaces v1's key, provider and speech-to-text steps: v2 has no keys or models on the device.
+  3. **Name, résumé and job description** (`SetContext`).
+  4. **The sound check:** live transcripts on screen, proving that the call's audio plays through the default output device.
+     - AUTO and recording stay off while the wizard is open, and are put back after.
+     - Leaving the sound check sends `ClearHeard`, so its words never join the next question (v1 `clear_heard`).
+     - It runs in a live session, so whether it costs minutes is open (Q12).
+  5. **The key hotkeys** and 🛡 Test hiding.
+
+## Release process (Phase 4)
+
+1. CI on a tag: build → unit + e2e tests → stealth tests on a Windows runner → electron-builder → sign (cloud HSM) → upload to the update bucket as a **staged** release.
+2. Rollout 10% → 50% → 100%, watching Sentry crash-free sessions and answer-failure rates.
+3. If a release is bad: stop the rollout. If it's dangerous: raise `minClientVersion` on the server.
+
+## Talking to a local backend
+
+Run `dotnet run --project src/Sotto.AppHost` in the backend repo (it needs Docker 25+). Then:
+
+| Setting | Local value | Environment variable |
+|---|---|---|
+| API base URL | `http://localhost:5180` (REST under `/api/v1`; the hub at `/hubs/live`) | `SOTTO_API_BASE_URL` |
+| OIDC issuer | `http://localhost:8080/realms/sotto` | `SOTTO_OIDC_ISSUER` |
+| OIDC client | `desktop` (public; PKCE S256 required; redirect `http://127.0.0.1:<any port>/callback`) | `SOTTO_OIDC_CLIENT_ID` |
+| Scopes | `openid email profile offline_access` | — |
+| First call after sign-in | `GET /api/v1/me` creates the user record | — |
+
+Register a test user on Keycloak's login page; the verification email lands in Mailpit (http://localhost:8025).
+
+## v1 references
+
+v1 is at `D:\Codes\Personal\inverview_app`. Read these before touching windows, capture or the answer view:
+- its `docs/ARCHITECTURE.md` §11–§12 (main process and renderer);
+- its `docs/PROTOCOL.md` §2–§3 (IPC and hotkeys);
+- its `docs/KNOWN_ISSUES.md` #12–#14.
