@@ -6,7 +6,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 ## The skeleton
 
-- [x] **C0 The skeleton** (2026-11-06, not committed yet):
+- [x] **C0 The skeleton** (2026-11-06, `97a1bee`):
   - the base project;
   - the two windows with the stealth rules main applies;
   - the session controller, its reducer, and the development preview;
