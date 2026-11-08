@@ -20,7 +20,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 ## Phase 1: the live core
 
-- [x] **1.10 Sign-in** (2026-11-08, checked end to end against the local stack; its commit is recorded once made):
+- [x] **1.10 Sign-in** (2026-11-08, `3212ec9`, checked end to end against the local stack):
   - the system browser, PKCE, a loopback redirect, openid-client in main;
   - tokens in main, the refresh token in safeStorage, one refresh at a time;
   - the device key and its proofs;
@@ -28,11 +28,11 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
   - the account read from REST into `AccountView`.
 - [ ] **1.11 The capture window:** Windows loopback → AudioWorklet → PCM16 100 ms frames → a MessagePort to main; the level meter fed.
 - [ ] **1.12 The hub connection in main:** the `HubDriver`, over `createLiveTransport`.
-  - [x] `StartSession` with a device proof (2026-11-08);
+  - [x] `StartSession` with a device proof (2026-11-08, `3212ec9`);
   - [ ] `UploadAudio` streamed, with the 10 s ring buffer: it needs 1.11's frames;
   - [ ] a device proof at connect too (backend docs/04 §6): the server doesn't check one yet, so both sides do it together (backend decisions, 2026-11-05);
-  - [x] `ResumeSession` with `LastSeq` after a drop, and a snapshot when the replay is incomplete (2026-11-08);
-  - [x] the preview stays for development: `npm run dev:preview` (2026-11-08).
+  - [x] `ResumeSession` with `LastSeq` after a drop, and a snapshot when the replay is incomplete (2026-11-08, `3212ec9`);
+  - [x] the preview stays for development: `npm run dev:preview` (2026-11-08, `3212ec9`).
 - [ ] **1.13 The overlay, complete:**
   - Mermaid (lazy, strict) and highlight.js in answers;
   - following a long answer, with "New text below";
