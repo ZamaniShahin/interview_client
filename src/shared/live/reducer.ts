@@ -29,7 +29,9 @@ export type LiveAction =
   /** Look at an earlier answer by index, or follow the newest again (null). */
   | { type: 'view'; index: number | null }
   /** Minutes and tier come from the account until the hub carries usage (backend 2.4). */
-  | { type: 'account'; minutesLeft: number | null; tier: Tier | null };
+  | { type: 'account'; minutesLeft: number | null; tier: Tier | null }
+  /** The session ended without a `SessionEnded` event: it couldn't be resumed in time, or the server said it expired. */
+  | { type: 'ended'; reason: string };
 
 export function reduceLive(state: LiveViewState, action: LiveAction): LiveViewState {
   switch (action.type) {
@@ -49,7 +51,18 @@ export function reduceLive(state: LiveViewState, action: LiveAction): LiveViewSt
       return { ...state, viewing: clampView(state, action.index) };
     case 'account':
       return { ...state, minutesLeft: action.minutesLeft, tier: action.tier };
+    case 'ended':
+      return state.phase === 'ended' ? state : endSession(state, action.reason);
   }
+}
+
+function endSession(state: LiveViewState, reason: string): LiveViewState {
+  return {
+    ...state,
+    phase: 'ended',
+    endReason: reason,
+    answers: state.answers.map((a) => (a.ending === 'writing' ? { ...a, ending: 'stopped' as const } : a)),
+  };
 }
 
 function applySnapshot(state: LiveViewState, s: SessionSnapshot): LiveViewState {
@@ -142,12 +155,7 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
       return { ...next, notice: { code: event.e.Code, text: event.e.Text } };
 
     case 'sessionEnded':
-      return {
-        ...next,
-        phase: 'ended',
-        endReason: event.e.Reason,
-        answers: next.answers.map((a) => (a.ending === 'writing' ? { ...a, ending: 'stopped' as const } : a)),
-      };
+      return endSession(next, event.e.Reason);
   }
 }
 

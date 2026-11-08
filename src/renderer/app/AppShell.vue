@@ -3,7 +3,7 @@
 // overlay takes over; it comes back when the session is closed.
 import { computed, onMounted, ref } from 'vue';
 import { useSettings } from '../shared/use-settings';
-import { useAccountStore } from './account-store';
+import { useAppStore } from './app-store';
 import SideNav from './components/SideNav.vue';
 import WindowChrome from './components/WindowChrome.vue';
 import AccountPage from './pages/AccountPage.vue';
@@ -25,11 +25,23 @@ const pages: { id: PageId; label: string; icon: 'home' | 'prepare' | 'practice' 
 ];
 
 const current = ref<PageId>('home');
-const store = useAccountStore();
+const store = useAppStore();
 useSettings(window.appApi);
 onMounted(() => void store.load());
 
 const minutes = computed(() => store.account?.minutes ?? null);
+const signedOutWords = computed(() => {
+  switch (store.auth.status) {
+    case 'signing-in':
+      return 'Signing in…';
+    case 'signed-in':
+      return 'Reading your account…';
+    case 'unreachable':
+      return "Can't reach Sotto";
+    default:
+      return 'Not signed in';
+  }
+});
 const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appApi.window(action);
 </script>
 
@@ -40,11 +52,17 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
       <SideNav :items="pages" :current="current" @select="(id) => (current = id)">
         <template #footer>
           <p class="eyebrow">Minutes</p>
-          <template v-if="minutes">
+          <template v-if="store.account && minutes">
             <p class="big num">{{ minutes.usable }} min left</p>
-            <p class="small">{{ store.account?.plan.name }} plan · renews {{ store.account?.plan.renewsOn }}</p>
+            <p class="small">
+              {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn"> · renews {{ store.account.plan.renewsOn }}</template>
+            </p>
           </template>
-          <p v-else class="small">Not signed in</p>
+          <template v-else-if="store.account">
+            <p class="big">Unlimited</p>
+            <p class="small">{{ store.account.plan.name }} plan</p>
+          </template>
+          <p v-else class="small">{{ signedOutWords }}</p>
         </template>
       </SideNav>
       <main class="main">

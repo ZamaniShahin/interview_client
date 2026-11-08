@@ -20,15 +20,18 @@ The server, in `../backend/interview_backend`, holds the intelligence: the promp
 ## Layout
 
 ```
-src/main/        Electron's core process: windows/ (the stealth rules), ipc/ (every handler), session/ (the controller,
-                 its drivers, the hotkeys), connection/ (the hub, 1.12), preview/ (development data), settings.
+src/main/        Electron's core process: windows/ (the stealth rules), ipc/ (every handler), auth/ (sign-in, the
+                 encrypted secrets), device/ (the key, its proofs, the fingerprint), api/ (REST), account/ (the account
+                 and this computer's registration), session/ (the controller, its drivers, the hotkeys), connection/
+                 (the hub transport), preview/ (development data), settings.
 src/preload/     overlay.ts, app.ts: each window's only bridge to main; api.ts types them. Sandboxed: no packages.
 src/renderer/    overlay/ (the product), app/ (the window outside sessions), shared/ (components, styles, icons,
                  the answer renderer).
 src/shared/      Runs in main, preloads and renderers, so no Electron and no DOM: contracts/ (generated, never edited),
                  ipc.ts and ipc-channels.ts, live/ (view state, reducer, the overlay's words), text-limits, settings,
                  account.
-tests/           unit/ (Node), renderer/ (happy-dom and @vue/test-utils), stealth/ (the rules readable in the source).
+tests/           unit/ (Node), renderer/ (happy-dom and @vue/test-utils), stealth/ (the rules readable in the source),
+                 e2e/ (against the backend's local stack; skipped unless SOTTO_E2E=1).
 scripts/         sync-contracts.mjs: copies the hub's contract from the backend.
 docs/            The product docs (01–08), the design handoff, design.md, decisions.md, roadmap.md.
 ```
@@ -37,8 +40,11 @@ docs/            The product docs (01–08), the design handoff, design.md, deci
 
 ```bash
 npm install
-npm run dev              # the app, with hot reload; the first run downloads Electron's binary (about 100 MB)
+npm run dev              # the app against the backend's local stack, with hot reload; the first run downloads
+                         # Electron's binary (about 100 MB)
+npm run dev:preview      # the app with no server: a scripted interview and a sample account
 npm run check            # type-check main and renderer, lint, test: run it before saying anything works
+SOTTO_E2E=1 npx vitest run tests/e2e   # sign-in, the device, the account and a live session, against the local stack
 npm run build            # out/
 npm run dist:win         # an unsigned NSIS installer in dist/, for internal use
 npm run contracts:sync   # copy the backend's contracts/sotto-contracts.ts; contracts:check fails if they differ
@@ -46,7 +52,9 @@ npm run contracts:sync   # copy the backend's contracts/sotto-contracts.ts; cont
 
 **Launching from a tool hosted in VS Code** (an agent's shell, a task runner) inherits `ELECTRON_RUN_AS_NODE=1` from VS Code's extension host. Electron then runs as plain Node, and main fails at `app.isPackaged`. Start it with `env -u ELECTRON_RUN_AS_NODE npm run dev`. A normal terminal doesn't have the variable.
 
-**Development runs a preview, not the server.** Until the live connection exists (1.12), `npm run dev` plays a scripted interview:
+**`npm run dev` needs the backend's local stack** (`dotnet run --project src/Sotto.AppHost` there; README, "Talking to a local backend"). Sign in on Home, in the browser, then start a session: it runs on the server, over the hub.
+
+**`npm run dev:preview` needs no server.** It plays a scripted interview with a sample account:
 - open Home, tick the consent box, and press Start session;
 - the overlay opens and plays it;
 - what you type is answered with a canned reply.
@@ -82,7 +90,8 @@ While a session runs, its hotkeys are global (Ctrl+Enter answers, Ctrl+Shift+H h
 8. **The client is a terminal.** It shows what the server decides; it decides nothing that matters for money or security.
 9. **No sound during a live session.** Practice may read questions aloud: the one exception, open to revision.
 10. **No interview content in logs**: no transcripts, answers, documents or screenshots. States and codes only.
-11. **The preview is development only** (`!app.isPackaged`). No code path that pretends to be the server ships.
+11. **The preview is development only**: an unpackaged build started with `--mode preview` (`npm run dev:preview`). No code path that pretends to be the server ships.
+12. **Sign-in state lives in main.** The refresh token, the device key and the device id are kept only through `SecretStore`, encrypted with safeStorage; where the OS can't encrypt, nothing is written and the sign-in lasts until the app quits. Keycloak's refresh tokens rotate, so every renewal goes through `AuthSession` (one at a time, the new token stored before use).
 
 ## Conventions
 

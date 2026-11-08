@@ -34,7 +34,13 @@ function cspPlugin(): Plugin {
 }
 
 export default defineConfig({
-  main: {},
+  main: {
+    build: {
+      // openid-client and its two dependencies ship as ES modules only: bundled into main's CommonJS, so nothing
+      // depends on Node loading ES modules at runtime.
+      externalizeDeps: { exclude: ['openid-client', 'jose', 'oauth4webapi'] },
+    },
+  },
   preload: {
     build: {
       // A sandboxed preload can't load other files, so each is built whole, with no shared chunk split out.

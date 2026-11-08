@@ -1,8 +1,8 @@
 // Every IPC handler, in one place. Each checks who sent the message (only our own windows) and what it carries
 // (the zod schemas in src/shared/ipc.ts) before anything happens: a renderer is untrusted input.
 import { ipcMain, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
+import type { AppState } from '../../shared/app-state';
 import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
-import type { AccountView } from '../../shared/account';
 import {
   appWindowActionSchema,
   IpcChannels,
@@ -23,7 +23,11 @@ export interface IpcDependencies {
   appWindow: () => BrowserWindow | null;
   session: SessionController;
   settings: SettingsStore;
-  account: () => AccountView | null;
+  appState: () => AppState;
+  signIn: () => Promise<CommandResult>;
+  cancelSignIn: () => void;
+  signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
   startSession: (request: StartSessionRequest) => Promise<CommandResult>;
   onOverlayWindow: (action: OverlayWindowAction) => void;
   onAppWindow: (action: AppWindowAction) => void;
@@ -39,11 +43,11 @@ export function registerIpc(deps: IpcDependencies): void {
   const fromOverlay = (event: IpcMainEvent | IpcMainInvokeEvent) => isFrom(event, deps.overlayWindow());
   const fromApp = (event: IpcMainEvent | IpcMainInvokeEvent) => isFrom(event, deps.appWindow());
   const fromEither = (event: IpcMainEvent | IpcMainInvokeEvent) => fromOverlay(event) || fromApp(event);
+  const refuse = (who: string) => {
+    throw new Error(`Refused: not ${who}.`);
+  };
 
-  ipcMain.handle(IpcChannels.overlayGetState, (event) => {
-    if (!fromOverlay(event)) throw new Error('Refused: not the overlay.');
-    return deps.session.current;
-  });
+  ipcMain.handle(IpcChannels.overlayGetState, (event) => (fromOverlay(event) ? deps.session.current : refuse('the overlay')));
 
   ipcMain.handle(IpcChannels.overlayCommand, async (event, payload: unknown): Promise<CommandResult> => {
     if (!fromOverlay(event)) return invalid;
@@ -64,10 +68,17 @@ export function registerIpc(deps: IpcDependencies): void {
     if (parsed.success) deps.onAppWindow(parsed.data);
   });
 
-  ipcMain.handle(IpcChannels.appGetAccount, (event) => {
-    if (!fromApp(event)) throw new Error('Refused: not the app window.');
-    return deps.account();
+  ipcMain.handle(IpcChannels.appGetState, (event) => (fromApp(event) ? deps.appState() : refuse('the app window')));
+
+  ipcMain.handle(IpcChannels.appSignIn, (event) => (fromApp(event) ? deps.signIn() : invalid));
+
+  ipcMain.on(IpcChannels.appCancelSignIn, (event) => {
+    if (fromApp(event)) deps.cancelSignIn();
   });
+
+  ipcMain.handle(IpcChannels.appSignOut, (event) => (fromApp(event) ? deps.signOut() : refuse('the app window')));
+
+  ipcMain.handle(IpcChannels.appRefresh, (event) => (fromApp(event) ? deps.refresh() : refuse('the app window')));
 
   ipcMain.handle(IpcChannels.appStartSession, async (event, payload: unknown): Promise<CommandResult> => {
     if (!fromApp(event)) return invalid;
@@ -78,15 +89,12 @@ export function registerIpc(deps: IpcDependencies): void {
     return deps.startSession(parsed.data);
   });
 
-  ipcMain.handle(IpcChannels.settingsGet, (event) => {
-    if (!fromEither(event)) throw new Error('Refused: not a Sotto window.');
-    return deps.settings.get();
-  });
+  ipcMain.handle(IpcChannels.settingsGet, (event) => (fromEither(event) ? deps.settings.get() : refuse('a Sotto window')));
 
   ipcMain.handle(IpcChannels.settingsSet, (event, payload: unknown) => {
-    if (!fromEither(event)) throw new Error('Refused: not a Sotto window.');
+    if (!fromEither(event)) return refuse('a Sotto window');
     const parsed = settingsPatchSchema.safeParse(payload);
-    if (!parsed.success) throw new Error('Refused: not a valid settings change.');
+    if (!parsed.success) return refuse('a valid settings change');
     return deps.settings.update(parsed.data);
   });
 }

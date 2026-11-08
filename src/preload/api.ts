@@ -1,5 +1,5 @@
 // What each window may ask of main: the whole surface, typed. Types only, so renderers can import it freely.
-import type { AccountView } from '../shared/account';
+import type { AppState } from '../shared/app-state';
 import type {
   AppWindowAction,
   CommandResult,
@@ -27,7 +27,17 @@ export interface OverlayApi extends SettingsApi {
 
 /** `window.appApi`, in the app window only. */
 export interface AppApi extends SettingsApi {
-  getAccount(): Promise<AccountView | null>;
+  /** Sign-in, the account and the last problem, as main holds them. */
+  getState(): Promise<AppState>;
+  /** Returns a function that stops listening. */
+  onState(listener: (state: AppState) => void): () => void;
+  /** Opens the sign-in page in the browser; answers once it is done, cancelled or failed. */
+  signIn(): Promise<CommandResult>;
+  /** Stops waiting for the browser; the pending `signIn` answers "cancelled". */
+  cancelSignIn(): void;
+  signOut(): Promise<void>;
+  /** Reads the account again. */
+  refresh(): Promise<void>;
   startSession(request: StartSessionRequest): Promise<CommandResult>;
   window(action: AppWindowAction): void;
 }

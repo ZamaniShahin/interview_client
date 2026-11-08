@@ -1,6 +1,6 @@
 // A development stand-in for the hub. It plays a short interview into the overlay, and answers what is typed, so the
-// UI can be built and checked without a server. Only `npm run dev` uses it: a packaged build never does (index.ts).
-// The real driver, over the hub, comes with checkpoint 1.12.
+// UI can be built and checked without a server. Only `npm run dev:preview` uses it: a packaged build never does
+// (index.ts). The real driver is hub-driver.ts.
 import { randomUUID } from 'node:crypto';
 import { AnswerKind, AskMode, SessionEndReasons, SpeechStates, ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult } from '../../shared/ipc';

@@ -1,5 +1,5 @@
-// What the window shows of the account. It is read from the REST API (backend docs/03 §5) from checkpoint 1.10 on;
-// until then only the development preview fills it. Nothing here decides anything: the server enforces every limit.
+// What the window shows of the account, read from the REST API (backend docs/03 §5; main/account/account-mapping.ts),
+// or the development preview's. Nothing here decides anything: the server enforces every limit.
 
 export type PlanState = 'none' | 'trialing' | 'active' | 'past_due' | 'cancelled' | 'suspended';
 

@@ -16,13 +16,19 @@ All the intelligence (prompts, AI keys, question detection, licensing) is on the
 
 ```bash
 npm install
-npm run dev     # the first run downloads Electron's binary (about 100 MB), checked against its checksums
-npm run check   # type-check, lint, test
+npm run dev           # against the backend's local stack; the first run downloads Electron's binary (about 100 MB)
+npm run dev:preview   # no server: a scripted interview and a sample account, for work on the UI
+npm run check         # type-check, lint, test
 ```
 
 Node 24 runs everything. Node 24.15 or later also avoids an engine warning from a build tool (`nopt`, via electron-builder).
 
-Until the live connection exists (1.12), `npm run dev` plays a scripted interview instead of the server:
+`npm run dev` talks to the backend's local stack ([below](#talking-to-a-local-backend)):
+- **Sign in** on Home: the browser opens Keycloak's page, and the app carries on when you're done;
+- tick the consent box and press **Start session**: the session runs on the server, over the hub;
+- until audio capture (1.11), answers come from what you type.
+
+`npm run dev:preview` plays a scripted interview instead of the server:
 - tick the consent box on Home and press **Start session**;
 - the overlay plays the interview, and answers what you type with a canned reply;
 - while it runs, the session hotkeys are global (Ctrl+Enter answers; Ctrl+Shift+H hides the overlay).
@@ -42,7 +48,14 @@ A packaged build never runs the preview.
 - **The hub connection**, built over the generated contract but not yet driven: that is 1.12.
 - **The checks:** typecheck, lint with the stealth rules, unit, renderer and stealth tests, and a build whose preloads are single sandbox-safe files.
 
-**Not yet:** sign-in (1.10), audio capture (1.11), the live connection (1.12), Mermaid and syntax colors in answers (1.13), the first run (1.14), the local database, packaging hardening.
+**Sign-in and the hub, 2026-11-08** (1.10, and 1.12 but for the audio):
+- **Sign-in** in the system browser: openid-client, PKCE, a loopback redirect. It comes back at startup without the browser, renews one refresh at a time, and can be cancelled or signed out.
+- **This computer's key and its proofs.** The first sign-in registers the computer; a computer the account removed registers again with a new key.
+- **The account**, read from REST: the plan, the minutes and their lots, the ledger, the devices.
+- **A live session over the hub:** `StartSession` with a device proof, the overlay's commands, and after a drop `ResumeSession` with `LastSeq`, redrawing from a snapshot when the replay is incomplete. Past the server's 2 minutes, the session ends.
+- **An end-to-end test** against the local stack, opt-in ([below](#talking-to-a-local-backend)).
+
+**Not yet:** audio capture (1.11) and so `UploadAudio`, Mermaid and syntax colors in answers (1.13), the first run (1.14), the local database, packaging hardening.
 
 ## Tech decisions
 
@@ -55,11 +68,11 @@ A packaged build never runs the preview.
 | Build | **electron-vite** (Vite for main, preload and renderer) | fast dev server and HMR; one config | webpack, Electron Forge's bundlers | added |
 | UI framework | **Vue 3** (Composition API) + **Pinia** for state | the team's framework | React | added |
 | Component library | **none inside overlay windows**; small custom components | every control must follow the stealth rules (no `title`, no native `<select>` popup, no cursor changes); a library fights them | Vuetify in the overlay (fine for a future web admin) | built |
-| Server connection | **@microsoft/signalr** + MessagePack protocol, **in the main process** | tokens never reach a renderer; an overlay reload doesn't drop the session | the connection in the renderer | added, wired at 1.12 |
+| Server connection | **@microsoft/signalr** + MessagePack protocol, **in the main process** | tokens never reach a renderer; an overlay reload doesn't drop the session | the connection in the renderer | wired (1.12); audio upload with 1.11 |
 | Contracts | TypeScript types **generated** from the server's C# hub interfaces (`src/shared/contracts/`, never hand-edited), copied from the backend's `contracts/sotto-contracts.ts` by `npm run contracts:sync`. Field keys are the C# names, as on the wire | a misspelled message or field fails at compile time | v1's hand-matched strings | built |
-| Login | **OIDC auth code + PKCE in the system browser** with a loopback redirect, via **openid-client** (panva) in main | RFC 8252; no password form inside the app | an embedded login window | 1.10 |
-| Token storage | refresh token + device private key encrypted with Electron **safeStorage**; access token in memory only. Refresh tokens rotate, and **sending an old one ends the sign-in** (checked on Keycloak 26.6.4, backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §10): refresh one request at a time, store each new refresh token before using it, and treat `invalid_grant` as "sign in again" | OS-user-bound encryption (DPAPI or Keychain) | keytar (archived), plain files | 1.10 |
-| Device key | ECDSA P-256 made with Node `crypto`; device proof = a compact JWS per request (backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §6) | binds tokens to this installation | — | 1.10 |
+| Login | **OIDC auth code + PKCE in the system browser** with a loopback redirect, via **openid-client** (panva) in main | RFC 8252; no password form inside the app | an embedded login window | added (6.8.8), bundled into main (it ships as ES modules only) |
+| Token storage | refresh token + device private key encrypted with Electron **safeStorage**; access token in memory only. Refresh tokens rotate, and **sending an old one ends the sign-in** (checked on Keycloak 26.6.4, backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §10): refresh one request at a time, store each new refresh token before using it, and treat `invalid_grant` as "sign in again" | OS-user-bound encryption (DPAPI or Keychain) | keytar (archived), plain files | built |
+| Device key | ECDSA P-256 made with Node `crypto`; device proof = a compact JWS per request (backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §6) | binds tokens to this installation | — | built |
 | Audio capture | hidden **capture window**: Windows system audio via `setDisplayMediaRequestHandler({audio: 'loopback'})`, mic via `getUserMedia`; an **AudioWorklet** mixes down, resamples to 24 kHz and makes PCM16 100 ms frames | no Python sidecar; Chromium handles devices | v1's Python `soundcard` | 1.11 |
 | macOS audio | **open (Q6)**: Electron's own loopback support if enough, otherwise a small native helper | — | — | Phase 5 |
 | Coach transcription | **on the device**: sherpa-onnx or Vosk, picked by a spike (Q5); the mic never leaves the machine | privacy, zero server cost | cloud STT for the mic | 3.7 |
@@ -163,7 +176,17 @@ Run `dotnet run --project src/Sotto.AppHost` in the backend repo (it needs Docke
 | Scopes | `openid email profile offline_access` | — |
 | First call after sign-in | `GET /api/v1/me` creates the user record | — |
 
-Register a test user on Keycloak's login page; the verification email lands in Mailpit (http://localhost:8025).
+`npm run dev` uses these values. Register a test user on Keycloak's login page; the verification email lands in Mailpit (http://localhost:8025).
+
+**The end-to-end check** runs main's own modules against the stack, with a scripted browser on Keycloak's pages:
+
+```bash
+SOTTO_E2E=1 npx vitest run tests/e2e
+```
+
+- It signs a new user up, verifying the email through Mailpit, then registers the computer and starts the trial.
+- Then it gets an answer in a live session over the hub, ends it, renews the sign-in and signs out.
+- Each run leaves one user behind. `SOTTO_OIDC_ISSUER`, `SOTTO_API_BASE_URL` and `SOTTO_MAILPIT_URL` point it elsewhere.
 
 ## v1 references
 

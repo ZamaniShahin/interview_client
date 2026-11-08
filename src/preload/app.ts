@@ -1,11 +1,21 @@
 // The app window's only bridge to main. Sandboxed, like the overlay's: channel names and types, never a package.
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import type { AppState } from '../shared/app-state';
 import { IpcChannels } from '../shared/ipc-channels';
 import type { Settings } from '../shared/settings';
 import type { AppApi } from './api';
 
 const api: AppApi = {
-  getAccount: () => ipcRenderer.invoke(IpcChannels.appGetAccount),
+  getState: () => ipcRenderer.invoke(IpcChannels.appGetState),
+  onState: (listener) => {
+    const handler = (_event: IpcRendererEvent, state: AppState) => listener(state);
+    ipcRenderer.on(IpcChannels.appState, handler);
+    return () => ipcRenderer.removeListener(IpcChannels.appState, handler);
+  },
+  signIn: () => ipcRenderer.invoke(IpcChannels.appSignIn),
+  cancelSignIn: () => ipcRenderer.send(IpcChannels.appCancelSignIn),
+  signOut: () => ipcRenderer.invoke(IpcChannels.appSignOut),
+  refresh: () => ipcRenderer.invoke(IpcChannels.appRefresh),
   startSession: (request) => ipcRenderer.invoke(IpcChannels.appStartSession, request),
   window: (action) => ipcRenderer.send(IpcChannels.appWindow, action),
   getSettings: () => ipcRenderer.invoke(IpcChannels.settingsGet),

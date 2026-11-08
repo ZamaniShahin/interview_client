@@ -1,15 +1,18 @@
 <script setup lang="ts">
 // The account (F10): the plan and its state, the minutes usable now and each lot behind them, the computers, the
-// ledger. Billing, buying and signing in happen in the browser.
-import { computed } from 'vue';
+// ledger. Billing, buying and signing in happen in the browser. Signing out keeps this computer registered (J3).
+import { computed, ref } from 'vue';
 import SButton from '../../shared/components/SButton.vue';
-import { useAccountStore } from '../account-store';
+import { useAppStore } from '../app-store';
 import DeviceRow from '../components/DeviceRow.vue';
 import LedgerRow from '../components/LedgerRow.vue';
 import MinutesLotRow from '../components/MinutesLotRow.vue';
+import ProblemBanner from '../components/ProblemBanner.vue';
+import SignInBanner from '../components/SignInBanner.vue';
 
-const store = useAccountStore();
+const store = useAppStore();
 const account = computed(() => store.account);
+const signingOut = ref(false);
 
 const stateWords: Record<string, string> = {
   none: 'No plan',
@@ -19,12 +22,23 @@ const stateWords: Record<string, string> = {
   cancelled: 'Cancelled',
   suspended: 'Suspended',
 };
+
+async function signOut(): Promise<void> {
+  signingOut.value = true;
+  try {
+    await store.signOut();
+  } finally {
+    signingOut.value = false;
+  }
+}
 </script>
 
 <template>
   <section class="page" aria-labelledby="account-title">
     <h1 id="account-title" class="title">Account</h1>
-    <p v-if="!account" class="lede">Not signed in.</p>
+    <ProblemBanner class="gap" />
+    <SignInBanner class="gap" />
+    <p v-if="!account" class="lede">{{ store.signedIn ? 'Reading your account…' : 'Not signed in.' }}</p>
     <template v-else>
       <p class="lede">{{ account.user.name }} · {{ account.user.emailMasked }}</p>
 
@@ -48,7 +62,7 @@ const stateWords: Record<string, string> = {
       <div v-if="account.minutes" class="card block">
         <p class="eyebrow">Minutes you can use now</p>
         <p class="big num">{{ account.minutes.usable }} min</p>
-        <MinutesLotRow v-for="lot in account.minutes.lots" :key="lot.source" :lot="lot" />
+        <MinutesLotRow v-for="lot in account.minutes.lots" :key="lot.source + lot.expires" :lot="lot" />
       </div>
 
       <div class="card block">
@@ -59,9 +73,12 @@ const stateWords: Record<string, string> = {
       <div class="card block">
         <p class="eyebrow">Minutes ledger</p>
         <LedgerRow v-for="(entry, i) in account.ledger" :key="i" :entry="entry" />
+        <p v-if="account.ledger.length === 0" class="small">Nothing yet.</p>
       </div>
 
-      <SButton variant="ghost" size="sm" class="sign-out" disabled>Sign out</SButton>
+      <SButton variant="ghost" size="sm" class="sign-out" :disabled="store.state.preview || signingOut" @click="signOut">
+        Sign out
+      </SButton>
     </template>
   </section>
 </template>
@@ -79,6 +96,9 @@ const stateWords: Record<string, string> = {
 .lede {
   margin-bottom: 16px;
   color: var(--text-2);
+}
+.gap {
+  margin-bottom: 16px;
 }
 .grid {
   display: grid;

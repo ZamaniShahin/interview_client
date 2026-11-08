@@ -1,5 +1,5 @@
 // Owns the live session's view state in main: the overlay can reload without losing it, and nothing in a renderer
-// talks to the network. Commands go to a driver: the hub from checkpoint 1.12, the scripted preview until then.
+// talks to the network. Commands go to a driver: the hub (hub-driver.ts), or the scripted preview in development.
 import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult, OverlayCommand } from '../../shared/ipc';
 import { reduceLive, type LiveAction } from '../../shared/live/reducer';
@@ -8,8 +8,8 @@ import { initialLiveState, type LiveViewState } from '../../shared/live/view-sta
 export type SessionCommand = Exclude<OverlayCommand, { type: 'view' }>;
 
 export interface SessionDriver {
-  /** Starts the session; events come back through `dispatch`. */
-  start(dispatch: (action: LiveAction) => void): Promise<CommandResult>;
+  /** Starts the session; events come back through `dispatch`. `state` reads the current view (a resume needs LastSeq). */
+  start(dispatch: (action: LiveAction) => void, state: () => LiveViewState): Promise<CommandResult>;
   command(command: SessionCommand): Promise<CommandResult>;
   /** Stops listening and drops timers or the connection. Safe to call twice. */
   dispose(): void;
@@ -44,7 +44,10 @@ export class SessionController {
     }
     this.driver?.dispose();
     this.driver = driver;
-    return driver.start(this.dispatch);
+    const result = await driver.start(this.dispatch, () => this.state);
+    // A session that never started leaves nothing behind: the next Start begins clean.
+    if (!result.ok && this.driver === driver) this.reset();
+    return result;
   }
 
   async command(command: OverlayCommand): Promise<CommandResult> {

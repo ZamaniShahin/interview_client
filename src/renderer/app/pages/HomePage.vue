@@ -1,28 +1,34 @@
 <script setup lang="ts">
-// Home: state 01, no session. What a session needs, the minutes, and Start, which waits for the consent box. The box
-// is ticked every time and never remembered (F4).
+// Home: state 01, no session. Sign-in when it isn't done, what a session needs, the minutes, and Start, which waits for
+// the consent box. The box is ticked every time and never remembered (F4).
 import { computed, ref } from 'vue';
 import SBanner from '../../shared/components/SBanner.vue';
 import SButton from '../../shared/components/SButton.vue';
 import SCheckbox from '../../shared/components/SCheckbox.vue';
 import SIcon from '../../shared/components/SIcon.vue';
-import { useAccountStore } from '../account-store';
+import { useAppStore } from '../app-store';
+import ProblemBanner from '../components/ProblemBanner.vue';
+import SignInBanner from '../components/SignInBanner.vue';
 
-const store = useAccountStore();
+const store = useAppStore();
 const consent = ref(false);
 const starting = ref(false);
-const error = ref<string | null>(null);
 
 const readiness = computed(() => store.account?.readiness ?? null);
 const autoReady = computed(() => !!(readiness.value?.resume && readiness.value?.jobDescription));
+const canStart = computed(() => store.signedIn && store.account !== null);
+const hint = computed(() => {
+  if (!canStart.value) return 'Sign in to start.';
+  if (!consent.value) return 'Tick the box to start.';
+  return autoReady.value ? 'AUTO, smart answers.' : 'Starts in MANUAL.';
+});
 
 async function start(): Promise<void> {
-  error.value = null;
   starting.value = true;
+  // A refusal comes back as the store's problem, shown above.
   const result = await store.startSession(consent.value);
   starting.value = false;
   if (result.ok) consent.value = false;
-  else error.value = result.message;
 }
 </script>
 
@@ -31,12 +37,9 @@ async function start(): Promise<void> {
     <h1 id="home-title" class="title">Home</h1>
     <p class="lede">Start a session when the call begins; the overlay opens over it.</p>
 
-    <SBanner v-if="error" tone="attention" class="gap">{{ error }}</SBanner>
-    <SBanner v-else-if="store.loaded && !store.account" tone="info" class="gap">
-      <b>Not signed in.</b> Signing in happens in your browser.
-      <template #actions><SButton size="sm" external disabled>Sign in</SButton></template>
-    </SBanner>
-    <SBanner v-else-if="readiness && !autoReady" tone="info" class="gap">
+    <ProblemBanner class="gap" />
+    <SignInBanner class="gap" />
+    <SBanner v-if="store.signedIn && readiness && !autoReady" tone="info" class="gap">
       Add your résumé and job description to answer automatically. Without them, Sotto answers only when you ask.
     </SBanner>
 
@@ -50,15 +53,21 @@ async function start(): Promise<void> {
         </ul>
         <SCheckbox v-model="consent" class="consent">I have consent to record and transcribe this conversation</SCheckbox>
         <div class="start">
-          <SButton variant="primary" size="lg" :disabled="!consent || starting" @click="start">Start session</SButton>
-          <span class="small">{{ !consent ? 'Tick the box to start.' : autoReady ? 'AUTO, smart answers.' : 'Starts in MANUAL.' }}</span>
+          <SButton variant="primary" size="lg" :disabled="!canStart || !consent || starting" @click="start">Start session</SButton>
+          <span class="small">{{ hint }}</span>
         </div>
       </div>
       <div class="card">
         <p class="eyebrow">Minutes</p>
         <template v-if="store.account?.minutes">
           <p class="big num">{{ store.account.minutes.usable }} min left</p>
-          <p class="small">{{ store.account.plan.name }} plan · renews {{ store.account.plan.renewsOn }}</p>
+          <p class="small">
+            {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn"> · renews {{ store.account.plan.renewsOn }}</template>
+          </p>
+        </template>
+        <template v-else-if="store.account">
+          <p class="big">Unlimited</p>
+          <p class="small">{{ store.account.plan.name }} plan · fair use applies</p>
         </template>
         <p v-else class="small">Shown once you're signed in.</p>
       </div>

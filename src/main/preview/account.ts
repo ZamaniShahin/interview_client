@@ -1,4 +1,4 @@
-// The development preview's account, so the window's pages show realistic data before sign-in exists (1.10).
+// The development preview's account (`npm run dev:preview`), so the window's pages show realistic data with no server.
 // Numbers follow the design handoff's §9 and add up: 87 plan minutes + 100 top-up = 187 usable.
 import type { AccountView } from '../../shared/account';
 
