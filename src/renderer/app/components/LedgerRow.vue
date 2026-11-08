@@ -3,13 +3,13 @@
 import type { LedgerEntry } from '../../../shared/account';
 
 defineProps<{ entry: LedgerEntry }>();
-const signed = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
+const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
 </script>
 
 <template>
   <div class="row">
     <span class="small">{{ entry.date }}</span>
-    <span><span class="kind">{{ entry.kind }}</span> <span class="small">· {{ entry.detail }}</span></span>
+    <span><span class="kind">{{ entry.kind }}</span> <span v-if="entry.detail" class="small">· {{ entry.detail }}</span></span>
     <span class="num value" :class="{ debit: entry.minutes < 0 }">{{ signed(entry.minutes) }}</span>
     <span class="num value debit">{{ entry.balanceAfter }}</span>
   </div>
