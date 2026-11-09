@@ -59,8 +59,12 @@ export class SessionController {
       return { ok: false, code: ErrorCodes.Session.NotInSession, message: 'No session is running.' };
     }
     const result = await this.driver.command(command);
-    // Clear heard has no event of its own: the question being put together is simply forgotten.
-    if (result.ok && command.type === 'clearHeard') this.dispatch({ type: 'heardCleared' });
+    if (result.ok) {
+      // Any command keeps the session in use, which the server counts against inactivity too.
+      this.dispatch({ type: 'commandAccepted' });
+      // Clear heard has no event of its own: the question being put together is simply forgotten.
+      if (command.type === 'clearHeard') this.dispatch({ type: 'heardCleared' });
+    }
     return result;
   }
 

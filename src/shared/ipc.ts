@@ -52,8 +52,11 @@ export type OverlayWindowAction = z.infer<typeof overlayWindowActionSchema>;
 export const appWindowActionSchema = z.enum(['minimize', 'maximize', 'close']);
 export type AppWindowAction = z.infer<typeof appWindowActionSchema>;
 
-/** The consent box is part of the request: no session starts without it, and it is never remembered (§F4). */
-export const startSessionSchema = z.object({ consent: z.literal(true) });
+/**
+ * The consent box is part of the request: no session starts without it, and it is never remembered (§F4). `takeOver`
+ * is the user's yes to ending the account's session on another device (`session_active_elsewhere`); never by default.
+ */
+export const startSessionSchema = z.object({ consent: z.literal(true), takeOver: z.boolean().optional() });
 export type StartSessionRequest = z.infer<typeof startSessionSchema>;
 
 /** What a command returns to a window: it worked, or a code from `ErrorCodes` and plain words. */

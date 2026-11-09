@@ -8,7 +8,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - done: C0, 1.10, and 1.12 except the audio and the proof at connect;
 - Claude builds 1.11, the rest of 1.12, 1.13, 1.14 and 2.13 in that order (backend Q35, decided 2026-11-09);
 - 1.11, audio capture, comes first, since `UploadAudio` needs its frames;
-- before the next checkpoint, run `npm run contracts:sync`: this copy of the contract is behind the backend's.
+- the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
 

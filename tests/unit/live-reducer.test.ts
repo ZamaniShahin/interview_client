@@ -138,3 +138,65 @@ describe('the live view state', () => {
     expect(s).toMatchObject({ minutesLeft: 187, tier: 'smart', answers: [], phase: 'starting' });
   });
 });
+
+const usage = (minutesLeft: number | null, warning: string | null = null) =>
+  ev({ name: 'usage', e: { ...stamp(), MinutesLeft: minutesLeft, SessionMinutes: 3, Warning: warning } });
+const ending = (reason: string, secondsLeft = 30) =>
+  ev({ name: 'sessionEnding', e: { ...stamp(), Reason: reason, SecondsLeft: secondsLeft } });
+
+describe("the session's minutes and its endings", () => {
+  it('follows the balance each time a minute is charged', () => {
+    const s = run({ type: 'account', minutesLeft: 30, tier: 'fast' }, usage(29), usage(28));
+    expect(s).toMatchObject({ minutesLeft: 28, notice: null });
+  });
+
+  it('shows no balance on a plan without minutes', () => {
+    expect(run({ type: 'account', minutesLeft: 30, tier: 'smart' }, usage(null)).minutesLeft).toBeNull();
+  });
+
+  it.each([
+    [10, '10 minutes left.'],
+    [2, '2 minutes left.'],
+    [1, '1 minute left.'],
+  ])('gives a quiet note at %i minutes left', (left, text) => {
+    expect(run(usage(left, 'low_credit')).notice).toEqual({ code: 'low_credit', text });
+  });
+
+  it('shows the fast tier once the session passes its AI ceiling', () => {
+    const s = run({ type: 'account', minutesLeft: 100, tier: 'smart' }, usage(99, 'cost_tier_down'));
+    expect(s).toMatchObject({ tier: 'fast', minutesLeft: 99, notice: null });
+  });
+
+  it('ignores a usage event a resume replays', () => {
+    const first = usage(20);
+    const s = run(first, usage(19), first);
+    expect(s.minutesLeft).toBe(19);
+  });
+
+  it('announces an ending, then forgets it once the session ends', () => {
+    const announced = run(start('a'), ending(SessionEndReasons.CreditExhausted));
+    expect(announced.ending).toEqual({ reason: SessionEndReasons.CreditExhausted, secondsLeft: 30 });
+
+    const s = reduceLive(announced, ev({ name: 'sessionEnded', e: { ...stamp(), Reason: SessionEndReasons.CreditExhausted } }));
+    expect(s).toMatchObject({ phase: 'ended', ending: null, endReason: SessionEndReasons.CreditExhausted });
+  });
+
+  it.each([
+    ['something is heard', () => partial('So tell me')],
+    ['a phrase ends', () => final('So tell me about Kafka.')],
+    ['an answer starts', () => start('a')],
+    ['a command is accepted', (): LiveAction => ({ type: 'commandAccepted' })],
+  ])('forgets an inactivity ending once %s', (_, action) => {
+    const s = run(ending(SessionEndReasons.Inactive, 60), action());
+    expect(s.ending).toBeNull();
+  });
+
+  it('keeps every other ending, whatever is heard or asked', () => {
+    const s = run(ending(SessionEndReasons.CreditExhausted), partial('Still talking'), start('a'), { type: 'commandAccepted' });
+    expect(s.ending).toEqual({ reason: SessionEndReasons.CreditExhausted, secondsLeft: 30 });
+  });
+
+  it("starts the next session without the last one's ending", () => {
+    expect(run(ending(SessionEndReasons.MaxLength), { type: 'starting' }).ending).toBeNull();
+  });
+});

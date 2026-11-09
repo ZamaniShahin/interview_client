@@ -46,6 +46,34 @@ describe('the session controller in main', () => {
     expect(result).toMatchObject({ ok: false, code: ErrorCodes.Session.AlreadyInSession });
   });
 
+  it('forgets an inactivity notice once a command is accepted, as the server does', async () => {
+    const driver = new FakeDriver();
+    await controller.start(driver);
+    driver.dispatch({
+      type: 'event',
+      event: { name: 'sessionEnding', e: { Seq: 1, AtMs: 1, Reason: 'inactive', SecondsLeft: 60 } },
+    });
+    expect(controller.current.ending).not.toBeNull();
+
+    await controller.command({ type: 'setMode', auto: false, paused: null });
+
+    expect(controller.current.ending).toBeNull();
+  });
+
+  it('keeps the inactivity notice when the server refuses the command', async () => {
+    const driver = new FakeDriver();
+    driver.command = async () => ({ ok: false, code: ErrorCodes.Request.RateLimited, message: 'Too many.' });
+    await controller.start(driver);
+    driver.dispatch({
+      type: 'event',
+      event: { name: 'sessionEnding', e: { Seq: 1, AtMs: 1, Reason: 'inactive', SecondsLeft: 60 } },
+    });
+
+    await controller.command({ type: 'trigger', text: null });
+
+    expect(controller.current.ending).toEqual({ reason: 'inactive', secondsLeft: 60 });
+  });
+
   it('forgets the question being put together once Clear heard is accepted', async () => {
     const driver = new FakeDriver();
     await controller.start(driver);

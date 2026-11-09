@@ -2,6 +2,7 @@
 // Home: state 01, no session. Sign-in when it isn't done, what a session needs, the minutes, and Start, which waits for
 // the consent box. The box is ticked every time and never remembered (F4).
 import { computed, ref } from 'vue';
+import { ErrorCodes } from '../../../shared/contracts/sotto-contracts';
 import SBanner from '../../shared/components/SBanner.vue';
 import SButton from '../../shared/components/SButton.vue';
 import SCheckbox from '../../shared/components/SCheckbox.vue';
@@ -17,16 +18,20 @@ const starting = ref(false);
 const readiness = computed(() => store.account?.readiness ?? null);
 const autoReady = computed(() => !!(readiness.value?.resume && readiness.value?.jobDescription));
 const canStart = computed(() => store.signedIn && store.account !== null);
+// The server refused because the account's session is open elsewhere: starting again takes it over (J7), and the
+// problem above says so in the server's words.
+const takeOver = computed(() => store.problem?.code === ErrorCodes.Session.ActiveElsewhere);
 const hint = computed(() => {
   if (!canStart.value) return 'Sign in to start.';
   if (!consent.value) return 'Tick the box to start.';
+  if (takeOver.value) return 'Ends the session on your other device.';
   return autoReady.value ? 'AUTO, smart answers.' : 'Starts in MANUAL.';
 });
 
 async function start(): Promise<void> {
   starting.value = true;
   // A refusal comes back as the store's problem, shown above.
-  const result = await store.startSession(consent.value);
+  const result = await store.startSession(consent.value, takeOver.value);
   starting.value = false;
   if (result.ok) consent.value = false;
 }
@@ -53,7 +58,9 @@ async function start(): Promise<void> {
         </ul>
         <SCheckbox v-model="consent" class="consent">I have consent to record and transcribe this conversation</SCheckbox>
         <div class="start">
-          <SButton variant="primary" size="lg" :disabled="!canStart || !consent || starting" @click="start">Start session</SButton>
+          <SButton variant="primary" size="lg" :disabled="!canStart || !consent || starting" @click="start">
+            {{ takeOver ? 'Start here' : 'Start session' }}
+          </SButton>
           <span class="small">{{ hint }}</span>
         </div>
       </div>

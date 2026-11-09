@@ -19,6 +19,21 @@ export function endedText(reason: string | null): string {
   return (reason && endings[reason]) ?? 'Session ended.';
 }
 
+/** The lead of the notice before an ending (`SessionEnding`), by reason; the canvas words "No minutes left." */
+const endingLeads: Record<string, string> = {
+  [SessionEndReasons.CreditExhausted]: 'No minutes left.',
+  [SessionEndReasons.MaxLength]: "Your plan's longest session is nearly over.",
+  [SessionEndReasons.Inactive]: 'Nothing heard for a while.',
+  [SessionEndReasons.CostLimit]: 'This session reached its limit.',
+};
+
+/** "The session ends in 30 seconds." or "in a minute.", as the canvas has them. */
+export function endingText(secondsLeft: number): string {
+  if (secondsLeft === 60) return 'The session ends in a minute.';
+  const seconds = Math.max(Math.round(secondsLeft), 1);
+  return `The session ends in ${seconds} ${seconds === 1 ? 'second' : 'seconds'}.`;
+}
+
 export type BannerIcon = 'attention' | 'info' | 'pause' | 'reconnect' | 'clock' | 'bolt';
 
 export interface OverlayBanner {
@@ -36,6 +51,14 @@ export function overlayBanner(state: LiveViewState): OverlayBanner | null {
   if (state.phase === 'ended' || state.phase === 'idle') return null;
   if (state.phase === 'reconnecting') {
     return { icon: 'reconnect', lead: 'Reconnecting…', rest: "Your session is kept. Answers catch up when it's back." };
+  }
+  if (state.ending) {
+    const rest = endingText(state.ending.secondsLeft);
+    const lead = endingLeads[state.ending.reason] ?? 'The session is ending.';
+    // Inactivity is the one the user can undo.
+    return state.ending.reason === SessionEndReasons.Inactive
+      ? { icon: 'clock', lead, rest: `${rest} Ask a question to keep it.` }
+      : { icon: 'clock', lead, rest };
   }
   if (state.paused) return { icon: 'pause', lead: 'Paused.', rest: 'Minutes still count.' };
   if (state.listening === 'down') {

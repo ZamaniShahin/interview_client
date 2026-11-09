@@ -3,17 +3,25 @@
 // design handoff's §7.2.
 import {
   ErrorCodes,
+  SessionEndReasons,
   SessionPhase,
   SpeechStates,
+  UsageWarnings,
   type LiveClient,
   type SessionSnapshot,
 } from '../contracts/sotto-contracts';
 import { initialLiveState, type AnswerView, type Listening, type LiveViewState, type Tier } from './view-state';
 
-/** One hub event, named as `LiveClient` names it, with its payload. Follows the contract by construction. */
+/**
+ * The hub's events about the session. `entitlementsUpdated` is the account's, not the session's: it has no `Seq`, and
+ * main answers it by reading the account again (hub-driver.ts), so it never reaches the overlay's state.
+ */
+export type SessionEventName = Exclude<keyof LiveClient, 'entitlementsUpdated'>;
+
+/** One session event, named as `LiveClient` names it, with its payload. Follows the contract by construction. */
 export type LiveEvent = {
-  [K in keyof LiveClient]: { name: K; e: Parameters<LiveClient[K]>[0] };
-}[keyof LiveClient];
+  [K in SessionEventName]: { name: K; e: Parameters<LiveClient[K]>[0] };
+}[SessionEventName];
 
 export type LiveAction =
   /** The user pressed Start; nothing from the server yet. Clears the last session. */
@@ -26,6 +34,8 @@ export type LiveAction =
   | { type: 'connectionRestored' }
   /** `ClearHeard` was accepted: the question being put together is forgotten. */
   | { type: 'heardCleared' }
+  /** The server accepted a command: the session is in use, so an inactivity notice no longer holds. */
+  | { type: 'commandAccepted' }
   /** Look at an earlier answer by index, or follow the newest again (null). */
   | { type: 'view'; index: number | null }
   /** Minutes and tier come from the account until the hub carries usage (backend 2.4). */
@@ -47,6 +57,8 @@ export function reduceLive(state: LiveViewState, action: LiveAction): LiveViewSt
       return state.phase === 'reconnecting' ? { ...state, phase: 'live' } : state;
     case 'heardCleared':
       return { ...state, heard: { finished: '', live: '' } };
+    case 'commandAccepted':
+      return state.ending?.reason === SessionEndReasons.Inactive ? { ...state, ending: null } : state;
     case 'view':
       return { ...state, viewing: clampView(state, action.index) };
     case 'account':
@@ -89,7 +101,9 @@ function applySnapshot(state: LiveViewState, s: SessionSnapshot): LiveViewState 
 function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
   // A resume replays what came after LastSeq; anything older was applied already.
   if (event.e.Seq <= state.lastSeq) return state;
-  const next = { ...state, lastSeq: event.e.Seq };
+  const seen = { ...state, lastSeq: event.e.Seq };
+  // Inactivity is the one ending that can go away: anything heard or asked keeps the session (SessionEnding).
+  const next = seen.ending?.reason === SessionEndReasons.Inactive && keepsSessionAlive(event.name) ? { ...seen, ending: null } : seen;
 
   switch (event.name) {
     case 'status':
@@ -154,9 +168,34 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
     case 'notice':
       return { ...next, notice: { code: event.e.Code, text: event.e.Text } };
 
+    case 'usage':
+      return applyUsage(next, event.e.MinutesLeft, event.e.Warning);
+
+    case 'sessionEnding':
+      return { ...next, ending: { reason: event.e.Reason, secondsLeft: event.e.SecondsLeft } };
+
     case 'sessionEnded':
-      return endSession(next, event.e.Reason);
+      return endSession({ ...next, ending: null }, event.e.Reason);
   }
+}
+
+/** The events that show the session is in use: something heard, or an answer asked for. */
+function keepsSessionAlive(name: SessionEventName): boolean {
+  return name === 'transcriptPartial' || name === 'transcriptFinal' || name === 'speechStarted' || name === 'answerStart';
+}
+
+/**
+ * A minute was charged (`Usage`). The balance follows the server; a low balance gets the quiet note at 10 and 2
+ * minutes left (the UI canvas, "Minutes and endings"), and passing 80% of the session's AI ceiling moves the answers to
+ * the fast tier, which the status strip shows.
+ */
+function applyUsage(state: LiveViewState, minutesLeft: number | null, warning: string | null): LiveViewState {
+  const next = { ...state, minutesLeft };
+  if (warning === UsageWarnings.LowCredit && minutesLeft !== null) {
+    return { ...next, notice: { code: warning, text: `${minutesLeft} ${minutesLeft === 1 ? 'minute' : 'minutes'} left.` } };
+  }
+  if (warning === UsageWarnings.CostTierDown) return { ...next, tier: 'fast' };
+  return next;
 }
 
 function listeningFrom(stt: string): Listening {

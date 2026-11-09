@@ -41,4 +41,37 @@ describe("the overlay's words", () => {
   it('shows nothing when all is well', () => {
     expect(overlayBanner(live({}))).toBeNull();
   });
+
+  it("says when the minutes run out, in the canvas's words", () => {
+    expect(overlayBanner(live({ ending: { reason: SessionEndReasons.CreditExhausted, secondsLeft: 30 } }))).toEqual({
+      icon: 'clock',
+      lead: 'No minutes left.',
+      rest: 'The session ends in 30 seconds.',
+    });
+  });
+
+  it('tells an inactive user how to keep the session', () => {
+    expect(overlayBanner(live({ ending: { reason: SessionEndReasons.Inactive, secondsLeft: 60 } }))).toMatchObject({
+      lead: 'Nothing heard for a while.',
+      rest: 'The session ends in a minute. Ask a question to keep it.',
+    });
+  });
+
+  it('has calm words for every ending, and for one a newer server adds', () => {
+    for (const reason of [...Object.values(SessionEndReasons), 'something_new']) {
+      const banner = overlayBanner(live({ ending: { reason, secondsLeft: 30 } }));
+      expect(banner?.lead).toMatch(/\.$/);
+      expect(`${banner?.lead} ${banner?.rest}`).not.toContain('!');
+    }
+    expect(overlayBanner(live({ ending: { reason: 'something_new', secondsLeft: 1 } }))).toMatchObject({
+      lead: 'The session is ending.',
+      rest: 'The session ends in 1 second.',
+    });
+  });
+
+  it('puts an ending above being paused, and reconnecting above an ending', () => {
+    const endingSoon = { reason: SessionEndReasons.MaxLength, secondsLeft: 30 };
+    expect(overlayBanner(live({ paused: true, ending: endingSoon }))?.icon).toBe('clock');
+    expect(overlayBanner(live({ phase: 'reconnecting', ending: endingSoon }))?.icon).toBe('reconnect');
+  });
 });

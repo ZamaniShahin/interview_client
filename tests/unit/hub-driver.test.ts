@@ -137,8 +137,43 @@ describe('the hub driver', () => {
     expect(h.actions[0]).toEqual({ type: 'starting' });
     const [start] = h.transports[0]!.connection.invocations;
     expect(start!.method).toBe('StartSession');
-    expect(start!.request).toMatchObject({ DeviceProof: 'proof-StartSession-token-1', Auto: true });
+    expect(start!.request).toMatchObject({ DeviceProof: 'proof-StartSession-token-1', Auto: true, TakeOver: false });
     expect((start!.request as { CommandId: string }).CommandId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('takes the session over from another device only when the user said so', async () => {
+    const h = harness({ deps: { takeOver: true } });
+
+    await h.start();
+
+    expect(h.transports[0]!.connection.invocations[0]!.request).toMatchObject({ TakeOver: true });
+  });
+
+  it("passes the minutes charged and an ending's notice on to the overlay", async () => {
+    const h = harness();
+    await h.start();
+    const events = h.transports[0]!.events;
+
+    events.usage({ Seq: 1, AtMs: 1, MinutesLeft: 10, SessionMinutes: 4, Warning: 'low_credit' });
+    events.sessionEnding({ Seq: 2, AtMs: 2, Reason: 'credit_exhausted', SecondsLeft: 30 });
+
+    expect(h.state()).toMatchObject({
+      minutesLeft: 10,
+      notice: { code: 'low_credit', text: '10 minutes left.' },
+      ending: { reason: 'credit_exhausted', secondsLeft: 30 },
+    });
+  });
+
+  it("reads the account again when its plan or minutes change, without touching the session's view", async () => {
+    const onEntitlementsUpdated = vi.fn();
+    const h = harness({ deps: { onEntitlementsUpdated } });
+    await h.start();
+    const before = h.actions.length;
+
+    h.transports[0]!.events.entitlementsUpdated({ AtMs: 5, Token: 'signed-snapshot' });
+
+    expect(onEntitlementsUpdated).toHaveBeenCalledOnce();
+    expect(h.actions).toHaveLength(before);
   });
 
   it("passes the server's refusal on, and closes the connection", async () => {

@@ -42,6 +42,11 @@ export interface LiveViewState {
   viewing: number | null;
   /** The newest notice from the server (a code and plain words), until the next one replaces it. */
   notice: { code: string; text: string } | null;
+  /**
+   * The session will end in `secondsLeft` seconds for `reason` (a `SessionEndReasons` value), unless the reason goes
+   * away: only `inactive` can, and anything heard or asked forgets it (`SessionEnding`).
+   */
+  ending: { reason: string; secondsLeft: number } | null;
   /** Why the session ended: a `SessionEndReasons` value. */
   endReason: string | null;
   /** From the account until the hub carries usage (backend 2.4); null on a plan without minutes. */
@@ -61,6 +66,7 @@ export const initialLiveState: LiveViewState = {
   answers: [],
   viewing: null,
   notice: null,
+  ending: null,
   endReason: null,
   minutesLeft: null,
   tier: null,

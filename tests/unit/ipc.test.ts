@@ -29,6 +29,13 @@ describe('what a window may send to main', () => {
     expect(startSessionSchema.safeParse({}).success).toBe(false);
   });
 
+  it('takes a session over only with consent, and only with a plain yes or no', () => {
+    expect(startSessionSchema.safeParse({ consent: true, takeOver: true }).success).toBe(true);
+    expect(startSessionSchema.safeParse({ consent: true, takeOver: false }).success).toBe(true);
+    expect(startSessionSchema.safeParse({ takeOver: true }).success).toBe(false);
+    expect(startSessionSchema.safeParse({ consent: true, takeOver: 'yes' }).success).toBe(false);
+  });
+
   it('takes only known settings, with their own values', () => {
     expect(settingsPatchSchema.safeParse({ theme: 'light' }).success).toBe(true);
     expect(settingsPatchSchema.safeParse({ theme: 'blue' }).success).toBe(false);

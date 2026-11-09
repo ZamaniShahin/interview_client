@@ -18,7 +18,8 @@ The numbers are the backend's (`docs/decisions.md` §2). Settled there:
   - Q32: what OpenAI may be sent in Phase 3, the three items below it in the backend's decisions;
   - Q33: screenshots checked by a header reader on the server;
   - Q35: Claude builds 1.11, the rest of 1.12, 1.13, 1.14 and 2.13, in order;
-  - Q37: v1's source is on GitHub (`ZamaniShahin/interview_app`).
+  - Q37: v1's source is on GitHub (`ZamaniShahin/interview_app`);
+  - Q18: the level meter and the no-audio warning come with audio capture (1.11).
 
 Q27–Q44 are open there too, apart from the ones above. The rows below are the ones that change something in the client.
 
@@ -34,7 +35,6 @@ Q27–Q44 are open there too, apart from the ones above. The rows below are the 
 | Q9 | Do **custom instructions outrank the assistant's rules**, as in v1? | no: they guide answers within the rules | how the custom instructions screen describes them | Phase 1's answer-quality checks |
 | Q10 | Optional **cloud transcription of the microphone** for a more accurate coach? | no: the microphone never leaves the device | if yes: a new opt-in, and new privacy text and notice | Phase 3 |
 | Q17 | **Choosing the tier** (fast or smart, where the plan allows): designed on the server, not scheduled | the plan's tier, no choice | a control in the overlay or in settings | settings (3.13) |
-| Q18 | **The audio level meter**, and a warning after about 20 s without the interviewer's audio. The client's technical design has them with audio capture; the roadmap lists the meter for after launch | with audio capture | the status, and the sound check | audio capture (1.11) |
 | Q19 | **Deleting the account, and the server's export.** Designed, with no checkpoint, though the privacy policy will promise both | Phase 4, with the legal work | the account screen | before any outside user |
 | Q20 | **Usage history** (sessions and minutes): designed, with no checkpoint | with 2.4, which records the sessions it lists; until then the minutes ledger | the account screen | the account screens (2.13) |
 | Q31 | **`SessionMigrate`**: the server could tell the app to move before an instance stops. Today the connection closes and the app resumes on another instance, as after any drop | not sent | a handler that resumes at once, without waiting for the drop | no deadline |

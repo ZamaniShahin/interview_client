@@ -3,7 +3,7 @@
 import { app, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
 import { ErrorCodes } from '../shared/contracts/sotto-contracts';
-import type { AppWindowAction, CommandResult, OverlayWindowAction } from '../shared/ipc';
+import type { AppWindowAction, CommandResult, OverlayWindowAction, StartSessionRequest } from '../shared/ipc';
 import { IpcChannels } from '../shared/ipc-channels';
 import { visibleAnswerIndex } from '../shared/live/view-state';
 import type { Settings } from '../shared/settings';
@@ -142,7 +142,7 @@ async function signOut(): Promise<void> {
   showProblem(null);
 }
 
-async function startSession(): Promise<CommandResult> {
+async function startSession(request: StartSessionRequest): Promise<CommandResult> {
   if (session.running) {
     return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'A session is already running.' };
   }
@@ -169,6 +169,10 @@ async function startSession(): Promise<CommandResult> {
       proof: (method, accessToken) => service.hubProof(method, accessToken),
       // AUTO answers from the résumé and the job description; without both a session starts in MANUAL (Home says so).
       auto: readiness.resume !== null && readiness.jobDescription !== null,
+      // Only after the user chose "Start here" on Home, once the server said the session is open elsewhere.
+      takeOver: request.takeOver === true,
+      // A purchase, a renewal or a refund while the session runs: the account's minutes and plan, read again.
+      onEntitlementsUpdated: () => void refreshAccount(),
     });
   }
 

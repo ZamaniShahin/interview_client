@@ -82,6 +82,11 @@ export const ErrorCodes = {
     AlreadyInSession: "already_in_session",
     /** The session is over, or was never this user's: start a new one. */
     SessionExpired: "session_expired",
+    /**
+     * The seat already has a live session, on this device or another (docs/05 §6). Starting again with `TakeOver` ends
+     * that one (`opened_elsewhere`) and starts here.
+     */
+    ActiveElsewhere: "session_active_elsewhere",
   },
   /** The AI path (docs/03 §7). */
   Ai: {
@@ -125,6 +130,15 @@ export const SpeechStates = {
   Degraded: "degraded",
 } as const;
 export type SpeechState = (typeof SpeechStates)[keyof typeof SpeechStates];
+
+/** Why `UsageEvent.Warning` is set. Published: spellings never change. */
+export const UsageWarnings = {
+  /** The balance reached 10 minutes, then 2. */
+  LowCredit: "low_credit",
+  /** The session's AI cost passed 80% of its ceiling: answers move to the fast tier. */
+  CostTierDown: "cost_tier_down",
+} as const;
+export type UsageWarning = (typeof UsageWarnings)[keyof typeof UsageWarnings];
 
 /** Constants both sides agree on. See docs/03-protocol.md. */
 export const Protocol = {
@@ -244,6 +258,18 @@ export interface CommandRequest {
   CommandId: Guid;
 }
 
+/**
+ * The account's plan or minutes changed: a purchase, a renewal, a trial, a refund (docs/05 §9). `Token` is the new
+ * signed snapshot, the one `GET /api/v1/me/entitlements` returns (docs/05 §10), for display only. The minutes aren't in
+ * it: a client that shows them reads `GET /api/v1/me/credits` again. Sent to every connection of the account, with a
+ * session or without. It belongs to the account, not to a session: it has no `Seq` and is never replayed, so a client
+ * that reconnects reads its entitlements again.
+ */
+export interface EntitlementsUpdatedEvent {
+  AtMs: number;
+  Token: string;
+}
+
 export interface NoticeEvent {
   Seq: number;
   AtMs: number;
@@ -262,6 +288,18 @@ export interface SessionEndedEvent {
   Seq: number;
   AtMs: number;
   Reason: string;
+}
+
+/**
+ * The session will end in `SecondsLeft` seconds, for `Reason` (one of `SessionEndReasons`), unless that reason goes
+ * away first. Only `inactive` can: any transcript or command keeps the session going, and the client may forget this
+ * notice when it sees one (docs/03 §4).
+ */
+export interface SessionEndingEvent {
+  Seq: number;
+  AtMs: number;
+  Reason: string;
+  SecondsLeft: number;
 }
 
 /**
@@ -309,10 +347,15 @@ export interface SpeechStartedEvent {
   AtMs: number;
 }
 
+/**
+ * `TakeOver`: the seat's live session, if there is one (`session_active_elsewhere`), ends as `opened_elsewhere` and
+ * this one starts instead (docs/05 §6). Asked of the user first, never sent by default.
+ */
 export interface StartSessionRequest {
   CommandId: Guid;
   DeviceProof: string;
   Auto: boolean;
+  TakeOver: boolean;
 }
 
 export interface StatusEvent {
@@ -332,6 +375,19 @@ export interface TranscriptUpdate {
 export interface TriggerRequest {
   CommandId: Guid;
   Text: string | null;
+}
+
+/**
+ * The session's minutes, sent each time one is charged (docs/05 §4). `MinutesLeft` is the account's balance, or null on
+ * a plan without minute credits (fair use). `SessionMinutes`: the minutes this session has used, the current one
+ * included. `Warning` is one of `UsageWarnings`, or null.
+ */
+export interface UsageEvent {
+  Seq: number;
+  AtMs: number;
+  MinutesLeft: number | null;
+  SessionMinutes: number;
+  Warning: string | null;
 }
 
 // ---- The hub: commands, client to server; events, server to client ------------------------------------------------
@@ -362,9 +418,9 @@ export interface LiveHub {
 }
 
 /**
- * The live hub's events, server → client (docs/03-protocol.md §4). Every one carries the session's sequence number
- * (`Seq`, counting from 1) and the time it was produced (`AtMs`, Unix milliseconds), so a resumed client can say what
- * it last saw.
+ * The live hub's events, server → client (docs/03-protocol.md §4). A session's events carry its sequence number (`Seq`,
+ * counting from 1) and the time they were produced (`AtMs`, Unix milliseconds), so a resumed client can say what it
+ * last saw. `LiveClient.entitlementsUpdated` is the account's, not a session's: it has no `Seq`.
  */
 export interface LiveClient {
   status(e: StatusEvent): void;
@@ -381,7 +437,13 @@ export interface LiveClient {
   answerFailed(e: AnswerFailedEvent): void;
   cleared(e: ClearedEvent): void;
   notice(e: NoticeEvent): void;
+  /** A minute was charged: the balance, the session's minutes, and a warning when the balance runs low. */
+  usage(e: UsageEvent): void;
+  /** The session will end soon, and why: out of minutes, at the plan's longest session, or inactive. */
+  sessionEnding(e: SessionEndingEvent): void;
   sessionEnded(e: SessionEndedEvent): void;
+  /** The account's plan or minutes changed: its new signed snapshot, to any connection, session or not. */
+  entitlementsUpdated(e: EntitlementsUpdatedEvent): void;
 }
 
 /** The C# names of `LiveHub`'s methods, which are what goes on the wire. */
@@ -412,7 +474,10 @@ export const LiveClientMethods = {
   answerFailed: "AnswerFailed",
   cleared: "Cleared",
   notice: "Notice",
+  usage: "Usage",
+  sessionEnding: "SessionEnding",
   sessionEnded: "SessionEnded",
+  entitlementsUpdated: "EntitlementsUpdated",
 } as const;
 
 // ---- Bindings to a SignalR connection, with no dependency of their own --------------------------------------------
@@ -466,7 +531,10 @@ export function registerLiveClient(connection: HubConnectionLike, client: LiveCl
     [LiveClientMethods.answerFailed, (e: AnswerFailedEvent) => client.answerFailed(e)],
     [LiveClientMethods.cleared, (e: ClearedEvent) => client.cleared(e)],
     [LiveClientMethods.notice, (e: NoticeEvent) => client.notice(e)],
+    [LiveClientMethods.usage, (e: UsageEvent) => client.usage(e)],
+    [LiveClientMethods.sessionEnding, (e: SessionEndingEvent) => client.sessionEnding(e)],
     [LiveClientMethods.sessionEnded, (e: SessionEndedEvent) => client.sessionEnded(e)],
+    [LiveClientMethods.entitlementsUpdated, (e: EntitlementsUpdatedEvent) => client.entitlementsUpdated(e)],
   ];
   for (const [method, handler] of handlers) {
     connection.on(method, handler);

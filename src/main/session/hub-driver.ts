@@ -25,6 +25,13 @@ export interface HubDriverDependencies {
   proof: (method: 'StartSession' | 'ResumeSession', accessToken: string) => Promise<string>;
   /** Start in AUTO (the default); MANUAL when the user chose it. */
   auto: boolean;
+  /**
+   * End the account's live session on another device and start here. Only after the user said yes to it, never by
+   * default (the contract's `TakeOver`).
+   */
+  takeOver?: boolean;
+  /** The account's plan or minutes changed (`EntitlementsUpdated`): main reads the account again. */
+  onEntitlementsUpdated?: () => void;
   /** Waits between reconnection attempts; the last one repeats. */
   retryDelaysMs?: number[];
   /** How long a dropped session may take to resume: the server's suspend grace. */
@@ -71,6 +78,7 @@ export class HubDriver implements SessionDriver {
         CommandId: randomUUID(),
         DeviceProof: await this.deps.proof('StartSession', opened.token),
         Auto: this.deps.auto,
+        TakeOver: this.deps.takeOver ?? false,
       });
       if (!ack.Ok || !ack.Value) {
         this.dispose();
@@ -128,10 +136,16 @@ export class HubDriver implements SessionDriver {
     answerFailed: (e) => this.emit({ name: 'answerFailed', e }),
     cleared: (e) => this.emit({ name: 'cleared', e }),
     notice: (e) => this.emit({ name: 'notice', e }),
+    usage: (e) => this.emit({ name: 'usage', e }),
+    sessionEnding: (e) => this.emit({ name: 'sessionEnding', e }),
     sessionEnded: (e) => {
       this.emit({ name: 'sessionEnded', e });
       this.ended = true;
       if (this.pending === 0) this.dispose();
+    },
+    // The account's, not the session's: it has no Seq and is never replayed, so it skips the overlay's state.
+    entitlementsUpdated: () => {
+      if (!this.disposed) this.deps.onEntitlementsUpdated?.();
     },
   };
 
