@@ -5,9 +5,8 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - A checkpoint is ticked with its date and its commit.
 
 **Where it stands (2026-11-09):**
-- done: C0, 1.10, 1.11, and 1.12 except the proof at connect;
-- Claude builds the rest of 1.12, then 1.13, 1.14 and 2.13, in that order (backend Q35, decided 2026-11-09);
-- the proof at connect needs the backend too: the server checks no proof at connect yet;
+- done: C0, 1.10, 1.11 and 1.12;
+- Claude builds 1.13, 1.14 and 2.13 next, in that order (backend Q35, decided 2026-11-09);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -36,10 +35,10 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
   - Windows loopback → Web Audio (mono, 24 kHz) → AudioWorklet → PCM16 100 ms frames → a MessagePort to main;
   - the level meter fed, and the no-sound warning after 20 s (Q18);
   - a lost device reopened after 1.5 s, with words in the strip meanwhile.
-- [ ] **1.12 The hub connection in main:** the `HubDriver`, over `createLiveTransport`.
+- [x] **1.12 The hub connection in main** (2026-11-09, `58abf2f`): the `HubDriver`, over `createLiveTransport`.
   - [x] `StartSession` with a device proof (2026-11-08, `3212ec9`);
   - [x] `UploadAudio` streamed, with the 10 s ring buffer; nothing while paused; checked end to end against the local stack (2026-11-09, `c8ccfc0`);
-  - [ ] a device proof at connect too (backend docs/04 §6): the server doesn't check one yet, so both sides do it together (backend decisions, 2026-11-05);
+  - [x] a device proof at connect too (backend docs/04 §6), built on both sides together: the client in `58abf2f`, the server in backend `459db08` (2026-11-09; checked end to end, a forged proof refused);
   - [x] `ResumeSession` with `LastSeq` after a drop, and a snapshot when the replay is incomplete (2026-11-08, `3212ec9`);
   - [x] the preview stays for development: `npm run dev:preview` (2026-11-08, `3212ec9`).
 - [ ] **1.13 The overlay, complete:**
