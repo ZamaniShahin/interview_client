@@ -2,8 +2,8 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AppApi } from '../../src/preload/api';
 import { useAppStore } from '../../src/renderer/app/app-store';
+import { fakeAppApi } from './fake-app-api';
 import PreparePage from '../../src/renderer/app/pages/PreparePage.vue';
 import { initialAppState, type AppState } from '../../src/shared/app-state';
 import type { CommandResult } from '../../src/shared/ipc';
@@ -12,20 +12,7 @@ import { emptyDocuments, type DocumentsView } from '../../src/shared/documents';
 /** Prepare over main's state, with the documents given; `setDocument` answers `answer`. */
 async function prepare(documents: Partial<DocumentsView> = {}, answer: CommandResult = { ok: true }) {
   const state: AppState = { ...initialAppState, documents: { ...emptyDocuments, ...documents } };
-  const api = {
-    getState: vi.fn(async () => state),
-    onState: vi.fn(() => () => {}),
-    signIn: vi.fn(async () => ({ ok: true as const })),
-    cancelSignIn: vi.fn(),
-    signOut: vi.fn(async () => {}),
-    refresh: vi.fn(async () => {}),
-    startSession: vi.fn(async () => ({ ok: true as const })),
-    setDocument: vi.fn(async () => answer),
-    window: vi.fn(),
-    getSettings: vi.fn(),
-    setSettings: vi.fn(),
-    onSettings: vi.fn(() => () => {}),
-  } satisfies AppApi;
+  const { api } = fakeAppApi(state, { setDocument: vi.fn(async () => answer) });
   window.appApi = api;
   await useAppStore().load();
   const wrapper = mount(PreparePage);

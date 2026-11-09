@@ -1,20 +1,9 @@
 // Global hotkeys, registered only while a session runs, so they never steal keys from other apps the rest of the time.
-// Ctrl+Enter is settled (the trigger); the others are the UI canvas's proposal, since v1's set isn't at hand (the
-// design handoff's §14). They become remappable in Settings (3.13).
+// The list is shared (src/shared/hotkeys.ts): the first run's step 5 shows the same one.
 import { globalShortcut } from 'electron';
+import { sessionHotkeys, type HotkeyAction } from '../../shared/hotkeys';
 
-export const sessionHotkeys = {
-  trigger: 'CommandOrControl+Enter',
-  focus: 'CommandOrControl+Shift+Space',
-  toggleAuto: 'CommandOrControl+Shift+A',
-  togglePause: 'CommandOrControl+Shift+P',
-  previous: 'CommandOrControl+Shift+Left',
-  next: 'CommandOrControl+Shift+Right',
-  compact: 'CommandOrControl+Shift+M',
-  hide: 'CommandOrControl+Shift+H',
-} as const;
-
-export type HotkeyAction = keyof typeof sessionHotkeys;
+export { sessionHotkeys, type HotkeyAction };
 
 /**
  * Registers every session hotkey; returns the accelerators another app already holds (shown in Settings later), and a

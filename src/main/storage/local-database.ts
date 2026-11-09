@@ -6,6 +6,7 @@
 // The schema grows by numbered migrations (schema.ts), run in order and once each, at open; `user_version` says how
 // far a file has come. A file from a newer app is refused rather than guessed at.
 import { randomBytes } from 'node:crypto';
+import { existsSync, renameSync } from 'node:fs';
 import Database from 'better-sqlite3-multiple-ciphers';
 import type { SecretStore } from '../auth/secret-store';
 
@@ -64,6 +65,21 @@ export function migrate(db: LocalDatabase, migrations: readonly Migration[]): vo
       db.pragma(`user_version = ${m.version}`);
     })();
   }
+}
+
+/** A file no key here opens: its key is gone (the secrets were deleted), or it isn't a database at all. */
+export const isUnreadable = (error: unknown) => (error as { code?: unknown } | null)?.code === 'SQLITE_NOTADB';
+
+/**
+ * Moves an unreadable file aside, with its WAL and shared-memory files, so a fresh one can take its place. Nothing is
+ * deleted: `sotto.db.unreadable-<time>` stays beside it. Returns the new name.
+ */
+export function setAside(file: string, now = Date.now()): string {
+  const aside = `${file}.unreadable-${now}`;
+  for (const suffix of ['', '-wal', '-shm']) {
+    if (existsSync(file + suffix)) renameSync(file + suffix, aside + suffix);
+  }
+  return aside;
 }
 
 /** The database's key: made once, 32 random bytes as hex, kept among the secrets. */

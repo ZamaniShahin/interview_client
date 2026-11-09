@@ -6,7 +6,16 @@ import type { AccountView } from '../shared/account';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
 import { ErrorCodes } from '../shared/contracts/sotto-contracts';
 import { answersOnItsOwn, type DocumentField, type DocumentsView, type SetDocumentRequest } from '../shared/documents';
-import type { AppWindowAction, CommandResult, OverlayWindowAction, StartSessionRequest } from '../shared/ipc';
+import { notice } from '../shared/first-run';
+import type {
+  AppWindowAction,
+  CommandResult,
+  HidingTestAction,
+  OverlayWindowAction,
+  SignInPageAction,
+  SoundCheckAction,
+  StartSessionRequest,
+} from '../shared/ipc';
 import { IpcChannels } from '../shared/ipc-channels';
 import { visibleAnswerIndex } from '../shared/live/view-state';
 import type { Settings } from '../shared/settings';
@@ -25,12 +34,13 @@ import { DeviceIdentity } from './device/device-identity';
 import { machineFingerprint } from './device/fingerprint';
 import { registerIpc } from './ipc/register';
 import { previewAccount } from './preview/account';
-import { HubDriver } from './session/hub-driver';
+import { HubDriver, type HubDriverDependencies } from './session/hub-driver';
+import { SoundCheck } from './session/sound-check';
 import { registerSessionHotkeys } from './session/hotkeys';
 import { PreviewDriver } from './session/preview-driver';
 import { SessionController, type SessionDriver } from './session/session-controller';
 import { SettingsStore } from './settings-store';
-import { databaseKey, openDatabase } from './storage/local-database';
+import { databaseKey, isUnreadable, openDatabase, setAside } from './storage/local-database';
 import { LocalStore, readinessFrom } from './storage/local-store';
 import { migrations } from './storage/schema';
 import { previewDocuments } from './preview/documents';
@@ -72,9 +82,33 @@ const session = new SessionController((state) => {
 // is going to the overlay (the meter, Q18's warning, a device being reopened).
 const capture = new AudioCapture({
   open: openCaptureWindow,
-  onFrame: (pcm, capturedAtMs) => session.audio(pcm, capturedAtMs),
-  onStatus: (status) => session.dispatch({ type: 'capture', status }),
+  onFrame: (pcm, capturedAtMs) =>
+    soundCheck.running ? soundCheck.audio(pcm, capturedAtMs) : session.audio(pcm, capturedAtMs),
+  onStatus: (status) =>
+    soundCheck.running ? soundCheck.capture(status) : session.dispatch({ type: 'capture', status }),
 });
+
+// The first run's sound check (F1 · 4): a short session of its own, heard in the app window, never in the overlay.
+const soundCheck = new SoundCheck({
+  driver: () => checkDriver(),
+  busy: () => session.running,
+  startCapture: () => capture.start(),
+  stopCapture: () => capture.stop(),
+  passed: () => {
+    store?.soundCheckPassed();
+    if (appState.account) setAppState({ account: withReadiness(appState.account) });
+  },
+  publish: (view) => {
+    if (alive(appWindow)) appWindow.webContents.send(IpcChannels.appSoundCheckState, view);
+    // The server ended it (its minutes ran out, say): the account is read again.
+    if (view.phase === 'ended') void refreshAccount();
+  },
+});
+
+/** Test hiding's overlay (F1 · 5b): the real overlay window, showing only its test card. */
+let hidingTestWindow: BrowserWindow | null = null;
+/** The sign-in page while the browser has it, for "Open the page again" and "Copy the link" (F1 · 2). */
+let signInUrl: string | null = null;
 
 function applySettings(changed: Settings): void {
   for (const win of [appWindow, overlayWindow]) {
@@ -144,7 +178,7 @@ async function signIn(): Promise<CommandResult> {
     return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'End the session first.' };
   try {
     showProblem(null);
-    await auth.signIn(openSignInPage);
+    await auth.signIn(openSignInPage).finally(() => (signInUrl = null));
     // Back from the browser: the window comes forward again (sign-in never runs during a session).
     if (alive(appWindow)) appWindow.focus();
     await refreshAccount();
@@ -161,7 +195,15 @@ async function signIn(): Promise<CommandResult> {
 async function openSignInPage(url: string): Promise<void> {
   if (!url.startsWith(`${config.oidcIssuer}/`)) throw new Error('Refused to open a page that is not the sign-in.');
   if (session.running) throw new Error('Signing in waits until the session ends.');
+  signInUrl = url;
   await shell.openExternal(url);
+}
+
+/** "Open the page again" and "Copy the link", while the browser has the sign-in page. */
+function signInPage(action: SignInPageAction): void {
+  if (!signInUrl) return;
+  if (action === 'open') void shell.openExternal(signInUrl);
+  else clipboard.writeText(signInUrl);
 }
 
 async function signOut(): Promise<void> {
@@ -184,6 +226,68 @@ function contextOf(documents: DocumentsView) {
   return Object.values(context).some((value) => value !== null) ? context : null;
 }
 
+/** The first run as kept, for the app window: it decides whether the setup opens by itself. */
+function showFirstRun(): void {
+  if (store) setAppState({ firstRun: store.firstRun(notice.version) });
+}
+
+function acknowledgeNotice(version: number): CommandResult {
+  if (!store) return { ok: false, code: ErrorCodes.Request.Unavailable, message: "This can't be kept right now." };
+  if (version !== notice.version) {
+    return { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'The notice has changed: read it again.' };
+  }
+  store.acknowledgeNotice(version);
+  showFirstRun();
+  return { ok: true };
+}
+
+function finishSetup(): CommandResult {
+  if (!store) return { ok: false, code: ErrorCodes.Request.Unavailable, message: "This can't be kept right now." };
+  store.finishSetup();
+  showFirstRun();
+  return { ok: true };
+}
+
+async function soundCheckAction(action: SoundCheckAction): Promise<CommandResult> {
+  if (action === 'stop') {
+    const ran = soundCheck.running;
+    await soundCheck.stop();
+    // Its minute was charged: Home's minutes are read again, as after any session.
+    if (ran) void refreshAccount();
+    return { ok: true };
+  }
+  if (!preview && auth?.current.status !== 'signed-in') {
+    return { ok: false, code: ErrorCodes.Identity.Unauthenticated, message: 'Sign in first.' };
+  }
+  return soundCheck.start();
+}
+
+/** Test hiding (F1 · 5b): the overlay with its test card, shown without taking focus, until the user says. */
+function hidingTest(action: HidingTestAction): CommandResult {
+  if (action === 'show') {
+    if (session.running)
+      return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'End the session first.' };
+    if (alive(hidingTestWindow)) {
+      hidingTestWindow.showInactive();
+    } else {
+      const win = createOverlayWindow({ compact: false, hidingTest: true });
+      win.once('ready-to-show', () => win.showInactive());
+      win.on('closed', () => {
+        if (hidingTestWindow === win) hidingTestWindow = null;
+      });
+      hidingTestWindow = win;
+    }
+    return { ok: true };
+  }
+  if (alive(hidingTestWindow)) hidingTestWindow.destroy();
+  hidingTestWindow = null;
+  if (action === 'hidden') {
+    store?.hidingTested();
+    showFirstRun();
+  }
+  return { ok: true };
+}
+
 /** Keeps one document on this computer (Prepare, the first run); Home's readiness follows. */
 function setDocument(change: SetDocumentRequest): CommandResult {
   if (!store) {
@@ -200,19 +304,35 @@ function setDocument(change: SetDocumentRequest): CommandResult {
 
 /**
  * This computer's database (1.14): encrypted in userData where the OS can encrypt, in memory otherwise and in the
- * preview, which brings sample documents. A file that can't be opened leaves this run on memory alone, and says so.
+ * preview, which brings sample documents. A file whose key is gone can never be read again: it is set aside, kept,
+ * and a fresh one takes its place. Any other file that can't be opened (a newer app's) leaves this run on memory alone,
+ * so going back to that app still finds it. Either way, the user is told.
  */
 async function openStore(): Promise<LocalStore> {
   if (preview) {
     const sample = new LocalStore(openDatabase(null, null, migrations));
     for (const [field, text] of Object.entries(previewDocuments)) sample.setDocument(field as DocumentField, text);
     sample.soundCheckPassed();
+    sample.acknowledgeNotice(notice.version);
+    sample.finishSetup();
     return sample;
   }
   if (await ElectronSecretStore.available()) {
+    const file = join(app.getPath('userData'), 'sotto.db');
     try {
       const key = await databaseKey(new ElectronSecretStore());
-      return new LocalStore(openDatabase(join(app.getPath('userData'), 'sotto.db'), key, migrations));
+      try {
+        return new LocalStore(openDatabase(file, key, migrations));
+      } catch (error) {
+        if (!isUnreadable(error)) throw error;
+        setAside(file);
+        showProblem({
+          code: ErrorCodes.Request.Internal,
+          message:
+            "Your saved documents and settings couldn't be read, so Sotto started them afresh. The old file is kept beside the new one.",
+        });
+        return new LocalStore(openDatabase(file, key, migrations));
+      }
     } catch {
       showProblem({
         code: ErrorCodes.Request.Internal,
@@ -224,10 +344,47 @@ async function openStore(): Promise<LocalStore> {
   return new LocalStore(openDatabase(null, null, migrations));
 }
 
+/** A driver over the hub, signed in: a session's, or the sound check's. */
+function hubDriver(
+  options: Pick<HubDriverDependencies, 'auto' | 'context' | 'takeOver' | 'onEntitlementsUpdated'>,
+): HubDriver {
+  const signedIn = auth!;
+  const service = accounts!;
+  return new HubDriver({
+    connect: (accessToken, deviceProof, events) =>
+      createLiveTransport({
+        apiBaseUrl: config.apiBaseUrl,
+        clientVersion: app.getVersion(),
+        accessToken,
+        deviceProof,
+        events,
+      }),
+    accessToken: () => signedIn.accessToken(),
+    connectProof: (accessToken) => service.connectProof(accessToken),
+    proof: (method, accessToken) => service.hubProof(method, accessToken),
+    ...options,
+  });
+}
+
+/** The sound check's driver: MANUAL and without documents, so nothing it hears is answered. */
+function checkDriver(): SessionDriver {
+  return preview ? new PreviewDriver() : hubDriver({ auto: false, context: null });
+}
+
 async function startSession(request: StartSessionRequest): Promise<CommandResult> {
   if (session.running) {
     return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'A session is already running.' };
   }
+  // No live session before the notice is read (J2): the setup wizard opens by itself until it is.
+  if (store && !store.firstRun(notice.version).acknowledged) {
+    return {
+      ok: false,
+      code: ErrorCodes.Request.InvalidInput,
+      message: 'Before your first session, read what goes where. Help runs the setup again.',
+    };
+  }
+  if (soundCheck.running)
+    return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'Finish the sound check first.' };
 
   let driver: SessionDriver;
   let account: LoadedAccount;
@@ -241,22 +398,9 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
     if (!loaded) await refreshAccount();
     if (!loaded)
       return { ok: false, ...(appState.problem ?? problemFrom(new Error('The account could not be read.'))) };
-    const signedIn = auth;
-    const service = accounts;
     const documents = store?.documents();
     account = loaded;
-    driver = new HubDriver({
-      connect: (accessToken, deviceProof, events) =>
-        createLiveTransport({
-          apiBaseUrl: config.apiBaseUrl,
-          clientVersion: app.getVersion(),
-          accessToken,
-          deviceProof,
-          events,
-        }),
-      accessToken: () => signedIn.accessToken(),
-      connectProof: (accessToken) => service.connectProof(accessToken),
-      proof: (method, accessToken) => service.hubProof(method, accessToken),
+    driver = hubDriver({
       // AUTO answers from the résumé and the job description; without both a session starts in MANUAL (Home says so).
       auto: documents ? answersOnItsOwn(documents) : false,
       context: documents ? contextOf(documents) : null,
@@ -434,6 +578,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     store = await openStore();
     settings.restore(store.settings(), (kept) => store?.saveSettings(kept));
     setAppState({ documents: store.documents() });
+    showFirstRun();
 
     registerIpc({
       overlayWindow: () => overlayWindow,
@@ -450,6 +595,11 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       onAppWindow,
       copyText: (text) => clipboard.writeText(text),
       setDocument,
+      acknowledgeNotice,
+      finishSetup,
+      soundCheck: soundCheckAction,
+      hidingTest,
+      signInPage,
     });
 
     const win = createAppWindow();
@@ -467,6 +617,8 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
   app.on('window-all-closed', () => app.quit());
   app.on('will-quit', () => {
     stopHotkeys();
+    void soundCheck.stop();
     capture.stop();
+    if (alive(hidingTestWindow)) hidingTestWindow.destroy();
   });
 }

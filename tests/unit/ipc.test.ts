@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { AskMode } from '../../src/shared/contracts/sotto-contracts';
 import { setDocumentSchema } from '../../src/shared/documents';
-import { copyTextSchema, overlayCommandSchema, overlayWindowActionSchema, startSessionSchema } from '../../src/shared/ipc';
+import {
+  acknowledgeNoticeSchema,
+  copyTextSchema,
+  hidingTestActionSchema,
+  overlayCommandSchema,
+  overlayWindowActionSchema,
+  signInPageActionSchema,
+  soundCheckActionSchema,
+  startSessionSchema,
+} from '../../src/shared/ipc';
 import { settingsPatchSchema } from '../../src/shared/settings';
 
 describe('what a window may send to main', () => {
@@ -84,5 +93,24 @@ describe('what the app window may keep as a document (1.14)', () => {
     expect(setDocumentSchema.safeParse({ field: 'prepDoc', text: 'x' }).success).toBe(false);
     expect(setDocumentSchema.safeParse({ field: 'resume', text: 'x', path: 'C:\resume.pdf' }).success).toBe(false);
     expect(setDocumentSchema.safeParse({ field: 'resume', text: 42 }).success).toBe(false);
+  });
+});
+
+describe('what the setup may ask of main (1.14)', () => {
+  it('acknowledges a notice by its version, and nothing else', () => {
+    expect(acknowledgeNoticeSchema.safeParse({ version: 1 }).success).toBe(true);
+    expect(acknowledgeNoticeSchema.safeParse({ version: 0 }).success).toBe(false);
+    expect(acknowledgeNoticeSchema.safeParse({ version: 1.5 }).success).toBe(false);
+    expect(acknowledgeNoticeSchema.safeParse({ version: 1, at: 0 }).success).toBe(false);
+  });
+
+  it('knows the sound check, Test hiding and the sign-in page by their few actions', () => {
+    expect(['start', 'stop'].map((a) => soundCheckActionSchema.safeParse(a).success)).toEqual([true, true]);
+    expect(['show', 'hide', 'hidden'].map((a) => hidingTestActionSchema.safeParse(a).success)).toEqual([true, true, true]);
+    expect(['open', 'copy'].map((a) => signInPageActionSchema.safeParse(a).success)).toEqual([true, true]);
+    for (const schema of [soundCheckActionSchema, hidingTestActionSchema, signInPageActionSchema]) {
+      expect(schema.safeParse('delete').success).toBe(false);
+      expect(schema.safeParse({ action: 'start' }).success).toBe(false);
+    }
   });
 });

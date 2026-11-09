@@ -23,15 +23,18 @@ The server, in `../backend/interview_backend`, holds the intelligence: the promp
 src/main/        Electron's core process: windows/ (the stealth rules, the hidden capture window), ipc/ (every
                  handler), auth/ (sign-in, the encrypted secrets), device/ (the key, its proofs, the fingerprint), api/
                  (REST), account/ (the account and this computer's registration), session/ (the controller, its
-                 drivers, the hotkeys), connection/ (the hub transport), capture/ (the call's sound: its frames, the
-                 meter, the no-sound watch, the capture check), preview/ (development data), settings.
+                 drivers, the hotkeys, the sound check), connection/ (the hub transport), capture/ (the call's sound:
+                 its frames, the meter, the no-sound watch, the capture check), storage/ (the encrypted database,
+                 its migrations, the store over it), preview/ (development data), settings.
 src/preload/     overlay.ts, app.ts: each window's only bridge to main; api.ts types them. capture.ts hands the capture
                  page its port. Sandboxed: no packages.
 src/renderer/    overlay/ (the product), app/ (the window outside sessions), capture/ (the hidden page and its
-                 AudioWorklet), shared/ (components, styles, icons, the answer renderer).
+                 AudioWorklet), shared/ (components, styles, icons, the answer renderer). app/setup/ is the first
+                 run's wizard.
 src/shared/      Runs in main, preloads and renderers, so no Electron and no DOM: contracts/ (generated, never edited),
                  ipc.ts and ipc-channels.ts, live/ (view state, reducer, the overlay's words), audio/ (PCM16 frames
-                 and levels), text-limits, settings, account.
+                 and levels), documents, first-run (the notice's words and version), hotkeys, text-limits, settings,
+                 account.
 tests/           unit/ (Node), renderer/ (happy-dom and @vue/test-utils), stealth/ (the rules readable in the source),
                  e2e/ (against the backend's local stack; skipped unless SOTTO_E2E=1), app/ (the built app's windows
                  under Playwright, against the preview; skipped unless SOTTO_APP=1).
@@ -107,6 +110,7 @@ While a session runs, its hotkeys are global (Ctrl+Enter answers, Ctrl+Shift+H h
 10. **No interview content in logs**: no transcripts, answers, documents or screenshots. States and codes only.
 11. **The preview is development only**: an unpackaged build started with `--mode preview` (`npm run dev:preview`). No code path that pretends to be the server ships.
 12. **Sign-in state lives in main.** The refresh token, the device key and the device id are kept only through `SecretStore`, encrypted with safeStorage; where the OS can't encrypt, nothing is written and the sign-in lasts until the app quits. Keycloak's refresh tokens rotate, so every renewal goes through `AuthSession` (one at a time, the new token stored before use).
+13. **This computer's data lives in the encrypted database** (`src/main/storage`, 1.14), where backend docs/07 §5 puts it. The schema changes only by a new migration in `schema.ts`: a released one never changes. Keep what is stored to what the decisions name (the documents, the settings, the first run); storing more is an "Ask first".
 
 ## Conventions
 

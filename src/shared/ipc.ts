@@ -55,6 +55,19 @@ export type OverlayWindowAction = z.infer<typeof overlayWindowActionSchema>;
  */
 export const copyTextSchema = z.string().min(1).max(100_000);
 
+/** The first-run notice's version the user read: main keeps it only when it is the current one. */
+export const acknowledgeNoticeSchema = z.object({ version: z.number().int().positive() }).strict();
+
+export const soundCheckActionSchema = z.enum(['start', 'stop']);
+export type SoundCheckAction = z.infer<typeof soundCheckActionSchema>;
+
+/** Test hiding: show the overlay with its test card, hide it, or record that the share left it out. */
+export const hidingTestActionSchema = z.enum(['show', 'hide', 'hidden']);
+export type HidingTestAction = z.infer<typeof hidingTestActionSchema>;
+
+export const signInPageActionSchema = z.enum(['open', 'copy']);
+export type SignInPageAction = z.infer<typeof signInPageActionSchema>;
+
 export const appWindowActionSchema = z.enum(['minimize', 'maximize', 'close']);
 export type AppWindowAction = z.infer<typeof appWindowActionSchema>;
 

@@ -44,6 +44,9 @@ export const icons = {
   external: 'M9 2.5h4.5V7M13.5 2.5L7.5 8.5M11.5 9.5v3.5h-9v-9H6',
   computer: 'M4 3.5h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zM1.5 12.5h13',
   shield: 'M8 2l5 2v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4z',
+  // The first-run notice's rows (F1 · 1): a server, and a cloud for the AI provider, with no one's logo.
+  server: 'M3 3h10v4H3zM3 9h10v4H3zM5.5 5h.01M5.5 11h.01',
+  cloud: 'M4.5 12.5h7.2a2.8 2.8 0 0 0 .3-5.6A4.2 4.2 0 0 0 4 7.6a2.5 2.5 0 0 0 .5 4.9z',
   pin: 'M9.5 2.5l4 4-1.8.9-2.6 2.6.4 2.6-1 1-6-6 1-1 2.6.4 2.6-2.6zM5.5 10.5l-3 3',
   home: 'M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z',
   prepare: 'M4 2.5h5l3 3v8H4zM9 2.5v3h3',

@@ -1,11 +1,15 @@
 // What each window may ask of main: the whole surface, typed. Types only, so renderers can import it freely.
 import type { AppState } from '../shared/app-state';
 import type { SetDocumentRequest } from '../shared/documents';
+import type { SoundCheckView } from '../shared/first-run';
 import type {
   AppWindowAction,
   CommandResult,
   OverlayCommand,
   OverlayWindowAction,
+  HidingTestAction,
+  SignInPageAction,
+  SoundCheckAction,
   StartSessionRequest,
 } from '../shared/ipc';
 import type { LiveViewState } from '../shared/live/view-state';
@@ -44,5 +48,14 @@ export interface AppApi extends SettingsApi {
   startSession(request: StartSessionRequest): Promise<CommandResult>;
   /** Keeps one document on this computer; the state that follows carries it. */
   setDocument(change: SetDocumentRequest): Promise<CommandResult>;
+  /** The first-run notice was read, in this version. */
+  acknowledgeNotice(version: number): Promise<CommandResult>;
+  /** The setup wizard was finished: it no longer opens by itself. */
+  finishSetup(): Promise<CommandResult>;
+  soundCheck(action: SoundCheckAction): Promise<CommandResult>;
+  /** Returns a function that stops listening. */
+  onSoundCheck(listener: (view: SoundCheckView) => void): () => void;
+  hidingTest(action: HidingTestAction): Promise<CommandResult>;
+  signInPage(action: SignInPageAction): void;
   window(action: AppWindowAction): void;
 }

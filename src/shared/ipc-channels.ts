@@ -29,6 +29,18 @@ export const IpcChannels = {
   appStartSession: 'app:start-session',
   /** app window → main (invoke): one document's whole text, kept on this computer (Prepare, the first run). */
   appSetDocument: 'app:set-document',
+  /** app window → main (invoke): the first-run notice was read, in this version (F1 · 1). */
+  appAcknowledgeNotice: 'app:acknowledge-notice',
+  /** app window → main (invoke): the setup wizard was finished; it no longer opens by itself. */
+  appFinishSetup: 'app:finish-setup',
+  /** app window → main (invoke): start or stop the sound check (F1 · 4). */
+  appSoundCheck: 'app:sound-check',
+  /** main → app window: the sound check as it goes, heard here instead of in the overlay. */
+  appSoundCheckState: 'app:sound-check-state',
+  /** app window → main (invoke): Test hiding, show or hide the overlay with its test card, or say it was hidden. */
+  appHidingTest: 'app:hiding-test',
+  /** app window → main (send): open the sign-in page again, or copy its link (F1 · 2). */
+  appSignInPage: 'app:sign-in-page',
   /** any window → main (invoke): the settings. */
   settingsGet: 'settings:get',
   /** any window → main (invoke): change some settings. */

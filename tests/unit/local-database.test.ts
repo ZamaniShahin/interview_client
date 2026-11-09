@@ -5,8 +5,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MemorySecretStore } from '../../src/main/auth/secret-store';
 import {
   databaseKey,
+  isUnreadable,
   NewerDatabaseError,
   openDatabase,
+  setAside,
   type LocalDatabase,
   type Migration,
 } from '../../src/main/storage/local-database';
@@ -136,5 +138,45 @@ describe("the database's key", () => {
     await secrets.set('database-key', 'not a key');
 
     expect(await databaseKey(secrets)).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('a database file no key here opens (1.14)', () => {
+  it('is set aside, kept with its WAL, and a fresh one takes its place', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sotto-db-'));
+    const file = join(dir, 'sotto.db');
+    try {
+      const old = openDatabase(file, key, notes);
+      old.prepare('INSERT INTO notes (text) VALUES (?)').run('kept, though unreadable now');
+      old.close();
+
+      let error: unknown;
+      try {
+        openDatabase(file, otherKey, notes);
+      } catch (thrown) {
+        error = thrown;
+      }
+      expect(isUnreadable(error)).toBe(true);
+
+      const aside = setAside(file, 1_800_000_000_000);
+      expect(aside).toBe(`${file}.unreadable-1800000000000`);
+      expect(existsSync(aside)).toBe(true);
+      expect(existsSync(file)).toBe(false);
+
+      const fresh = openDatabase(file, otherKey, notes);
+      expect(fresh.prepare('SELECT count(*) AS n FROM notes').get()).toEqual({ n: 0 });
+      fresh.close();
+      const kept = openDatabase(aside, key, notes);
+      expect(kept.prepare('SELECT text FROM notes').get()).toEqual({ text: 'kept, though unreadable now' });
+      kept.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('tells a missing key from a newer app', () => {
+    expect(isUnreadable({ code: 'SQLITE_NOTADB' })).toBe(true);
+    expect(isUnreadable(new NewerDatabaseError(3, 1))).toBe(false);
+    expect(isUnreadable(null)).toBe(false);
   });
 });

@@ -5,15 +5,22 @@ import type { AppState } from '../../shared/app-state';
 import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import { setDocumentSchema, type SetDocumentRequest } from '../../shared/documents';
 import {
+  acknowledgeNoticeSchema,
   appWindowActionSchema,
   copyTextSchema,
+  hidingTestActionSchema,
   IpcChannels,
   overlayCommandSchema,
   overlayWindowActionSchema,
+  signInPageActionSchema,
+  soundCheckActionSchema,
   startSessionSchema,
   type AppWindowAction,
   type CommandResult,
+  type HidingTestAction,
   type OverlayWindowAction,
+  type SignInPageAction,
+  type SoundCheckAction,
   type StartSessionRequest,
 } from '../../shared/ipc';
 import { settingsPatchSchema } from '../../shared/settings';
@@ -37,6 +44,11 @@ export interface IpcDependencies {
   copyText: (text: string) => void;
   /** Keeps one document on this computer (checked against its limit). */
   setDocument: (change: SetDocumentRequest) => CommandResult;
+  acknowledgeNotice: (version: number) => CommandResult;
+  finishSetup: () => CommandResult;
+  soundCheck: (action: SoundCheckAction) => Promise<CommandResult>;
+  hidingTest: (action: HidingTestAction) => CommandResult;
+  signInPage: (action: SignInPageAction) => void;
 }
 
 const invalid: CommandResult = { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'That request was not valid.' };
@@ -99,6 +111,32 @@ export function registerIpc(deps: IpcDependencies): void {
       return { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'Tick the consent box to start.' };
     }
     return deps.startSession(parsed.data);
+  });
+
+  ipcMain.handle(IpcChannels.appAcknowledgeNotice, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = acknowledgeNoticeSchema.safeParse(payload);
+    return parsed.success ? deps.acknowledgeNotice(parsed.data.version) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appFinishSetup, (event): CommandResult => (fromApp(event) ? deps.finishSetup() : invalid));
+
+  ipcMain.handle(IpcChannels.appSoundCheck, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = soundCheckActionSchema.safeParse(payload);
+    return parsed.success ? deps.soundCheck(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appHidingTest, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = hidingTestActionSchema.safeParse(payload);
+    return parsed.success ? deps.hidingTest(parsed.data) : invalid;
+  });
+
+  ipcMain.on(IpcChannels.appSignInPage, (event, payload: unknown) => {
+    if (!fromApp(event)) return;
+    const parsed = signInPageActionSchema.safeParse(payload);
+    if (parsed.success) deps.signInPage(parsed.data);
   });
 
   ipcMain.handle(IpcChannels.appSetDocument, (event, payload: unknown): CommandResult => {

@@ -18,4 +18,5 @@ function run(script, args) {
 }
 
 run('node_modules/electron-vite/bin/electron-vite.js', ['build', '--mode', 'preview']);
-run('node_modules/vitest/vitest.mjs', ['run', 'tests/app']);
+// One file at a time: the app holds a single-instance lock, so a second one launched alongside would quit.
+run('node_modules/vitest/vitest.mjs', ['run', 'tests/app', '--no-file-parallelism']);

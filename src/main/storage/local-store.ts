@@ -2,6 +2,7 @@
 // lives follows backend docs/07 §5: the résumé and the job description are `documents`; the candidate's name, the
 // notes and the settings are `settings` rows, each a key and a JSON value.
 import { emptyDocuments, type DocumentField, type DocumentsView } from '../../shared/documents';
+import type { FirstRunView } from '../../shared/first-run';
 import { settingsSchema, type Settings } from '../../shared/settings';
 import type { LocalDatabase } from './local-database';
 
@@ -74,6 +75,32 @@ export class LocalStore {
       if (value !== undefined && schema.safeParse(value).success) kept[field] = value;
     }
     return kept as Partial<Settings>;
+  }
+
+  /** The first run, as kept: which notice version was acknowledged, whether setup was finished and hiding tested. */
+  firstRun(currentNotice: number): FirstRunView {
+    const acknowledged = this.setting('firstRun.notice');
+    return {
+      acknowledged:
+        typeof acknowledged === 'object' &&
+        acknowledged !== null &&
+        (acknowledged as { version?: unknown }).version === currentNotice,
+      finished: typeof this.setting('firstRun.finishedAt') === 'number',
+      hidingTested: typeof this.setting('firstRun.hidingTestedAt') === 'number',
+    };
+  }
+
+  /** The notice in this version was read and acknowledged, now: asked again only when its words change. */
+  acknowledgeNotice(version: number): void {
+    this.setSetting('firstRun.notice', { version, at: this.now() });
+  }
+
+  finishSetup(): void {
+    this.setSetting('firstRun.finishedAt', this.now());
+  }
+
+  hidingTested(): void {
+    this.setSetting('firstRun.hidingTestedAt', this.now());
   }
 
   /** When the sound check last heard this computer's sound (the first run, step 4), or null. */

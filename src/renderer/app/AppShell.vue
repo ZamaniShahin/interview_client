@@ -1,16 +1,18 @@
 <script setup lang="ts">
 // The window outside sessions: its own chrome, the sidebar, and the page. During a session it steps aside and the
-// overlay takes over; it comes back when the session is closed.
+// overlay takes over; it comes back when the session is closed. The setup (F1) takes the whole window, framed as Setup.
 import { computed, onMounted, ref } from 'vue';
 import { useSettings } from '../shared/use-settings';
 import { useAppStore } from './app-store';
 import SideNav from './components/SideNav.vue';
 import WindowChrome from './components/WindowChrome.vue';
 import AccountPage from './pages/AccountPage.vue';
+import HelpPage from './pages/HelpPage.vue';
 import HomePage from './pages/HomePage.vue';
 import LaterPage from './pages/LaterPage.vue';
 import PreparePage from './pages/PreparePage.vue';
 import SettingsPage from './pages/SettingsPage.vue';
+import SetupWizard from './setup/SetupWizard.vue';
 
 type PageId = 'home' | 'prepare' | 'practice' | 'history' | 'account' | 'settings' | 'help';
 
@@ -46,7 +48,13 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
 </script>
 
 <template>
-  <div class="shell">
+  <div v-if="store.setup" class="shell">
+    <WindowChrome subtitle="Setup" :maximizable="false" @minimize="windowAction('minimize')" @close="windowAction('close')" />
+    <main class="main setup">
+      <SetupWizard />
+    </main>
+  </div>
+  <div v-else class="shell">
     <WindowChrome @minimize="windowAction('minimize')" @maximize="windowAction('maximize')" @close="windowAction('close')" />
     <div class="body">
       <SideNav :items="pages" :current="current" @select="(id) => (current = id)">
@@ -80,11 +88,7 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
           heading="History"
           text="Your interviews, their questions and answers, and debriefs, kept on this computer, encrypted. Built in the later phase (3.9)."
         />
-        <LaterPage
-          v-else
-          heading="Help"
-          text="Run the setup again, and test that Sotto is hidden from screen shares. The setup wizard arrives with the first run (1.14)."
-        />
+        <HelpPage v-else />
       </main>
     </div>
   </div>
@@ -106,6 +110,11 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
   min-width: 0;
   overflow-y: auto;
   padding: 28px 32px;
+}
+.setup {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
 }
 .big {
   color: var(--text-0);

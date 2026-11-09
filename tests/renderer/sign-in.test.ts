@@ -1,38 +1,15 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AppApi } from '../../src/preload/api';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '../../src/renderer/app/app-store';
+import { fakeAppApi } from './fake-app-api';
 import ProblemBanner from '../../src/renderer/app/components/ProblemBanner.vue';
 import SignInBanner from '../../src/renderer/app/components/SignInBanner.vue';
 import { initialAppState, type AppState, type AuthView } from '../../src/shared/app-state';
 
-/** Stands in for the preload bridge: main's state, and what the window asked for. */
-function fakeAppApi(state: AppState) {
-  let listener: ((state: AppState) => void) | null = null;
-  const api = {
-    getState: vi.fn(async () => state),
-    onState: vi.fn((l: (state: AppState) => void) => {
-      listener = l;
-      return () => {};
-    }),
-    signIn: vi.fn(async () => ({ ok: true as const })),
-    cancelSignIn: vi.fn(),
-    signOut: vi.fn(async () => {}),
-    refresh: vi.fn(async () => {}),
-    startSession: vi.fn(async () => ({ ok: true as const })),
-    setDocument: vi.fn(async () => ({ ok: true as const })),
-    window: vi.fn(),
-    getSettings: vi.fn(),
-    setSettings: vi.fn(),
-    onSettings: vi.fn(() => () => {}),
-  } satisfies AppApi;
-  return { api, push: (next: AppState) => listener?.(next) };
-}
-
 async function showing(auth: AuthView, change: Partial<AppState> = {}) {
-  const { api, push } = fakeAppApi({ ...initialAppState, auth, ...change });
+  const { api, send: push } = fakeAppApi({ ...initialAppState, auth, ...change });
   window.appApi = api;
   await useAppStore().load();
   const wrapper = mount(SignInBanner);

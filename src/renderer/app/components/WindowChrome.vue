@@ -2,7 +2,7 @@
 // The window's own title bar: the system frame is off, so this is where it is dragged, minimized and closed.
 import SIconButton from '../../shared/components/SIconButton.vue';
 
-defineProps<{ subtitle?: string }>();
+withDefaults(defineProps<{ subtitle?: string; maximizable?: boolean }>(), { subtitle: undefined, maximizable: true });
 const emit = defineEmits<{ minimize: []; maximize: []; close: [] }>();
 </script>
 
@@ -13,7 +13,7 @@ const emit = defineEmits<{ minimize: []; maximize: []; close: [] }>();
     <span class="spacer" />
     <div class="controls">
       <SIconButton icon="minimize" label="Minimize" @click="emit('minimize')" />
-      <SIconButton icon="maximize" label="Maximize" @click="emit('maximize')" />
+      <SIconButton v-if="maximizable" icon="maximize" label="Maximize" @click="emit('maximize')" />
       <SIconButton icon="close" label="Close" @click="emit('close')" />
     </div>
   </header>

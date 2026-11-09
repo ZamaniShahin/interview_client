@@ -10,7 +10,11 @@ export const overlaySize = {
   min: { width: 360, height: 200 },
 } as const;
 
-export function createOverlayWindow(options: { compact: boolean }): BrowserWindow {
+/**
+ * The overlay window. With `hidingTest`, the same window shows only its Test hiding card (F1 · 5b): what matters there
+ * is that it is this window, with all its protections, that the share must leave out.
+ */
+export function createOverlayWindow(options: { compact: boolean; hidingTest?: boolean }): BrowserWindow {
   const area = screen.getPrimaryDisplay().workArea;
   const size = options.compact ? overlaySize.compact : overlaySize.full;
   const win = new BrowserWindow({
@@ -46,6 +50,6 @@ export function createOverlayWindow(options: { compact: boolean }): BrowserWindo
   keepOutOfCapture(win);
   keepOnTop(win);
   lockDown(win.webContents);
-  void loadPage(win, 'overlay');
+  void loadPage(win, 'overlay', options.hidingTest ? 'hiding-test' : undefined);
   return win;
 }

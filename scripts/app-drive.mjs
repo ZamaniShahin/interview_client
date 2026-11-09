@@ -346,24 +346,28 @@ async function stubBrowser(main) {
 
 // ---- The run -------------------------------------------------------------------------------------------------------
 async function run() {
-  // Each run starts signed out, so it signs in from the app's first screen.
+  // Each run starts as a new computer: signed out, and with no database, so the first run's setup opens by itself.
   const appData = process.env.APPDATA ?? fail('no APPDATA');
   rmSync(join(appData, 'Sotto', 'secrets'), { recursive: true, force: true });
+  for (const suffix of ['', '-wal', '-shm']) rmSync(join(appData, 'Sotto', `sotto.db${suffix}`), { force: true });
 
   step('A user with a verified email and a trial (outside the app)');
   const { email, password } = await createTrialUser();
 
-  step('Launch 1: signed out');
+  step('Launch 1: the first run, its setup opening by itself');
   launch('1');
   let main = await connectMain();
   const userData = await stubBrowser(main);
   note('userData:', userData);
   let home = await connectPage('app/index.html');
-  await waitFor('"Not signed in."', async () => (await textOf(home)).includes('Not signed in.'));
-  // innerText follows CSS text-transform: the eyebrow labels read in capitals, hence the /i.
-  note('Home says: Not signed in. Sidebar:', (await textOf(home)).match(/Minutes\s*\n?\s*(.*)/i)?.[1]);
+  await waitFor('the notice', async () => (await textOf(home)).includes('Before your first session: what goes where'));
+  note('Setup, step 1:', (await textOf(home)).match(/To OpenAI[^\n]*/)?.[0]);
+  must(await clickButton(home, 'I understand'), 'no I understand');
 
-  step('Sign in from the app');
+  step("Sign in, the setup's step 2");
+  await waitFor('the sign-in step', async () =>
+    (await textOf(home)).includes('Sign in, or create an account, in your browser.'),
+  );
   must(await clickButton(home, 'Sign in'), 'no Sign in button');
   const url = await waitFor(
     'the app to open the sign-in page',
@@ -382,7 +386,7 @@ async function run() {
   await waitFor('"Finish signing in in your browser."', async () =>
     (await textOf(home)).includes('Finish signing in in your browser.'),
   );
-  note('Home says: Finish signing in in your browser.');
+  note('Setup says: Finish signing in in your browser.');
   const browser = new Browser(signInUrl.searchParams.get('redirect_uri'));
   let page = await browser.open(url);
   const login = formAction(page.html, 'kc-form-login') ?? fail(`no login form (HTTP ${page.status})`);
@@ -394,6 +398,28 @@ async function run() {
     back.status,
     (await back.text()).includes('You can close this tab') ? '"You can close this tab…"' : '',
   );
+  await waitFor(
+    'the setup to move on by itself',
+    async () => (await textOf(home)).includes('Answers are grounded in these.'),
+    30_000,
+  );
+  note('Setup, step 3: Your documents (skipped)');
+  must(await clickButton(home, 'Skip for now'), 'no Skip for now');
+
+  step('The sound check, a session of its own on the server');
+  must(await clickButton(home, 'Start the sound check'), 'no Start the sound check');
+  await waitFor(
+    "the sound check's session",
+    async () => (await textOf(home)).includes("Hearing this computer's sound"),
+    30_000,
+  );
+  note("Setup, step 4: Hearing this computer's sound (the local stack's scripted speech-to-text ignores real sound)");
+  must(await clickButton(home, 'Continue'), 'no Continue on the sound check');
+  await waitFor('the hotkeys', async () => (await textOf(home)).includes('Your hands stay on the call'));
+  must(await clickButton(home, 'Continue'), 'no Continue on the hotkeys');
+  await waitFor('Test hiding', async () => (await textOf(home)).includes('Check it once with a real share.'));
+  must(await clickButton(home, 'Skip the test'), 'no Skip the test');
+
   await waitFor('the account on Home', async () => (await textOf(home)).includes('min left'), 30_000);
   const signedIn = await textOf(home);
   note(

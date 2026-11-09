@@ -149,3 +149,31 @@ describe("Home's readiness, from this computer (1.14)", () => {
     ).toBeNull();
   });
 });
+
+describe('the first run, as kept on this computer (1.14)', () => {
+  it('starts with nothing acknowledged, finished or tested', () => {
+    expect(store().local.firstRun(1)).toEqual({ acknowledged: false, finished: false, hidingTested: false });
+  });
+
+  it('keeps the notice acknowledged in its version, and asks again for a new one', () => {
+    const { local } = store();
+    local.acknowledgeNotice(1);
+
+    expect(local.firstRun(1).acknowledged).toBe(true);
+    expect(local.firstRun(2).acknowledged).toBe(false);
+  });
+
+  it('keeps that setup was finished and hiding tested', () => {
+    const { local } = store();
+    local.finishSetup();
+    local.hidingTested();
+
+    expect(local.firstRun(1)).toEqual({ acknowledged: false, finished: true, hidingTested: true });
+  });
+
+  it('reads an acknowledgment that no longer makes sense as none', () => {
+    const { db, local } = store();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('firstRun.notice', '\"yes\"')").run();
+    expect(local.firstRun(1).acknowledged).toBe(false);
+  });
+});

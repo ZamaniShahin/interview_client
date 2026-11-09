@@ -2,6 +2,7 @@
 // one problem to explain. Main owns it and sends it whole on every change.
 import type { AccountView } from './account';
 import { emptyDocuments, type DocumentsView } from './documents';
+import { initialFirstRun, type FirstRunView } from './first-run';
 
 export type AuthView =
   | { status: 'signed-out' }
@@ -27,6 +28,8 @@ export interface AppState {
   preview: boolean;
   /** What answers are grounded in, as kept on this computer (1.14). */
   documents: DocumentsView;
+  /** The first run: the notice acknowledged, setup finished, hiding tested (1.14). */
+  firstRun: FirstRunView;
 }
 
 export const initialAppState: AppState = {
@@ -35,4 +38,5 @@ export const initialAppState: AppState = {
   problem: null,
   preview: false,
   documents: emptyDocuments,
+  firstRun: initialFirstRun,
 };

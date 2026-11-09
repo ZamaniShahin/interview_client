@@ -70,7 +70,12 @@ A packaged build never runs the preview.
 - **The app tests** drive the built app's own windows with Playwright against the preview: diagrams under the Content Security Policy, the clipboard, the stealth rules at run time, and every window's display affinity, after hide and show too.
 - **Windows 11 rounds the windows' corners**; there is no "tray only" setting any more (Q16).
 
-**Not yet:** the first run (1.14), the microphone (with the coach, 3.7), the local database, packaging hardening.
+**The first run, 2026-11-09** (1.14; [docs/decisions.md](docs/decisions.md) §9):
+- **The setup wizard**, opening by itself until it has been finished once: what goes where, sign-in, the documents, the sound check, the hotkeys and Test hiding. Help runs it again.
+- **This computer's encrypted database** (SQLCipher's format, its key in safeStorage): the documents, the settings and the first run, kept across restarts. Prepare edits the documents.
+- **A session gets the documents** (`SetContext`), so AUTO answers once the résumé and the job description are there.
+
+**Not yet:** the microphone (with the coach, 3.7), history and the answer bank (later, in the same database), packaging hardening.
 
 ## Tech decisions
 
@@ -93,7 +98,7 @@ A packaged build never runs the preview.
 | Coach transcription | **on the device**: sherpa-onnx or Vosk, picked by a spike (Q5); the mic never leaves the machine | privacy, zero server cost | cloud STT for the mic | 3.7 |
 | Markdown | **markdown-it** (`html: false`) + **DOMPurify**; **highlight.js**; **Mermaid** (lazy, `securityLevel: "strict"`) | a safe, standard renderer for model output | v1's hand-written renderer | built (1.13): highlight.js 11.12 (20 languages, the canvas's syntax colors), Mermaid 12.2 loaded with the first diagram |
 | Documents | **pdfjs-dist** (PDF text) + **mammoth** (`.docx`, tables included: v1 KNOWN_ISSUES #11); only the extracted text is sent | no PDF parser on the server | parsing on the server | 3.10 |
-| Local data | **SQLite**, encrypted (**better-sqlite3-multiple-ciphers**, SQLCipher-compatible), in main; key in safeStorage. Schema in backend [07](../backend/interview_backend/docs/07-data-model.md) §5 | history and answer bank stay on the device, encrypted | plain JSON / SQLite (v1) | with the first stored data (1.14) |
+| Local data | **SQLite**, encrypted (**better-sqlite3-multiple-ciphers**, SQLCipher-compatible), in main; key in safeStorage. Schema in backend [07](../backend/interview_backend/docs/07-data-model.md) §5 | history and answer bank stay on the device, encrypted | plain JSON / SQLite (v1) | built (1.14): better-sqlite3-multiple-ciphers 13.0.3, the documents, settings and first run; history and the answer bank come later |
 | Validation | **zod** schemas for every IPC payload and local settings | untrusted renderer input | — | added |
 | Packaging | **electron-builder**: NSIS (Windows x64) first, DMG next | used by v1; mature | — | added (unsigned) |
 | Updates | **electron-updater** from our CDN bucket, staged rollout; the server's `minClientVersion` forces upgrades | patched or old builds stop working | manual installers (v1) | 4.2 |
@@ -167,15 +172,15 @@ Built 2026-11-09 for the interviewer's side; the choices are in [docs/decisions.
 - **History:** interviews, Q&A, optional transcripts, debrief results; an HTML report export (port `history.py`).
 - **Documents:** parse, clip the prep doc at 100k characters at a line break (v1 `clip_prep_doc`), and send the text with `SetContext` / `SetPrepDoc`.
 - **Recording** (opt-in, after the consent checkbox): local WAV of loopback + mic, as v1's `recorder.py`.
-- **First run:** v1's setup wizard (its ARCHITECTURE.md "Setup wizard", PROTOCOL.md "First-run setup wizard"), re-made for v2. It opens by itself on first use and can be re-run from Help. Its steps:
+- **First run** (built in 1.14; [docs/decisions.md](docs/decisions.md) §9): v1's setup wizard (its ARCHITECTURE.md "Setup wizard", PROTOCOL.md "First-run setup wizard"), re-made for v2. It opens by itself until it has been finished once, and can be re-run from Help. Its steps:
   1. **What is recorded and sent where**, now including what goes to OpenAI and how long OpenAI may keep it (backend [06](../backend/interview_backend/docs/06-ai-gateway.md) §10 rule 7). The user acknowledges it once, and again when the text changes. This step is needed before any outside user.
   2. **Sign in and register this device.** This replaces v1's key, provider and speech-to-text steps: v2 has no keys or models on the device.
-  3. **Name, résumé and job description** (`SetContext`).
+  3. **Name, résumé and job description**, kept on this computer; a session sends them (`SetContext`).
   4. **The sound check:** live transcripts on screen, proving that the call's audio plays through the default output device.
-     - AUTO and recording stay off while the wizard is open, and are put back after.
-     - Leaving the sound check sends `ClearHeard`, so its words never join the next question (v1 `clear_heard`).
-     - It runs in a live session and is charged like any session minute (Q12, decided 2026-11-09).
-  5. **The key hotkeys** and 🛡 Test hiding.
+     - It runs as a short live session of its own, in MANUAL and without documents, so nothing it hears is answered; its words show in the setup window, not the overlay.
+     - It starts only when asked, since it is charged like any session minute (Q12, decided 2026-11-09).
+     - Leaving the step ends that session, so its words never join a real question (what v1's `clear_heard` did).
+  5. **The key hotkeys** and 🛡 Test hiding: a real share, while the overlay window shows a test card.
 
 ## Release process (Phase 4)
 

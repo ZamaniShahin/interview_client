@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { previewAccount } from '../../src/main/preview/account';
-import type { AppApi } from '../../src/preload/api';
 import { useAppStore } from '../../src/renderer/app/app-store';
+import { fakeAppApi } from './fake-app-api';
 import HomePage from '../../src/renderer/app/pages/HomePage.vue';
 import { initialAppState, type AppState, type Problem } from '../../src/shared/app-state';
 import { ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
@@ -17,20 +17,7 @@ async function home(problem: Problem | null = null) {
     account: previewAccount,
     problem,
   };
-  const api = {
-    getState: vi.fn(async () => state),
-    onState: vi.fn(() => () => {}),
-    signIn: vi.fn(async () => ({ ok: true as const })),
-    cancelSignIn: vi.fn(),
-    signOut: vi.fn(async () => {}),
-    refresh: vi.fn(async () => {}),
-    startSession: vi.fn(async () => ({ ok: true as const })),
-    setDocument: vi.fn(async () => ({ ok: true as const })),
-    window: vi.fn(),
-    getSettings: vi.fn(),
-    setSettings: vi.fn(),
-    onSettings: vi.fn(() => () => {}),
-  } satisfies AppApi;
+  const { api } = fakeAppApi(state);
   window.appApi = api;
   await useAppStore().load();
   const wrapper = mount(HomePage);

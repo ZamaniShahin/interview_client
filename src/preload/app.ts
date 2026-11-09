@@ -1,6 +1,7 @@
 // The app window's only bridge to main. Sandboxed, like the overlay's: channel names and types, never a package.
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import type { AppState } from '../shared/app-state';
+import type { SoundCheckView } from '../shared/first-run';
 import { IpcChannels } from '../shared/ipc-channels';
 import type { Settings } from '../shared/settings';
 import type { AppApi } from './api';
@@ -18,6 +19,16 @@ const api: AppApi = {
   refresh: () => ipcRenderer.invoke(IpcChannels.appRefresh),
   startSession: (request) => ipcRenderer.invoke(IpcChannels.appStartSession, request),
   setDocument: (change) => ipcRenderer.invoke(IpcChannels.appSetDocument, change),
+  acknowledgeNotice: (version) => ipcRenderer.invoke(IpcChannels.appAcknowledgeNotice, { version }),
+  finishSetup: () => ipcRenderer.invoke(IpcChannels.appFinishSetup),
+  soundCheck: (action) => ipcRenderer.invoke(IpcChannels.appSoundCheck, action),
+  onSoundCheck: (listener) => {
+    const handler = (_event: IpcRendererEvent, view: SoundCheckView) => listener(view);
+    ipcRenderer.on(IpcChannels.appSoundCheckState, handler);
+    return () => ipcRenderer.removeListener(IpcChannels.appSoundCheckState, handler);
+  },
+  hidingTest: (action) => ipcRenderer.invoke(IpcChannels.appHidingTest, action),
+  signInPage: (action) => ipcRenderer.send(IpcChannels.appSignInPage, action),
   window: (action) => ipcRenderer.send(IpcChannels.appWindow, action),
   getSettings: () => ipcRenderer.invoke(IpcChannels.settingsGet),
   setSettings: (patch) => ipcRenderer.invoke(IpcChannels.settingsSet, patch),
