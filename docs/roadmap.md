@@ -5,8 +5,8 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - A checkpoint is ticked with its date and its commit.
 
 **Where it stands (2026-11-09):**
-- done: C0, 1.10, 1.11 and 1.12;
-- Claude builds 1.13, 1.14 and 2.13 next, in that order (backend Q35, decided 2026-11-09);
+- done: C0, 1.10, 1.11, 1.12 and 1.13;
+- Claude builds 1.14 and 2.13 next, in that order (backend Q35, decided 2026-11-09);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -41,12 +41,12 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
   - [x] a device proof at connect too (backend docs/04 §6), built on both sides together: the client in `58abf2f`, the server in backend `459db08` (2026-11-09; checked end to end, a forged proof refused);
   - [x] `ResumeSession` with `LastSeq` after a drop, and a snapshot when the replay is incomplete (2026-11-08, `3212ec9`);
   - [x] the preview stays for development: `npm run dev:preview` (2026-11-08, `3212ec9`).
-- [ ] **1.13 The overlay, complete:**
-  - Mermaid (lazy, strict) and highlight.js in answers;
+- [x] **1.13 The overlay, complete** (2026-11-09, `83a6009`; packages in `4cc3cac`; checked with the app tests, 5 of 5, three times):
+  - Mermaid (lazy, strict, SVG labels) and highlight.js in answers, with Copy on code blocks;
   - following a long answer, with "New text below";
-  - Playwright end to end against a fake hub;
-  - the display-affinity test (`0x11` after hide/show);
-  - the rounded corners decided.
+  - Playwright end to end against the preview, the stand-in for the hub (`node scripts/app-tests.mjs`);
+  - the display-affinity test: `0x11` for every window on screen, and after hide and show;
+  - the rounded corners decided: Windows 11's own (decisions §8), and no "tray only" setting (Q16).
 - [ ] **1.14 First run:**
   - the setup wizard, with the OpenAI notice, sign-in and the device;
   - the documents (with the local database);
