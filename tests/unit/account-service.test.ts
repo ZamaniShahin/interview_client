@@ -36,7 +36,13 @@ class FakeRest {
   readonly answers = new Map<string, (() => unknown)[]>();
 
   constructor() {
-    this.answer('GET /api/v1/me', () => ({ id: 'u1', email: 'sam@example.com', emailVerified: true, displayName: 'Sam', createdAt: '2026-11-01T12:00:00Z' }));
+    this.answer('GET /api/v1/me', () => ({
+      id: 'u1',
+      email: 'sam@example.com',
+      emailVerified: true,
+      displayName: 'Sam',
+      createdAt: '2026-11-01T12:00:00Z',
+    }));
     this.answer('GET /api/v1/me/entitlements', () => entitlements(['smart_tier', 'practice']));
     this.answer('GET /api/v1/me/credits', () => ({ balance: 120, lots: [] }));
     this.answer('GET /api/v1/me/credits/ledger?limit=20', () => ({ entries: [], next: null }));
@@ -112,7 +118,12 @@ describe('the account service', () => {
 
     expect(rest.routes().slice(0, 2)).toEqual(['GET /api/v1/me', 'POST /api/v1/devices']);
     const registration = rest.calls[1]!;
-    expect(registration.body).toEqual({ name: 'Test PC', platform: 'windows', appVersion: '0.1.0', fingerprint: 'f'.repeat(64) });
+    expect(registration.body).toEqual({
+      name: 'Test PC',
+      platform: 'windows',
+      appVersion: '0.1.0',
+      fingerprint: 'f'.repeat(64),
+    });
     expect(registration.proof!.header['jwk']).toEqual((await identity.keyPair()).publicJwk);
     expect(registration.proof!.header).not.toHaveProperty('kid');
     expect(registration.proof!.payload).toMatchObject({ htm: 'POST', htu: '/api/v1/devices' });

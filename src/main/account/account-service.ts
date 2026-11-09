@@ -35,7 +35,10 @@ export interface LoadedAccount {
 }
 
 /** Registration refusals that a new key answers. */
-const keyRefusals: ReadonlySet<string> = new Set([ErrorCodes.Identity.DeviceKeyRevoked, ErrorCodes.Identity.DeviceKeyInUse]);
+const keyRefusals: ReadonlySet<string> = new Set([
+  ErrorCodes.Identity.DeviceKeyRevoked,
+  ErrorCodes.Identity.DeviceKeyInUse,
+]);
 
 export class AccountService {
   constructor(private readonly deps: AccountServiceDependencies) {}
@@ -67,7 +70,9 @@ export class AccountService {
     const known = await device.id();
     if (known) {
       try {
-        await rest.get('/api/v1/devices/current', { proof: (token) => this.proof('GET', '/api/v1/devices/current', token, known) });
+        await rest.get('/api/v1/devices/current', {
+          proof: (token) => this.proof('GET', '/api/v1/devices/current', token, known),
+        });
         return known;
       } catch (error) {
         if (!(error instanceof ApiError) || error.code !== ErrorCodes.Identity.DeviceNotRegistered) throw error;
@@ -97,7 +102,13 @@ export class AccountService {
         fingerprint: await this.deps.fingerprint(),
       },
       proof: (token) =>
-        signDeviceProof({ privateKey: key.privateKey, htm: 'POST', htu: '/api/v1/devices', accessToken: token, jwk: key.publicJwk }),
+        signDeviceProof({
+          privateKey: key.privateKey,
+          htm: 'POST',
+          htu: '/api/v1/devices',
+          accessToken: token,
+          jwk: key.publicJwk,
+        }),
     });
     await device.remember(registered.id);
     return registered.id;

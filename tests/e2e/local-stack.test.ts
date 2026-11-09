@@ -32,7 +32,12 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     // 1.10: sign in, as the app does it, with only the browser scripted.
     const secrets = new MemorySecretStore();
     const auth = new AuthSession({
-      oidc: new OpenIdClient({ issuer, clientId: 'desktop', scopes: 'openid email profile offline_access', allowHttp: true }),
+      oidc: new OpenIdClient({
+        issuer,
+        clientId: 'desktop',
+        scopes: 'openid email profile offline_access',
+        allowHttp: true,
+      }),
       secrets,
       loopback: () => startLoopback(60_000),
     });
@@ -45,7 +50,11 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     expect(await secrets.get('refresh-token')).toBeTruthy();
 
     // The account, with this computer registered by its key.
-    const rest = new RestClient({ baseUrl: apiBaseUrl, clientVersion, accessToken: (options) => auth.accessToken(options) });
+    const rest = new RestClient({
+      baseUrl: apiBaseUrl,
+      clientVersion,
+      accessToken: (options) => auth.accessToken(options),
+    });
     const identity = new DeviceIdentity(secrets);
     // A trial is once per device too: a new fingerprint per run.
     const fingerprint = randomBytes(32).toString('hex');
@@ -89,7 +98,9 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     });
 
     expect(await session.start(driver)).toEqual({ ok: true });
-    expect(await session.command({ type: 'ask', mode: AskMode.Question, text: 'What is a mutex?' })).toEqual({ ok: true });
+    expect(await session.command({ type: 'ask', mode: AskMode.Question, text: 'What is a mutex?' })).toEqual({
+      ok: true,
+    });
     await vi.waitFor(
       () => {
         const answer = session.current.answers.at(-1);

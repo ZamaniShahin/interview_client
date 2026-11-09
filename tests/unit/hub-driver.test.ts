@@ -213,7 +213,11 @@ describe('the hub driver', () => {
     const h = harness({
       connection: (t) =>
         t.connection.replies.set('StartSession', () => {
-          t.close(new Error('Server returned an error on close: Connection closed with an error. HubException: client_outdated'));
+          t.close(
+            new Error(
+              'Server returned an error on close: Connection closed with an error. HubException: client_outdated',
+            ),
+          );
           throw new Error('Invocation canceled due to the underlying connection being closed.');
         }),
     });
@@ -241,11 +245,14 @@ describe('the hub driver', () => {
 
     h.transports[0]!.events.transcriptFinal(hear(1, 'Tell me about yourself.'));
 
-    expect(h.actions).toContainEqual({ type: 'event', event: { name: 'transcriptFinal', e: hear(1, 'Tell me about yourself.') } });
+    expect(h.actions).toContainEqual({
+      type: 'event',
+      event: { name: 'transcriptFinal', e: hear(1, 'Tell me about yourself.') },
+    });
     expect(h.state().lastSeq).toBe(1);
   });
 
-  it("sends each command to its hub method, keyed by the C# names", async () => {
+  it('sends each command to its hub method, keyed by the C# names', async () => {
     const h = harness();
     await h.start();
 
@@ -257,7 +264,14 @@ describe('the hub driver', () => {
     await h.driver.command({ type: 'endSession' });
 
     const calls = h.transports[0]!.connection.invocations.slice(1);
-    expect(calls.map((call) => call.method)).toEqual(['Ask', 'Trigger', 'SetMode', 'Clear', 'ClearHeard', 'EndSession']);
+    expect(calls.map((call) => call.method)).toEqual([
+      'Ask',
+      'Trigger',
+      'SetMode',
+      'Clear',
+      'ClearHeard',
+      'EndSession',
+    ]);
     expect(calls[0]!.request).toMatchObject({ Mode: AskMode.Tip, Text: 'Pace?' });
     expect(calls[1]!.request).toMatchObject({ Text: null });
     expect(calls[2]!.request).toMatchObject({ Auto: false, Paused: null });
@@ -266,7 +280,8 @@ describe('the hub driver', () => {
 
   it("answers a refused command with the server's code", async () => {
     const h = harness({
-      connection: (t) => t.connection.replies.set('Ask', () => ({ Ok: false, Code: 'too_large', Message: 'Too long.' })),
+      connection: (t) =>
+        t.connection.replies.set('Ask', () => ({ Ok: false, Code: 'too_large', Message: 'Too long.' })),
     });
     await h.start();
 
@@ -319,7 +334,11 @@ describe('the hub driver', () => {
   it('resumes a dropped session on a new connection, from the last event it saw', async () => {
     const h = harness({
       connection: (t, index) => {
-        if (index === 1) t.connection.replies.set('ResumeSession', () => ({ Ok: true, Value: { SessionId: 'session-1', Replayed: true, LastSeq: 5 } }));
+        if (index === 1)
+          t.connection.replies.set('ResumeSession', () => ({
+            Ok: true,
+            Value: { SessionId: 'session-1', Replayed: true, LastSeq: 5 },
+          }));
       },
     });
     await h.start();
@@ -352,7 +371,10 @@ describe('the hub driver', () => {
     const h = harness({
       connection: (t, index) => {
         if (index !== 1) return;
-        t.connection.replies.set('ResumeSession', () => ({ Ok: true, Value: { SessionId: 'session-1', Replayed: false, LastSeq: 40 } }));
+        t.connection.replies.set('ResumeSession', () => ({
+          Ok: true,
+          Value: { SessionId: 'session-1', Replayed: false, LastSeq: 40 },
+        }));
         t.connection.replies.set('GetState', () => ({ Ok: true, Value: snapshot }));
       },
     });
@@ -367,7 +389,12 @@ describe('the hub driver', () => {
   it('ends the session when the server says it expired', async () => {
     const h = harness({
       connection: (t, index) => {
-        if (index === 1) t.connection.replies.set('ResumeSession', () => ({ Ok: false, Code: ErrorCodes.Session.SessionExpired, Message: 'Gone.' }));
+        if (index === 1)
+          t.connection.replies.set('ResumeSession', () => ({
+            Ok: false,
+            Code: ErrorCodes.Session.SessionExpired,
+            Message: 'Gone.',
+          }));
       },
     });
     await h.start();
@@ -460,7 +487,11 @@ describe("the hub driver's audio upload (1.12)", () => {
   it('sends the newest 10 s again after a resume, then carries on, with frames from the drop among them', async () => {
     const h = harness({
       connection: (t, index) => {
-        if (index === 1) t.connection.replies.set('ResumeSession', () => ({ Ok: true, Value: { SessionId: 'session-1', Replayed: true, LastSeq: 0 } }));
+        if (index === 1)
+          t.connection.replies.set('ResumeSession', () => ({
+            Ok: true,
+            Value: { SessionId: 'session-1', Replayed: true, LastSeq: 0 },
+          }));
       },
     });
     await h.start();
