@@ -14,7 +14,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // The package ships its types, but its "exports" don't name them; Vite and Vitest don't read "paths".
+    "paths": {
+      "better-sqlite3-multiple-ciphers": ["./node_modules/better-sqlite3-multiple-ciphers/index.d.ts"]
+    }
   },
   "include": [
     "electron.vite.config.ts",

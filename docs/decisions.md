@@ -119,3 +119,13 @@ The packages are Shahin's call (§1, 2026-11-09): highlight.js 11.12.0, Mermaid 
 | 2026-11-09 | **The `trayOnly` setting is gone** (Q16 settled it): during a session there is neither a taskbar button nor a tray icon, so there was nothing to choose. The overlay always skips the taskbar, and a source test holds it |
 | 2026-11-09 | **The app tests** (`tests/app`, `node scripts/app-tests.mjs`) drive the built app's own windows with Playwright against the preview, the stand-in for the hub. They cover Mermaid under the app's Content Security Policy, the sanitized SVG, code colors and the clipboard (borrowed and given back), the stealth rules at run time, and the display affinity. Windows only. They leave a preview build in `out/` |
 | 2026-11-09 | **Display affinity, as measured**: every window on screen reads `0x11` (WDA_EXCLUDEFROMCAPTURE). A hidden window reads 0, since Windows forgets it, and `0x11` again as soon as it shows (stealth.ts sets it on every show). The capture window is never shown. The app tests check exactly that, the overlay hidden and shown, and the app window shown as after a session |
+
+## 9. Taken in session on 2026-11-09, building the first run (1.14; open to revision)
+
+Storing on this computer in an encrypted database is Shahin's call (§1, 2026-11-09).
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | **The database is better-sqlite3-multiple-ciphers 13.0.3** (2026-08-07, the newest). Its prebuilt N-API binaries ship inside the package, so nothing compiles on install (this computer has no Python for node-gyp), and the same binary loads in Node, for the tests, and in Electron 45. TypeScript finds its types through `paths` in `tsconfig.node.json`: the package's `exports` don't name them |
+| 2026-11-09 | **One file, `sotto.db` in userData, in SQLCipher 4's format** (`cipher='sqlcipher'`, `legacy=4`), so support can open it with standard tools and the key. The key is 32 random bytes made once and kept as the `database-key` secret (safeStorage), given as a raw key, since a random key needs no passphrase stretching. WAL, foreign keys on. Signing out keeps it: the data is this computer's, not the session's |
+| 2026-11-09 | **The schema grows by numbered migrations**, each in its own transaction with the `user_version` it brings, run once at open. A file from a newer app is refused, not guessed at; a migration that fails leaves the file as it was. Where the OS can't encrypt, the database lives in memory and nothing is written |
