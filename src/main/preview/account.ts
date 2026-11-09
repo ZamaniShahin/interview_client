@@ -22,9 +22,29 @@ export const previewAccount: AccountView = {
     { date: 'Nov 1', kind: 'Plan minutes', detail: 'November', minutes: 400, balanceAfter: 400 },
   ],
   devices: [
-    { id: 'desk', name: 'Desk PC', platform: 'Windows 11', appVersion: '0.1.0', firstSeen: 'Oct 30', lastSeen: 'now', isThisComputer: true },
-    { id: 'laptop', name: 'Laptop', platform: 'Windows 11', appVersion: '0.1.0', firstSeen: 'Nov 2', lastSeen: 'today', isThisComputer: false },
+    {
+      id: 'desk',
+      name: 'Desk PC',
+      platform: 'Windows 11',
+      appVersion: '0.1.0',
+      firstSeen: 'Oct 30',
+      lastSeen: 'now',
+      isThisComputer: true,
+    },
+    {
+      id: 'laptop',
+      name: 'Laptop',
+      platform: 'Windows 11',
+      appVersion: '0.1.0',
+      firstSeen: 'Nov 2',
+      lastSeen: 'today',
+      isThisComputer: false,
+    },
   ],
   deviceLimit: 3,
-  readiness: { resume: 'updated Nov 4', jobDescription: 'Senior Backend Engineer, Payments', soundCheck: 'passed Nov 4' },
+  readiness: {
+    resume: 'updated Nov 4',
+    jobDescription: 'Senior Backend Engineer, Payments',
+    soundCheck: 'passed Nov 4',
+  },
 };

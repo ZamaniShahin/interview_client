@@ -45,7 +45,9 @@ async function signOut(): Promise<void> {
       <div class="grid">
         <div class="card">
           <p class="eyebrow">Plan</p>
-          <p class="h">{{ account.plan.name }} <span class="tag">{{ stateWords[account.plan.state] }}</span></p>
+          <p class="h">
+            {{ account.plan.name }} <span class="tag">{{ stateWords[account.plan.state] }}</span>
+          </p>
           <p v-if="account.plan.renewsOn" class="small">Renews {{ account.plan.renewsOn }}</p>
           <div class="actions">
             <SButton size="sm" external disabled>Manage billing</SButton>
@@ -76,7 +78,13 @@ async function signOut(): Promise<void> {
         <p v-if="account.ledger.length === 0" class="small">Nothing yet.</p>
       </div>
 
-      <SButton variant="ghost" size="sm" class="sign-out" :disabled="store.state.preview || signingOut" @click="signOut">
+      <SButton
+        variant="ghost"
+        size="sm"
+        class="sign-out"
+        :disabled="store.state.preview || signingOut"
+        @click="signOut"
+      >
         Sign out
       </SButton>
     </template>

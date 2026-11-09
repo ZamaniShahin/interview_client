@@ -16,7 +16,12 @@ export interface EntitlementsDto {
   planName: string;
   state: string;
   features: string[];
-  limits: { liveMinutesPerPeriod: number | null; fairUseMinutesPerPeriod: number | null; maxSessionMinutes: number; devices: number };
+  limits: {
+    liveMinutesPerPeriod: number | null;
+    fairUseMinutesPerPeriod: number | null;
+    maxSessionMinutes: number;
+    devices: number;
+  };
   validUntil: string | null;
 }
 
@@ -26,7 +31,14 @@ export interface CreditsDto {
 }
 
 export interface LedgerDto {
-  entries: { number: number; type: string; minutes: number; balanceAfter: number; sessionId: string | null; createdAt: string }[];
+  entries: {
+    number: number;
+    type: string;
+    minutes: number;
+    balanceAfter: number;
+    sessionId: string | null;
+    createdAt: string;
+  }[];
   next: number | null;
 }
 
@@ -74,7 +86,8 @@ const platforms: Record<string, string> = { windows: 'Windows', macos: 'macOS', 
 export function toAccountView(sources: AccountSources, now: Date): AccountView {
   const { me, entitlements, credits, ledger, devices, deviceId } = sources;
   // A plan with fair use and no minute allowance (Unlimited) shows no minutes.
-  const unlimited = entitlements.limits.liveMinutesPerPeriod === null && entitlements.limits.fairUseMinutesPerPeriod !== null;
+  const unlimited =
+    entitlements.limits.liveMinutesPerPeriod === null && entitlements.limits.fairUseMinutesPerPeriod !== null;
   return {
     user: { name: me.displayName || me.email, emailMasked: maskEmail(me.email) },
     plan: {

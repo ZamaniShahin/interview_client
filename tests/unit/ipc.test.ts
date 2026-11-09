@@ -15,7 +15,9 @@ import { settingsPatchSchema } from '../../src/shared/settings';
 
 describe('what a window may send to main', () => {
   it("accepts a question within its mode's limit", () => {
-    expect(overlayCommandSchema.safeParse({ type: 'ask', mode: AskMode.Question, text: 'What is a mutex?' }).success).toBe(true);
+    expect(
+      overlayCommandSchema.safeParse({ type: 'ask', mode: AskMode.Question, text: 'What is a mutex?' }).success,
+    ).toBe(true);
   });
 
   it('refuses a Tip over its 1,000 characters', () => {
@@ -24,7 +26,9 @@ describe('what a window may send to main', () => {
   });
 
   it('accepts a pasted Result of 200,000 characters', () => {
-    expect(overlayCommandSchema.safeParse({ type: 'ask', mode: AskMode.Result, text: 'x'.repeat(200_000) }).success).toBe(true);
+    expect(
+      overlayCommandSchema.safeParse({ type: 'ask', mode: AskMode.Result, text: 'x'.repeat(200_000) }).success,
+    ).toBe(true);
   });
 
   it('refuses an empty question, an unknown mode and an unknown command', () => {
@@ -106,7 +110,11 @@ describe('what the setup may ask of main (1.14)', () => {
 
   it('knows the sound check, Test hiding and the sign-in page by their few actions', () => {
     expect(['start', 'stop'].map((a) => soundCheckActionSchema.safeParse(a).success)).toEqual([true, true]);
-    expect(['show', 'hide', 'hidden'].map((a) => hidingTestActionSchema.safeParse(a).success)).toEqual([true, true, true]);
+    expect(['show', 'hide', 'hidden'].map((a) => hidingTestActionSchema.safeParse(a).success)).toEqual([
+      true,
+      true,
+      true,
+    ]);
     expect(['open', 'copy'].map((a) => signInPageActionSchema.safeParse(a).success)).toEqual([true, true]);
     for (const schema of [soundCheckActionSchema, hidingTestActionSchema, signInPageActionSchema]) {
       expect(schema.safeParse('delete').success).toBe(false);

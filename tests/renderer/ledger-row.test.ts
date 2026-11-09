@@ -23,7 +23,9 @@ describe('a ledger row', () => {
   });
 
   it('leaves no separator behind when there is no detail', () => {
-    const text = mount(LedgerRow, { props: { entry: entry({ kind: 'Trial minutes', detail: '', minutes: 30, balanceAfter: 30 }) } }).text();
+    const text = mount(LedgerRow, {
+      props: { entry: entry({ kind: 'Trial minutes', detail: '', minutes: 30, balanceAfter: 30 }) },
+    }).text();
 
     expect(text).toContain('Trial minutes');
     expect(text).not.toContain('·');
@@ -31,7 +33,9 @@ describe('a ledger row', () => {
   });
 
   it('shows no sign on a change of nothing', () => {
-    const text = mount(LedgerRow, { props: { entry: entry({ detail: '0 minutes', minutes: 0, balanceAfter: 30 }) } }).text();
+    const text = mount(LedgerRow, {
+      props: { entry: entry({ detail: '0 minutes', minutes: 0, balanceAfter: 30 }) },
+    }).text();
 
     expect(text).not.toContain('−0');
     expect(text).not.toContain('+0');

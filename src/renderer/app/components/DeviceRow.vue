@@ -22,14 +22,20 @@ function remove(): void {
     <div class="row">
       <SIcon name="computer" :size="20" />
       <div class="main">
-        <p class="title">
-          {{ device.name }}<span v-if="device.isThisComputer" class="tag">This computer</span>
-        </p>
+        <p class="title">{{ device.name }}<span v-if="device.isThisComputer" class="tag">This computer</span></p>
         <p class="small">
-          {{ device.platform }} · {{ device.appVersion }} · first seen {{ device.firstSeen }} · last seen {{ device.lastSeen }}
+          {{ device.platform }} · {{ device.appVersion }} · first seen {{ device.firstSeen }} · last seen
+          {{ device.lastSeen }}
         </p>
       </div>
-      <SButton v-if="!device.isThisComputer" variant="danger" size="sm" :disabled="!canRemove" @click="confirming = true">Remove</SButton>
+      <SButton
+        v-if="!device.isThisComputer"
+        variant="danger"
+        size="sm"
+        :disabled="!canRemove"
+        @click="confirming = true"
+        >Remove</SButton
+      >
     </div>
     <SConfirm
       v-if="confirming"

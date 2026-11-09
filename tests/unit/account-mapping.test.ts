@@ -6,7 +6,13 @@ const now = new Date('2026-11-08T12:00:00Z');
 
 function sources(change: Partial<AccountSources> = {}): AccountSources {
   return {
-    me: { id: 'u1', email: 'sam@example.com', emailVerified: true, displayName: 'Sam Rivera', createdAt: '2026-10-01T12:00:00Z' },
+    me: {
+      id: 'u1',
+      email: 'sam@example.com',
+      emailVerified: true,
+      displayName: 'Sam Rivera',
+      createdAt: '2026-10-01T12:00:00Z',
+    },
     entitlements: {
       accountId: 'a1',
       planId: 'pro',
@@ -19,20 +25,54 @@ function sources(change: Partial<AccountSources> = {}): AccountSources {
     credits: {
       balance: 442,
       lots: [
-        { source: 'plan', granted: 600, remaining: 400, grantedAt: '2026-11-01T12:00:00Z', expiresAt: '2026-12-01T12:00:00Z' },
+        {
+          source: 'plan',
+          granted: 600,
+          remaining: 400,
+          grantedAt: '2026-11-01T12:00:00Z',
+          expiresAt: '2026-12-01T12:00:00Z',
+        },
         { source: 'purchase', granted: 60, remaining: 42, grantedAt: '2026-11-03T12:00:00Z', expiresAt: null },
       ],
     },
     ledger: {
       entries: [
-        { number: 3, type: 'debit_live', minutes: -42, balanceAfter: 442, sessionId: 's1', createdAt: '2026-11-07T12:00:00Z' },
-        { number: 2, type: 'grant_plan', minutes: 400, balanceAfter: 484, sessionId: null, createdAt: '2026-11-01T12:00:00Z' },
+        {
+          number: 3,
+          type: 'debit_live',
+          minutes: -42,
+          balanceAfter: 442,
+          sessionId: 's1',
+          createdAt: '2026-11-07T12:00:00Z',
+        },
+        {
+          number: 2,
+          type: 'grant_plan',
+          minutes: 400,
+          balanceAfter: 484,
+          sessionId: null,
+          createdAt: '2026-11-01T12:00:00Z',
+        },
       ],
       next: null,
     },
     devices: [
-      { id: 'd1', name: 'Work laptop', platform: 'windows', appVersion: '0.1.0', createdAt: '2026-10-01T12:00:00Z', lastSeenAt: '2026-11-08T09:00:00Z' },
-      { id: 'd2', name: 'Home PC', platform: 'macos', appVersion: '0.1.0', createdAt: '2026-10-02T12:00:00Z', lastSeenAt: '2026-11-07T12:00:00Z' },
+      {
+        id: 'd1',
+        name: 'Work laptop',
+        platform: 'windows',
+        appVersion: '0.1.0',
+        createdAt: '2026-10-01T12:00:00Z',
+        lastSeenAt: '2026-11-08T09:00:00Z',
+      },
+      {
+        id: 'd2',
+        name: 'Home PC',
+        platform: 'macos',
+        appVersion: '0.1.0',
+        createdAt: '2026-10-02T12:00:00Z',
+        lastSeenAt: '2026-11-07T12:00:00Z',
+      },
     ],
     deviceId: 'd1',
     ...change,
@@ -90,8 +130,24 @@ describe("the account's view, from the REST API's", () => {
     const view = toAccountView(sources(), now);
 
     expect(view.devices).toEqual([
-      { id: 'd1', name: 'Work laptop', platform: 'Windows', appVersion: '0.1.0', firstSeen: 'Oct 1', lastSeen: 'now', isThisComputer: true },
-      { id: 'd2', name: 'Home PC', platform: 'macOS', appVersion: '0.1.0', firstSeen: 'Oct 2', lastSeen: 'yesterday', isThisComputer: false },
+      {
+        id: 'd1',
+        name: 'Work laptop',
+        platform: 'Windows',
+        appVersion: '0.1.0',
+        firstSeen: 'Oct 1',
+        lastSeen: 'now',
+        isThisComputer: true,
+      },
+      {
+        id: 'd2',
+        name: 'Home PC',
+        platform: 'macOS',
+        appVersion: '0.1.0',
+        firstSeen: 'Oct 2',
+        lastSeen: 'yesterday',
+        isThisComputer: false,
+      },
     ]);
     expect(view.deviceLimit).toBe(3);
   });

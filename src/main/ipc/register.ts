@@ -51,7 +51,11 @@ export interface IpcDependencies {
   signInPage: (action: SignInPageAction) => void;
 }
 
-const invalid: CommandResult = { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'That request was not valid.' };
+const invalid: CommandResult = {
+  ok: false,
+  code: ErrorCodes.Request.InvalidInput,
+  message: 'That request was not valid.',
+};
 
 function isFrom(event: IpcMainEvent | IpcMainInvokeEvent, win: BrowserWindow | null): boolean {
   return win !== null && !win.isDestroyed() && event.sender.id === win.webContents.id;
@@ -65,7 +69,9 @@ export function registerIpc(deps: IpcDependencies): void {
     throw new Error(`Refused: not ${who}.`);
   };
 
-  ipcMain.handle(IpcChannels.overlayGetState, (event) => (fromOverlay(event) ? deps.session.current : refuse('the overlay')));
+  ipcMain.handle(IpcChannels.overlayGetState, (event) =>
+    fromOverlay(event) ? deps.session.current : refuse('the overlay'),
+  );
 
   ipcMain.handle(IpcChannels.overlayCommand, async (event, payload: unknown): Promise<CommandResult> => {
     if (!fromOverlay(event)) return invalid;
@@ -148,7 +154,9 @@ export function registerIpc(deps: IpcDependencies): void {
       : invalid;
   });
 
-  ipcMain.handle(IpcChannels.settingsGet, (event) => (fromEither(event) ? deps.settings.get() : refuse('a Sotto window')));
+  ipcMain.handle(IpcChannels.settingsGet, (event) =>
+    fromEither(event) ? deps.settings.get() : refuse('a Sotto window'),
+  );
 
   ipcMain.handle(IpcChannels.settingsSet, (event, payload: unknown) => {
     if (!fromEither(event)) return refuse('a Sotto window');

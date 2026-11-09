@@ -16,7 +16,11 @@ import SetupWizard from './setup/SetupWizard.vue';
 
 type PageId = 'home' | 'prepare' | 'practice' | 'history' | 'account' | 'settings' | 'help';
 
-const pages: { id: PageId; label: string; icon: 'home' | 'prepare' | 'practice' | 'history' | 'account' | 'settings' | 'help' }[] = [
+const pages: {
+  id: PageId;
+  label: string;
+  icon: 'home' | 'prepare' | 'practice' | 'history' | 'account' | 'settings' | 'help';
+}[] = [
   { id: 'home', label: 'Home', icon: 'home' },
   { id: 'prepare', label: 'Prepare', icon: 'prepare' },
   { id: 'practice', label: 'Practice', icon: 'practice' },
@@ -49,13 +53,22 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
 
 <template>
   <div v-if="store.setup" class="shell">
-    <WindowChrome subtitle="Setup" :maximizable="false" @minimize="windowAction('minimize')" @close="windowAction('close')" />
+    <WindowChrome
+      subtitle="Setup"
+      :maximizable="false"
+      @minimize="windowAction('minimize')"
+      @close="windowAction('close')"
+    />
     <main class="main setup">
       <SetupWizard />
     </main>
   </div>
   <div v-else class="shell">
-    <WindowChrome @minimize="windowAction('minimize')" @maximize="windowAction('maximize')" @close="windowAction('close')" />
+    <WindowChrome
+      @minimize="windowAction('minimize')"
+      @maximize="windowAction('maximize')"
+      @close="windowAction('close')"
+    />
     <div class="body">
       <SideNav :items="pages" :current="current" @select="(id) => (current = id)">
         <template #footer>
@@ -63,7 +76,9 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
           <template v-if="store.account && minutes">
             <p class="big num">{{ minutes.usable }} min left</p>
             <p class="small">
-              {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn"> · renews {{ store.account.plan.renewsOn }}</template>
+              {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn">
+                · renews {{ store.account.plan.renewsOn }}</template
+              >
             </p>
           </template>
           <template v-else-if="store.account">

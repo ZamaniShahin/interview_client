@@ -52,11 +52,26 @@ async function start(): Promise<void> {
       <div class="card">
         <h2 class="h">Ready for an interview</h2>
         <ul class="ready">
-          <li><SIcon :name="readiness?.resume ? 'done' : 'notDone'" :class="readiness?.resume ? 'yes' : 'no'" />Résumé · {{ readiness?.resume ?? 'not added' }}</li>
-          <li><SIcon :name="readiness?.jobDescription ? 'done' : 'notDone'" :class="readiness?.jobDescription ? 'yes' : 'no'" />Job description · {{ readiness?.jobDescription ?? 'not added' }}</li>
-          <li><SIcon :name="readiness?.soundCheck ? 'done' : 'notDone'" :class="readiness?.soundCheck ? 'yes' : 'no'" />Sound check · {{ readiness?.soundCheck ?? 'not done' }}</li>
+          <li>
+            <SIcon :name="readiness?.resume ? 'done' : 'notDone'" :class="readiness?.resume ? 'yes' : 'no'" />Résumé ·
+            {{ readiness?.resume ?? 'not added' }}
+          </li>
+          <li>
+            <SIcon
+              :name="readiness?.jobDescription ? 'done' : 'notDone'"
+              :class="readiness?.jobDescription ? 'yes' : 'no'"
+            />Job description · {{ readiness?.jobDescription ?? 'not added' }}
+          </li>
+          <li>
+            <SIcon
+              :name="readiness?.soundCheck ? 'done' : 'notDone'"
+              :class="readiness?.soundCheck ? 'yes' : 'no'"
+            />Sound check · {{ readiness?.soundCheck ?? 'not done' }}
+          </li>
         </ul>
-        <SCheckbox v-model="consent" class="consent">I have consent to record and transcribe this conversation</SCheckbox>
+        <SCheckbox v-model="consent" class="consent"
+          >I have consent to record and transcribe this conversation</SCheckbox
+        >
         <div class="start">
           <SButton variant="primary" size="lg" :disabled="!canStart || !consent || starting" @click="start">
             {{ takeOver ? 'Start here' : 'Start session' }}
@@ -69,7 +84,9 @@ async function start(): Promise<void> {
         <template v-if="store.account?.minutes">
           <p class="big num">{{ store.account.minutes.usable }} min left</p>
           <p class="small">
-            {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn"> · renews {{ store.account.plan.renewsOn }}</template>
+            {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn">
+              · renews {{ store.account.plan.renewsOn }}</template
+            >
           </p>
         </template>
         <template v-else-if="store.account">
