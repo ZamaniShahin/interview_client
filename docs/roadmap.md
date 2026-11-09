@@ -5,8 +5,8 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - A checkpoint is ticked with its date and its commit.
 
 **Where it stands (2026-11-09):**
-- done: C0 and all of Phase 1 (1.10–1.14);
-- Claude builds 2.13, the account and plan screens, next (backend Q35, decided 2026-11-09);
+- done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for;
+- next: Phase 3, whose client checkpoints follow the server's (3.1–3.4);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -54,11 +54,11 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 ## Phase 2: plans and billing
 
-- [ ] **2.13 The account and plan screens:**
-  - the session-ending messages (from `SessionEnded`, `SessionEnding` and `Usage` once the hub carries them, 2.4);
-  - the device list with removal;
-  - the upgrade and top-up links (the browser);
-  - reading the account again on return from the browser (until 2.9 pushes it).
+- [x] **2.13 The account and plan screens** (2026-11-09, `16c81bd`, with the server's catalog and account facts in backend `4d69bce` and `f7f3496`; checked with the app tests, the end-to-end tests and `scripts/app-drive.mjs` against the local stack):
+  - the session-ending messages, and the offer after a session that ran out of minutes (F8 · a);
+  - the device list with removal, and the device limit met by removing one in this computer's place (F3);
+  - buying in the browser from the server's catalog, the window waiting until the purchase shows (F8 · b, c), and the trial (F9);
+  - reading the account again on return from the browser, and every few seconds while a payment is waited for (decisions §10).
 
 ## Phase 3: everything v1 did
 
