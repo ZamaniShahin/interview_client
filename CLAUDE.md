@@ -121,3 +121,26 @@ While a session runs, its hotkeys are global (Ctrl+Enter answers, Ctrl+Shift+H h
 - changing the contract (it's the backend's);
 - weakening a stealth rule or the Content Security Policy;
 - writing to the backend repository.
+
+## Working with Shahin
+
+How Shahin works with agents, the same in both repositories. This was kept in one computer's agent memory and moved here on 2026-11-09, so it holds on any computer.
+- **Ask decisions in the question dialog**, not in prose, and tag the options:
+  - **(Recommended)** on the one you would pick, listed first;
+  - **(Cleanest)** on the most principled, least tangled one;
+  - **(Fastest)** on the least work or the quickest result.
+
+  One option may carry several tags; never invent an option to fill a tag. Each question must stand on its own, since the dialog may be all he sees.
+- **Work he hands over is yours to decide.** Once he says "complete it yourself", decide its details, log each in docs/decisions.md as taken in session, and say so in one line. Still ask about what "Ask first" lists, and about brand, scope or process choices.
+- **An unattended run** ("go for all of the roadmap", "no interrupt, keep the questions for tomorrow"):
+  - ask nothing, and take the checkpoints in your recommended order;
+  - for each checkpoint: its tests, then `npm run check` (and the end-to-end test against the local stack where it applies), then commit and push, then record the commit in docs/roadmap.md;
+  - an open question takes the default the docs assume, logged as taken in session;
+  - what needs his say (anything under "Ask first") goes into [docs/08-open-questions.md](docs/08-open-questions.md) for his return.
+- **Run his deep test round** every two or three checkpoints of such a run, not only at the end:
+  1. map every feature built since the last round;
+  2. write tests that trigger each one, and check that every feature is covered before running any;
+  3. widen each test with more data points around it, as oversampling makes new points from existing ones;
+  4. run them and fix what fails;
+  5. study each test's output, then add tests until every possible output and result has its own test;
+  6. run them, fix what fails, then commit and push.

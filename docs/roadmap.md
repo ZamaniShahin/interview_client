@@ -4,6 +4,12 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - What each one gives the user is in [06-scope-and-phases.md](06-scope-and-phases.md).
 - A checkpoint is ticked with its date and its commit.
 
+**Where it stands (2026-11-09):**
+- done: C0, 1.10, and 1.12 except the audio and the proof at connect;
+- the rest waits for Shahin's go-ahead (backend Q35);
+- 1.11, audio capture, comes first, since `UploadAudio` needs its frames;
+- before the next checkpoint, run `npm run contracts:sync`: this copy of the contract is behind the backend's.
+
 ## The skeleton
 
 - [x] **C0 The skeleton** (2026-11-06, `97a1bee`):

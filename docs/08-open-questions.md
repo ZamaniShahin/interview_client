@@ -4,11 +4,16 @@ What isn't decided yet, what is assumed until it is, and what each answer would 
 
 ## Open decisions
 
-The numbers are the backend's (`docs/decisions.md` §2). Q11 and Q13 are settled.
+The numbers are the backend's (`docs/decisions.md` §2). Settled there:
+- Q1: the payment provider is Paddle (2026-11-08);
+- Q11 and Q13;
+- Q25: a computer at the device limit names the one it replaces as it registers (2026-11-08);
+- Q26, the server's speech model.
+
+Q21–Q24 (the practice design) and Q27–Q44 are open there too. The rows below are the ones that change something in the client.
 
 | # | Question | Assumed until decided | What it changes in the client | Needed by |
 |---|---|---|---|---|
-| Q1 | The company and the **payment provider**: Stripe or Paddle | Stripe | the checkout and billing pages the user sees, and whose name is on the receipt. The app only opens the links the server gives it, so its code barely changes | Phase 2 |
 | Q2 | The **cloud provider and region** | — | if we host in Europe, OpenAI keeps the data in Europe too, and the OpenAI notice can say so | the first deployment |
 | Q3 | **Prices**, the trial's size, whether minutes roll over, how long top-ups last | the values in [04](04-plans-and-billing.md) | what the plan screens say, never their code: the values come from the server | Phase 2 |
 | Q4 | The **domain** | none | the addresses of sign-in, account pages, downloads and updates (configuration) | the first deployment |
@@ -26,10 +31,15 @@ The numbers are the backend's (`docs/decisions.md` §2). Q11 and Q13 are settled
 | Q18 | **The audio level meter**, and a warning after about 20 s without the interviewer's audio. The client's technical design has them with audio capture; the roadmap lists the meter for after launch | with audio capture | the status, and the sound check | audio capture (1.11) |
 | Q19 | **Deleting the account, and the server's export.** Designed, with no checkpoint, though the privacy policy will promise both | Phase 4, with the legal work | the account screen | before any outside user |
 | Q20 | **Usage history** (sessions and minutes): designed, with no checkpoint | with 2.4, which records the sessions it lists; until then the minutes ledger | the account screen | the account screens (2.13) |
+| Q31 | **`SessionMigrate`**: the server could tell the app to move before an instance stops. Today the connection closes and the app resumes on another instance, as after any drop | not sent | a handler that resumes at once, without waiting for the drop | no deadline |
+| Q32 | **What OpenAI may be sent in Phase 3**: the prep doc, preferences and answer bank; the candidate's practice answers; an interview's transcript for the debrief | nothing new | the OpenAI notice in the first run, and what [05](05-privacy-and-discretion.md) promises | 3.2–3.4 |
+| Q35 | **Who builds the client's next checkpoints** (1.11, the rest of 1.12, 1.13, 1.14, 2.13), and when | they wait for Shahin's go-ahead | everything left in [roadmap.md](roadmap.md) | Phase 1's exit |
+| Q36 | **At most 3 hub connections per user** (backend docs/08 §5) | no limit | a fourth connection is refused, and the app says why | before launch |
+| Q44 | **DPoP**: Keycloak supports it; turned on, the tokens are bound to a key the app holds | off | the app sends a DPoP proof when it gets tokens and with every call: a protocol change, made on both sides together | before launch (proposed: with 2.13) |
 
 ## Unknowns that aren't decisions
 
 | # | What | Today | What it changes |
 |---|---|---|---|
-| C1 | **v1's hotkeys and overlay layout.** v1's source isn't on the machine these docs were written on, and the docs name only the trigger, Ctrl+Enter | read v1's `docs/PROTOCOL.md` §3 and `docs/ARCHITECTURE.md` §11–§12 when they're at hand | the wizard's hotkey step, the overlay's layout |
+| C1 | **v1's hotkeys and overlay layout.** v1's source isn't on the machine these docs were written on (backend Q37), and the docs name only the trigger, Ctrl+Enter | read v1's `docs/PROTOCOL.md` §3 and `docs/ARCHITECTURE.md` §11–§12 when they're at hand | the wizard's hotkey step, the overlay's layout |
 | C2 | **The wording** of the OpenAI notice and the consent checkbox | drafts; a lawyer reviews them before launch (roadmap 4.8) | the wizard, and starting a session |

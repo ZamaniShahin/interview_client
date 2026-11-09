@@ -73,39 +73,41 @@ Also on the server in Phase 3: practice (3.3), and resuming a session on another
 
 ## What the server can do today
 
-As of 2026-11-06 (backend checkpoint 1.9).
+As of 2026-11-09. The backend's roadmap opens with where each phase stands.
 
 **Accounts and devices**
-- Sign-in through Keycloak, with the user created on the first call. A suspended account is refused at once.
+- Sign-in through Keycloak, with the user created on the first call. A suspended account is refused at once, and its running session ends.
 - A verified email required for the trial.
-- The minimum client version, refusing older builds.
-- Devices: registering this computer, listing, removing (the limit and the removal cap), proof that a request comes from this device.
+- The minimum client version, refusing older builds at the hub. The REST API still answers them, so an old app can update.
+- Devices: registering this computer, listing, removing (the limit and the removal cap), replacing one at the limit as this computer registers (Q25), proof that a request comes from this device.
 
 **Plans and minutes**
-- The plan and its limits, with a signed copy for the app to display.
+- The plan and its limits, with a signed copy for the app to display, pushed to the open app when they change (`EntitlementsUpdated`).
 - Starting the trial.
 - The minutes: the balance in lots, and the ledger.
-- Checkout and billing-portal links, **with a development stand-in for the payment provider only**.
+- Checkout and billing-portal links: the development stand-in, and Paddle (Q1), whose sandbox run waits for its keys.
 
 **Live sessions**
-- Start, resume after a drop (same server, within 2 minutes), end.
+- Start, end, and resume after a drop within 2 minutes, on the same server or another.
+- One session per seat: another device is refused (`session_active_elsewhere`) or takes the session over.
 - The call's audio, transcribed by OpenAI, with listening's health (ok, reconnecting, degraded).
 - Name, résumé, job description and notes for the interview.
 - AUTO and MANUAL, pause, the trigger, the four ask modes, Clear and Clear heard.
 - Answers streamed by OpenAI, the newest question winning, a redraw from a snapshot after a long drop.
+- Minutes charged as they begin, with the low-minute warnings (`Usage`).
+- The endings, each with its 30 s notice (`SessionEnding`): out of minutes, the longest session, inactivity, the cost ceiling.
 - The output filter, which stops an answer that repeats the assistant's rules.
+- Rate limits on starts, asks and new devices (`rate_limited`). New sessions are refused (`unavailable`) while a server stops or the AI spend breaker is tripped.
 
 ## Not on the server yet
 
 | Missing | Until it comes, the client… | Comes with |
 |---|---|---|
-| One session per account, takeover | can run sessions on two devices at once | 2.3 |
-| Minutes charged, warnings, most session-ending reasons (today only `user` and `expired`), the cost ceiling | shows the balance, which sessions don't use yet | 2.4 |
-| Account changes pushed to the app | reads the account again, for instance when the user comes back from the browser | 2.9 |
-| A real payment provider | buys only against the development stand-in | 2.7 (Q1) |
-| Screenshots, the prep doc, custom instructions, the answer bank in answers | — | 3.1, 3.2 |
-| Practice; debriefs and prepared-answer drafts | — | 3.3, 3.4 |
-| A session moving to another server | — | 3.5 |
+| A real payment provider in use | buys only against the development stand-in. Paddle's adapter is built and waits for its sandbox keys | 2.7 (Q28) |
+| Screenshots, the prep doc, custom instructions, the answer bank in answers | — | 3.1, 3.2 (Q32, Q37) |
+| Practice; debriefs and prepared-answer drafts | — | 3.3, 3.4 (Q32) |
+| A word before a server stops (`SessionMigrate`) | resumes after the drop, as after any other | not planned ([08](08-open-questions.md), Q31) |
+| The device proof when the hub connection opens | — | with the rest of 1.12, on both sides together |
 | Choosing the quality tier (fast or smart, where the plan allows) | uses the plan's tier, without a choice | designed, not on the roadmap yet ([08](08-open-questions.md)) |
 | Usage history (sessions and minutes) | shows the minutes ledger | designed, not on the roadmap yet |
 | Deleting the account, and the server's export | — | designed, not on the roadmap yet ([08](08-open-questions.md)) |

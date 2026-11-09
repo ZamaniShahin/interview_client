@@ -79,7 +79,7 @@ What Sotto sells, how use is counted, and what the client shows. **Every number 
 
 - **In the browser.** The app gets a checkout link from the server and opens it; the payment provider's page takes the card. **We never see card details.**
 - **The billing portal**, also in the browser, changes the plan or the payment method and cancels. Opening it needs this registered device.
-- **The payment provider isn't chosen yet** (Q1): Stripe is the default, Paddle the alternative. The app only ever opens the links the server gives it.
+- **The payment provider is Paddle** (Q1, decided 2026-11-08), as merchant of record: it sells on Sotto's behalf and handles the sales taxes, so its name is on the checkout and the receipt. The app only ever opens the links the server gives it.
 - **What the server refuses:**
   - a second plan for a subscriber (`already_subscribed`): plans change in the portal;
   - a top-up without a plan that has minutes (`no_entitlement`);

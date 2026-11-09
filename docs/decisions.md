@@ -3,7 +3,7 @@
 What this repository settled, who settled it, and what was chosen while building.
 
 - **Product decisions:** plans, the protocol, what is sent where, the stealth rules as requirements. They live in the backend's [decisions.md](../../backend/interview_backend/docs/decisions.md), which wins on any disagreement.
-- **The open questions** (Q1–Q25) are numbered there too.
+- **The open questions** (Q1–Q44) are numbered there too; [08-open-questions.md](08-open-questions.md) lists the ones that change the client.
 
 **Rule:** a row goes in §1 only when a person decided it on a date. Choices made while writing code are recorded too, marked "taken in session, open to revision", so nobody mistakes them for team positions.
 
