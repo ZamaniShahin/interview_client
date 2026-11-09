@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sotto overlay: the live loop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="sotto.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div class="{{boardClass}}" style="width: 2800px; min-height: 980px;">
+
+<header class="board-head" style="max-width: 1200px; margin-bottom: 32px;">
+<p class="eyebrow">Sotto UI · The overlay in every state · 02 to 07</p>
+<h1 class="board-title">The live loop (F5)</h1>
+<p class="board-lede">Heard, the question ends, the answer streams, the candidate speaks, the next question replaces it. Nothing here needs a click.</p>
+</header>
+
+<div class="frames">
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">02</p><p class="cap-title">Starting</p><p class="cap-note">A brief "Starting…". Controls wait, disabled rather than hidden.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state quiet"><span class="dot"></span>Starting…</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true" disabled>AUTO</button><button aria-pressed="false" disabled>MANUAL</button></div><button class="btn btn-ghost btn-sm" disabled><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">187 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Not listening yet.</p></div>
+<div class="ans"><p class="ans-empty"><b>Starting your session…</b>A moment. There is nothing to do.</p></div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true" disabled>Question</button><button aria-pressed="false" disabled>Tip</button><button aria-pressed="false" disabled>Study</button><button aria-pressed="false" disabled>Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Ready in a moment" disabled></textarea><button class="btn btn-primary" disabled>Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">03</p><p class="cap-title">Live, nothing heard yet</p><p class="cap-note">Quiet readiness. The meter shows the call's sound reaches Sotto.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">187 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans"><p class="ans-empty"><b>Ready.</b>An answer appears here when a question ends. Ctrl+Enter answers at any time.</p></div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">04</p><p class="cap-title">The interviewer speaking</p><p class="cap-note">Heard fills in a phrase at a time. The last answer stays until a new one starts.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 6px;"></i><i style="height: 11px;"></i><i style="height: 12px;"></i><i style="height: 8px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">181 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link">Clear</button></div><p class="heard-text">Okay, great. Next one. Can you walk me through how you'd design a URL shortener, like, for <span class="live">millions of users a day?</span><span class="caret"></span></p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">How does Kafka keep messages in order?</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="meta">2 min ago</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">4 of 4</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>So <span class="kw">Kafka</span> only guarantees order within a <span class="kw">partition</span>, not across a topic. Producers pick the partition by <span class="kw">key</span>, so all the events for one customer land in the same partition and stay in order.</p><p>At Northwind we keyed order events by <span class="kw">customer id</span> for exactly that.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">05</p><p class="cap-title">An answer writing</p><p class="cap-note">About 1.5 s after the question ends. Heard starts over; "Writing…" and the caret show more is coming.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">181 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Design a URL shortener for millions of users a day.</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="writing"><span class="dot"></span>Writing…</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">5 of 5</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>So it's <span class="kw">read-heavy</span>, maybe a hundred reads per write. I'd put a <span class="kw">cache</span> in front of a <span class="kw">key-value store</span>, and make the short codes from a<span class="caret"></span></p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">06</p><p class="cap-title">Answer done</p><p class="cap-note">The full answer and its diagram. The writing sign goes; history grows.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">180 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Design a URL shortener for millions of users a day.</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">5 of 5</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>So it's <span class="kw">read-heavy</span>, maybe a hundred reads per write. I'd put a <span class="kw">cache</span> in front of a <span class="kw">key-value store</span>, and make the short codes from a <span class="kw">counter in base 62</span>, so they never collide.</p>
+<div class="dia" role="img" aria-label="Diagram: user, load balancer, API servers; the API servers use a cache, a key-value store and an ID generator"><span class="dia-node">User</span><svg class="dia-arrow" viewBox="0 0 16 10" aria-hidden="true"><path d="M1 5h12M10 2l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="dia-node">Load balancer</span><svg class="dia-arrow" viewBox="0 0 16 10" aria-hidden="true"><path d="M1 5h12M10 2l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="dia-node">API servers</span><svg class="dia-fan" viewBox="0 0 18 90" style="height: 90px;" aria-hidden="true"><path d="M1 45h6M7 13v64M7 13h8M7 45h8M7 77h8M12 10l3 3-3 3M12 42l3 3-3 3M12 74l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg><div class="dia-col"><span class="dia-node store">Cache</span><span class="dia-node store">Key-value store</span><span class="dia-node">ID generator</span></div></div>
+<p>Then I'd talk about <span class="kw">expiry</span> and <span class="kw">analytics</span> if we have time.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">07</p><p class="cap-title">A new question while writing</p><p class="cap-note">A newer question always wins. The old answer stops, keeps what it showed and is marked Stopped early.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">180 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Sorry, before that: how would you handle hot keys in the cache?</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="writing"><span class="dot"></span>Writing…</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">6 of 6</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div>
+<p class="meta" style="margin-top: 6px;">The answer before stopped early. It is kept at 5 of 6.</p></div>
+<div class="ans-body"><p>For <span class="kw">hot keys</span> I'd first add a small <span class="kw">local cache</span> on each API server with a short TTL, so the busiest codes never<span class="caret"></span></p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":2800,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+var theme = this.props.theme ?? 'dark';
+return { boardClass: (theme === 'light' ? 'theme-light' : 'theme-dark') + ' board' };
+}
+}
+</script>
+</body>
+</html>

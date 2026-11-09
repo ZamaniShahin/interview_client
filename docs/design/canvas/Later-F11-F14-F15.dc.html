@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sotto later phase: F11, F14, F15</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="sotto.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div class="{{boardClass}}" style="width: 3072px; min-height: 1760px;">
+
+<header class="board-head" style="max-width: 1200px; margin-bottom: 32px;">
+<p class="eyebrow">Sotto UI · Later phase · F11, F14, F15</p>
+<h1 class="board-title">Screenshots, preparing, the coach and prepared answers</h1>
+<p class="board-lede">Phase 3. Practice (F12) and practice history (F13) are drawn in Claude Design's export and map onto these tokens; their open points are logged for checkpoint 3.3.</p>
+</header>
+
+<div class="frames wrap" style="gap: 56px 48px; width: 2976px;">
+
+<div class="frame">
+<div class="cap" style="width: 960px;"><p class="cap-num">F11 · a</p><p class="cap-title">The region selector</p><p class="cap-note">A full-screen layer, hidden from capture like the overlay. Drag a rectangle around the problem or diagram.</p></div>
+<div class="screen theme-dark">
+<div style="position: absolute; left: 0; top: 0; right: 0; height: 28px; background: #111827;"></div>
+<div style="position: absolute; left: 40px; top: 60px; width: 560px; height: 420px; border-radius: 6px; background: #0F172A; padding: 18px 20px;">
+<p style="font: 600 13px/18px var(--font-sans); color: #E5E7EB; margin: 0 0 10px;">Problem 3 · LRU cache</p>
+<p style="font: 400 12px/18px var(--font-sans); color: #9CA3AF; margin: 0 0 12px;">Design a data structure that follows the constraints of a least recently used cache. Implement get(key) and put(key, value) in O(1) average time.</p>
+<div style="font: 400 12px/18px var(--font-mono); color: #CBD5E1;"><div>class LRUCache:</div><div>&#160;&#160;&#160;&#160;def __init__(self, capacity: int):</div><div>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;...</div></div>
+</div>
+<div style="position: absolute; left: 640px; top: 60px; width: 280px; height: 420px; border-radius: 6px; background: #1F2937;"></div>
+<div class="scrim"></div>
+<div class="sel" style="left: 52px; top: 72px; width: 536px; height: 168px;"><span class="sel-size">536 × 168</span><span style="position: absolute; left: -5px; top: -5px; width: 8px; height: 8px; background: #FFFFFF; border-radius: 2px;"></span><span style="position: absolute; right: -5px; bottom: -5px; width: 8px; height: 8px; background: #FFFFFF; border-radius: 2px;"></span></div>
+<div class="theme-dark" style="position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 14px; border-radius: 10px; background: var(--surface-2); box-shadow: var(--shadow-2), 0 0 0 1px var(--line-2);"><span style="font: 400 13px/18px var(--font-sans); color: var(--text-1);">Drag around the problem. Enter attaches it; Esc cancels.</span><button class="btn btn-primary btn-sm">Attach</button></div>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">F11 · b</p><p class="cap-title">Screenshots attached, or asked about now</p><p class="cap-note">Up to 5 ride with the next question. Or Ask about them now, with an optional hint.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Capture a screen region"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5v-2h2M11.5 3.5h2v2M13.5 10.5v2h-2M4.5 12.5h-2v-2"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">142 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">What's the bug in this?</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5v-2h2M11.5 3.5h2v2M13.5 10.5v2h-2M4.5 12.5h-2v-2"></path></svg>Screen · 1 image</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">12 of 12</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>The cache never <span class="kw">evicts</span>: <span class="ic">put</span> adds the key but doesn't drop the least recently used one when it's over <span class="kw">capacity</span>. I'd keep an <span class="kw">OrderedDict</span> and pop from the front.</p></div>
+</div>
+<div class="ask">
+<div class="shots"><span class="shot" role="img" aria-label="Screenshot 1"><button class="ib" aria-label="Remove screenshot 1"><svg class="i i-12" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></span><span class="shot" role="img" aria-label="Screenshot 2"><button class="ib" aria-label="Remove screenshot 2"><svg class="i i-12" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></span><span class="small" style="align-self: center; margin-left: 4px;">2 of 5 · go with the next question</span></div>
+<div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div>
+<div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question, or a hint about the screenshots" placeholder="Type a question, or a hint"></textarea><button class="btn btn-secondary">Ask about them</button><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div>
+</div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 960px;"><p class="cap-num">F14 · a</p><p class="cap-title">Prepare: documents</p><p class="cap-note">Each document with its count against its limit. Instructions and the answer bank are the other two parts.</p></div>
+<div class="win">
+<div class="win-bar"><span class="wordmark"><span class="mark" aria-hidden="true"></span>Sotto</span><div class="win-ctl"><button class="ib" aria-label="Minimize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"></path></svg></button><button class="ib" aria-label="Maximize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"></rect></svg></button><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></div></div>
+<div class="win-body">
+<nav class="nav" aria-label="Main">
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</a>
+<a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</a>
+<div class="nav-foot"><p class="eyebrow" style="margin-bottom: 4px;">Minutes</p><p class="big">187 min left</p><p class="small">Minutes plan · renews Dec 1</p></div>
+</nav>
+<main class="main">
+<div class="hrow" style="margin-bottom: 16px;"><h1 class="title" style="margin: 0; flex: 1;">Prepare</h1><div class="seg" role="group" aria-label="Part"><button aria-pressed="true">Documents</button><button aria-pressed="false">Instructions</button><button aria-pressed="false">Answer bank</button></div></div>
+<p class="lede" style="margin-bottom: 12px;">What answers are grounded in. Kept on this computer, encrypted; sent only for a session.</p>
+<div class="list">
+<div class="li"><div class="li-main"><p class="li-title">Name</p><p class="li-sub">Sam Rivera</p></div><span class="small num">10 / 200</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+<div class="li"><div class="li-main"><p class="li-title">Résumé</p><p class="li-sub">Backend engineer, 7 years. Northwind (2021–now): payments platform…</p></div><span class="small num">12,480 / 50,000</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+<div class="li"><div class="li-main"><p class="li-title">Job description</p><p class="li-sub">Senior Backend Engineer, Payments. You will own the ledger service…</p></div><span class="small num">6,210 / 30,000</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+<div class="li"><div class="li-main"><p class="li-title">Notes</p><p class="li-sub">Interviewer: Priya, platform lead. Ask about on-call.</p></div><span class="small num">412 / 5,000</span><button class="btn btn-ghost btn-sm">Edit</button></div>
+<div class="li"><div class="li-main"><p class="li-title">Prep doc</p><p class="li-sub">Not added. A longer document to draw on: a study guide, design notes.</p></div><span class="small num">0 / 100,000</span><button class="btn btn-secondary btn-sm">Add</button></div>
+</div>
+</main>
+</div>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 960px;"><p class="cap-num">F14 · b</p><p class="cap-title">Prepare: the answer bank</p><p class="cap-note">Prepared answers, each with the phrasings it answers, enabled or not. Drafts can be written by the server from the documents.</p></div>
+<div class="win">
+<div class="win-bar"><span class="wordmark"><span class="mark" aria-hidden="true"></span>Sotto</span><div class="win-ctl"><button class="ib" aria-label="Minimize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"></path></svg></button><button class="ib" aria-label="Maximize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"></rect></svg></button><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></div></div>
+<div class="win-body">
+<nav class="nav" aria-label="Main">
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</a>
+<a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</a>
+<div class="nav-foot"><p class="eyebrow" style="margin-bottom: 4px;">Minutes</p><p class="big">187 min left</p><p class="small">Minutes plan · renews Dec 1</p></div>
+</nav>
+<main class="main">
+<div class="hrow" style="margin-bottom: 16px;"><h1 class="title" style="margin: 0; flex: 1;">Prepare</h1><div class="seg" role="group" aria-label="Part"><button aria-pressed="false">Documents</button><button aria-pressed="false">Instructions</button><button aria-pressed="true">Answer bank</button></div></div>
+<div class="hrow" style="margin-bottom: 10px;"><p class="small" style="flex: 1;">6 of 100 answers · 4 enabled · 7,940 of 12,000 characters go into answers</p><button class="btn btn-secondary btn-sm">Draft answers from my documents</button><button class="btn btn-primary btn-sm">New answer</button></div>
+<div class="list">
+<div class="li"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" style="color: var(--text-0);"><path d="M9.5 2.5l4 4-1.8.9-2.6 2.6.4 2.6-1 1-6-6 1-1 2.6.4 2.6-2.6zM5.5 10.5l-3 3"></path></svg><div class="li-main"><p class="li-title">Disagreement with a teammate</p><p class="li-sub">3 phrasings · "a time you disagreed", "conflict with a colleague", "pushed back"</p></div><button class="switch" role="switch" aria-checked="true" aria-label="Enabled"><span class="switch-track"><span class="switch-knob"></span></span></button></div>
+<div class="li"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" style="color: var(--text-0);"><path d="M9.5 2.5l4 4-1.8.9-2.6 2.6.4 2.6-1 1-6-6 1-1 2.6.4 2.6-2.6zM5.5 10.5l-3 3"></path></svg><div class="li-main"><p class="li-title">Why are you leaving Northwind?</p><p class="li-sub">2 phrasings</p></div><button class="switch" role="switch" aria-checked="true" aria-label="Enabled"><span class="switch-track"><span class="switch-knob"></span></span></button></div>
+<div class="li"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" style="color: var(--text-0);"><path d="M9.5 2.5l4 4-1.8.9-2.6 2.6.4 2.6-1 1-6-6 1-1 2.6.4 2.6-2.6zM5.5 10.5l-3 3"></path></svg><div class="li-main"><p class="li-title">Tell me about yourself <span class="tag" style="margin-left: 6px;">Draft</span></p><p class="li-sub">Written from your documents · check it before you enable it</p></div><button class="switch" role="switch" aria-checked="false" aria-label="Enabled"><span class="switch-track"><span class="switch-knob"></span></span></button></div>
+<div class="li" style="border-bottom: 0;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" style="color: var(--text-0);"><path d="M9.5 2.5l4 4-1.8.9-2.6 2.6.4 2.6-1 1-6-6 1-1 2.6.4 2.6-2.6zM5.5 10.5l-3 3"></path></svg><div class="li-main"><p class="li-title">A project that didn't go to plan</p><p class="li-sub">1 phrasing</p></div><button class="switch" role="switch" aria-checked="true" aria-label="Enabled"><span class="switch-track"><span class="switch-knob"></span></span></button></div>
+</div>
+<p class="small" style="margin-top: 8px;">Drafts: 1 of 30 this month. They come back as drafts, never enabled by themselves.</p>
+</main>
+</div>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">F15 · a</p><p class="cap-title">The coach strip</p><p class="cap-note">Your talk time, pace, fillers and which key words you used, from your microphone, on this computer only. At 1:30, a word, not an alarm.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">139 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="coach" aria-label="Coach"><span class="eyebrow" style="margin: 0 4px 0 0;">You</span><span class="stat on">1:34</span><span class="vsep"></span><span class="stat">146 wpm</span><span class="vsep"></span><span class="stat">2 fillers</span><span class="vsep"></span><span class="stat">key words 3 of 5</span><span class="spacer"></span><span class="stat on">Time to land it</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Tell me about a time you disagreed with a teammate.</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="meta">2 min ago</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">5 of 5</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>Sure. So at <span class="kw">Northwind</span> I was on the payments team, and a teammate wanted to rewrite our retry logic right before a <span class="kw">release</span>.</p><p>We went through the <span class="kw">failure cases</span> together, fixed two bugs first, and the rewrite later cut <span class="kw">duplicate charges</span>.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">F15 · b</p><p class="cap-title">Your prepared answer, at once</p><p class="cap-note">When the question matches a prepared answer, it shows first, in your own words; the written answer follows under it.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">138 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Have you ever had a conflict with a colleague?</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="writing"><span class="dot"></span>Writing…</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">6 of 6</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="pin-card"><p class="pin-head"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5l4 4-1.8.9-2.6 2.6.4 2.6-1 1-6-6 1-1 2.6.4 2.6-2.6zM5.5 10.5l-3 3"></path></svg>Your prepared answer · Disagreement with a teammate</p><p class="body">At Northwind a teammate wanted to rewrite retries right before a release. I set up a call, we went through the failure cases, fixed two bugs first and shipped on time.</p></div>
+<div class="ans-body"><p>Yes. At <span class="kw">Northwind</span> a teammate wanted to rewrite our retry logic right before a <span class="kw">release</span>, and I<span class="caret"></span></p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":3072,"height":1760}}'>
+class Component extends DCLogic {
+renderVals() {
+var theme = this.props.theme ?? 'dark';
+return { boardClass: (theme === 'light' ? 'theme-light' : 'theme-dark') + ' board' };
+}
+}
+</script>
+</body>
+</html>

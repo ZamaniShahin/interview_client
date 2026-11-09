@@ -53,3 +53,13 @@ What this repository settled, who settled it, and what was chosen while building
 | 2026-11-08 | **A refused hub connection is read from its close.** The server accepts the handshake, then closes with `HubException: <code>` (`client_outdated`, `account_suspended`, `unauthenticated`); the app shows its own words for those codes |
 | 2026-11-08 | **After a drop, the hub driver reconnects itself**, not SignalR's automatic reconnect: waits of 1, 2, 4, 8, then 10 s, a new access token and proof each time, `ResumeSession` with `LastSeq`, and a snapshot when the replay is incomplete. After 2 minutes (the server's suspend grace) the session ends as expired |
 | 2026-11-08 | **The end-to-end check is a Vitest test** (`tests/e2e`, `SOTTO_E2E=1`) running main's modules in Node against the backend's AppHost, with a scripted browser ported from the backend's `tools/signin-check.mjs`. Playwright for the windows themselves stays with 1.13 |
+
+## 4. Taken in session on 2026-11-09, keeping everything in the repository (open to revision)
+
+Shahin asked for everything about the project to be in the repositories, so work can go on from another computer.
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | **A copy of the UI canvas's own files** is kept in [design/canvas/](design/canvas/), taken from the canvas on claude.ai that day. The canvas stays the source ([design.md](design.md)) |
+| 2026-11-09 | **The scripts that checked 1.10 and the design are kept in `scripts/`**, formatted and linted like the rest: `app-drive.mjs` (the built app through its own windows), `oidc-cjs-check.mjs`, `contrast.mjs`, `pick-versions.mjs`, `design-unbundle.mjs` and `design-split.mjs`. They had been scratch files on one computer |
+| 2026-11-09 | **Claude Design's export stays out of the repositories**: it carries ARN Fintech's design system, which this product leaves out (backend decisions.md, 2026-11-05 and 2026-11-06). Shahin keeps the file; its practice screens are redrawn on these tokens before 3.3 is built |

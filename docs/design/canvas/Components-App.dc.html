@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sotto components: the app</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="sotto.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div class="{{boardClass}}" style="width: 1440px; min-height: 3300px;">
+
+<header class="board-head">
+<p class="eyebrow">Sotto UI · Components</p>
+<h1 class="board-title">The app's parts</h1>
+<p class="board-lede">Outside a session there is time: setup, preparation, the account. Same tokens, roomier sizes. Every control shows its state with fill, edge and weight; the pointer stays an arrow, and fields show a text caret instead of an I-beam.</p>
+</header>
+
+<div class="grid-2" style="gap: 48px; align-items: start;">
+
+<section class="sec">
+<p class="sec-num">A</p>
+<h2 class="sec-title">Buttons</h2>
+<p class="sec-note">One primary action per view. Destructive only outside a session.</p>
+<div class="panel">
+<div style="display: grid; grid-template-columns: 110px repeat(4, minmax(0, 1fr)); gap: 14px 12px; align-items: center;">
+<span></span><span class="spec">Default</span><span class="spec">Hover</span><span class="spec">Focus</span><span class="spec">Disabled</span>
+<span class="small">Primary</span><span><button class="btn btn-primary">Start session</button></span><span><button class="btn btn-primary is-hover">Start session</button></span><span><button class="btn btn-primary is-focus">Start session</button></span><span><button class="btn btn-primary" disabled>Start session</button></span>
+<span class="small">Secondary</span><span><button class="btn btn-secondary">Try again</button></span><span><button class="btn btn-secondary is-hover">Try again</button></span><span><button class="btn btn-secondary is-focus">Try again</button></span><span><button class="btn btn-secondary" disabled>Try again</button></span>
+<span class="small">Ghost</span><span><button class="btn btn-ghost">Cancel</button></span><span><button class="btn btn-ghost is-hover">Cancel</button></span><span><button class="btn btn-ghost is-focus">Cancel</button></span><span><button class="btn btn-ghost" disabled>Cancel</button></span>
+<span class="small">Destructive</span><span><button class="btn btn-danger">Remove</button></span><span><button class="btn btn-danger is-hover">Remove</button></span><span><button class="btn btn-danger is-focus">Remove</button></span><span><button class="btn btn-danger" disabled>Remove</button></span>
+</div>
+<div class="hrow" style="flex-wrap: wrap; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line);">
+<button class="btn btn-primary btn-lg">Start session</button>
+<button class="btn btn-secondary"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5M11.5 9.5v3.5h-9v-9H6"></path></svg>Manage billing</button>
+<button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button>
+<button class="btn btn-secondary btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5l7 4.5-7 4.5z"></path></svg>Resume</button>
+</div>
+<p class="small" style="margin-top: 12px;">The arrow-out icon means the button opens your browser: sign-in, checkout and billing never happen inside the app.</p>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">B</p>
+<h2 class="sec-title">Toggles</h2>
+<p class="sec-note">A switch for an on/off setting, a segmented control for two to five choices, a checkbox for agreeing.</p>
+<div class="panel stack" style="gap: 18px;">
+<div class="hrow" style="gap: 28px; flex-wrap: wrap;">
+<button class="switch" role="switch" aria-checked="false"><span class="switch-track"><span class="switch-knob"></span></span>Off</button>
+<button class="switch" role="switch" aria-checked="true"><span class="switch-track"><span class="switch-knob"></span></span>On</button>
+<button class="switch is-focus" role="switch" aria-checked="true"><span class="switch-track"><span class="switch-knob"></span></span>Focus</button>
+<button class="switch" role="switch" aria-checked="false" disabled><span class="switch-track"><span class="switch-knob"></span></span>Disabled</button>
+</div>
+<button class="switch" role="switch" aria-checked="false" style="width: 100%;"><span style="flex: 1;"><span style="display: block; color: var(--text-0); font-weight: 600;">Keep transcripts on this computer</span><span class="small">Off by default. Kept encrypted, in History, until you delete them.</span></span><span class="switch-track"><span class="switch-knob"></span></span></button>
+<div class="hrow" style="gap: 20px; flex-wrap: wrap;">
+<div class="seg" role="group" aria-label="Theme"><button aria-pressed="true">Dark</button><button aria-pressed="false">Light</button></div>
+<div class="seg" role="group" aria-label="Text size"><button aria-pressed="false">Small</button><button aria-pressed="true">Medium</button><button aria-pressed="false">Large</button></div>
+<div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false" class="is-hover">MANUAL</button></div>
+</div>
+<div class="stack" style="gap: 10px; padding-top: 16px; border-top: 1px solid var(--line);">
+<label class="check"><input type="checkbox" aria-describedby="consent-note"><span>I have consent to record and transcribe this conversation</span></label>
+<label class="check"><input type="checkbox" checked><span>I have consent to record and transcribe this conversation</span></label>
+<label class="check"><input type="checkbox" class="is-focus"><span>I have consent to record and transcribe this conversation</span></label>
+<p class="small" id="consent-note">Ticked before every session, never remembered. Final words wait for legal review.</p>
+</div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">C</p>
+<h2 class="sec-title">A list instead of a dropdown</h2>
+<p class="sec-note">A native dropdown opens its own window. Choices longer than a segmented control are an in-window list, or a panel that expands in place.</p>
+<div class="panel" style="max-width: 520px;">
+<p class="fld-label" style="margin-bottom: 8px;" id="screen-label">Open the overlay on</p>
+<div class="opts" role="listbox" aria-labelledby="screen-label">
+<button class="opt" role="option" aria-selected="true">Screen 1<span class="opt-sub">2560 × 1440 · the one with your webcam</span><svg class="i tick" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg></button>
+<button class="opt is-hover" role="option" aria-selected="false">Screen 2<span class="opt-sub">1920 × 1080</span></button>
+<button class="opt" role="option" aria-selected="false">Where I last left it</button>
+</div>
+<p class="small" style="margin-top: 10px;">Arrow keys move, Enter picks. Selected: surface-3, weight 600 and a tick, never color alone.</p>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">D</p>
+<h2 class="sec-title">Fields</h2>
+<p class="sec-note">A 1 px edge (3.9:1) shows where a field ends. Focus adds the ring. Counts appear with the limit; over it, the limit is named and nothing is cut.</p>
+<div class="panel stack" style="gap: 18px;">
+<div class="grid-2" style="gap: 16px;">
+<div class="fld"><label class="fld-label" for="f-name">Your name</label><input class="input" id="f-name" type="text" value="Sam Rivera"></div>
+<div class="fld"><label class="fld-label" for="f-name-2">Your name · focus</label><input class="input is-focus" id="f-name-2" type="text" value="Sam Rivera"></div>
+</div>
+<div class="fld"><label class="fld-label" for="f-cv">Résumé</label><textarea class="textarea" id="f-cv" rows="3" aria-describedby="f-cv-hint">Backend engineer, 7 years. Northwind (2021–now): payments platform, Go and Kafka; cut duplicate charges by moving retries to idempotent keys…</textarea><p class="fld-hint" id="f-cv-hint">Paste it, or type. Files can be imported later.<span class="count">12,480 / 50,000</span></p></div>
+<div class="fld"><label class="fld-label" for="f-jd">Job description</label><textarea class="textarea is-focus" id="f-jd" rows="2" aria-describedby="f-jd-hint">Senior Backend Engineer, Payments. You will own the ledger service and its event pipeline…</textarea><p class="fld-hint" id="f-jd-hint"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true" style="color: var(--text-0);"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.8v3.6M8 11h.01"></path></svg>Shorten it by 1,204 characters. Nothing has been cut.<span class="count over">31,204 / 30,000</span></p></div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">E</p>
+<h2 class="sec-title">Calm banners</h2>
+<p class="sec-note">An icon and plain words; an action when there is one. They never flash and never use amber.</p>
+<div class="stack" style="gap: 10px;">
+<div class="banner"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 7.5v3.5M8 5h.01"></path></svg><span>Add your résumé and job description to answer automatically.</span><span class="act"><button class="btn btn-secondary btn-sm">Add them</button></span></div>
+<div class="banner done"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg><span><b>100 minutes added.</b> They last until Nov 6, 2027.</span></div>
+<div class="banner"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.8v3.6M8 11h.01"></path></svg><span><b>Sign in again</b> to keep using Sotto. A running interview isn't interrupted.</span><span class="act"><button class="btn btn-secondary btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5M11.5 9.5v3.5h-9v-9H6"></path></svg>Sign in</button></span></div>
+<div class="banner"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 3v3h-3"></path></svg><span><b>Can't reach Sotto right now.</b> Your documents are safe here; trying again every few seconds.</span></div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">F</p>
+<h2 class="sec-title">Inline confirmation and the wizard stepper</h2>
+<p class="sec-note">A confirmation opens in place, under what it is about. The stepper shows the first run's five steps.</p>
+<div class="stack" style="gap: 18px;">
+<div class="panel" style="padding: 0 16px;">
+<div class="li" style="border-bottom: 0;"><svg class="i i-20" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3.5" width="10" height="7" rx="1"></rect><path d="M1.5 12.5h13"></path></svg><div class="li-main"><p class="li-title">Laptop</p><p class="li-sub">Windows 11 · 2.0.0 · first seen Nov 2 · last seen today</p></div></div>
+<div class="confirm" role="group" aria-label="Confirm removing Laptop" style="margin: 0 0 16px;"><p class="confirm-q">Remove Laptop?</p><p class="confirm-d">It is signed out and can't be added back. You can remove 2 more computers until Dec 6.</p><div class="confirm-acts"><button class="btn btn-danger btn-sm">Remove</button><button class="btn btn-ghost btn-sm">Cancel</button></div></div>
+</div>
+<div class="panel">
+<ol class="stepper" aria-label="Setup steps">
+<li class="step done"><span class="step-n"><svg class="i i-12" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg></span>What goes where</li>
+<li class="step-line" aria-hidden="true"></li>
+<li class="step done"><span class="step-n"><svg class="i i-12" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg></span>Sign in</li>
+<li class="step-line" aria-hidden="true"></li>
+<li class="step current" aria-current="step"><span class="step-n">3</span>Your documents</li>
+<li class="step-line" aria-hidden="true"></li>
+<li class="step"><span class="step-n">4</span>Sound check</li>
+<li class="step-line" aria-hidden="true"></li>
+<li class="step"><span class="step-n">5</span>Hotkeys and hiding</li>
+</ol>
+<p class="small" style="margin-top: 12px;">Done: a tick. Current: filled, weight 600, aria-current. Later steps are text-3 and can't be skipped to.</p>
+</div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">G</p>
+<h2 class="sec-title">Navigation</h2>
+<p class="sec-note">The window's sidebar, outside a session. The current page carries aria-current and changes weight and background, not color alone.</p>
+<div class="hrow" style="align-items: flex-start; gap: 24px;">
+<div class="panel" style="padding: 0; width: 212px; height: 470px; display: flex;">
+<nav class="nav" aria-label="Main" style="border-right: 0; width: 100%;">
+<a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</a>
+<a href="#" class="is-hover"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</a>
+<div class="nav-foot"><p class="eyebrow" style="margin-bottom: 4px;">Minutes</p><p class="big">187 min left</p><p class="small">Minutes plan · renews Dec 1</p></div>
+</nav>
+</div>
+<div class="stack" style="flex: 1; gap: 10px;">
+<p class="body"><b style="color: var(--text-0);">Home</b> starts a session and says what is missing.</p>
+<p class="body"><b style="color: var(--text-0);">Prepare</b> holds the documents, custom instructions and the answer bank (F14).</p>
+<p class="body"><b style="color: var(--text-0);">Practice</b> and its history are drawn in Claude Design's export (F12, F13).</p>
+<p class="body"><b style="color: var(--text-0);">Help</b> runs the setup wizard again.</p>
+<p class="small">The footer answers "where do minutes left show" outside a session; during one, they are in the overlay's strip.</p>
+</div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">H</p>
+<h2 class="sec-title">Devices and minutes</h2>
+<p class="sec-note">Rows for the account: a computer, a lot of minutes, a ledger entry.</p>
+<div class="stack" style="gap: 18px;">
+<div class="panel" style="padding: 4px 16px;">
+<p class="eyebrow" style="margin: 12px 0 4px;">Device rows</p>
+<div class="list" style="border-top: 0;">
+<div class="li"><svg class="i i-20" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3.5" width="10" height="7" rx="1"></rect><path d="M1.5 12.5h13"></path></svg><div class="li-main"><p class="li-title">Desk PC <span class="tag this" style="margin-left: 6px;">This computer</span></p><p class="li-sub">Windows 11 · 2.0.0 · first seen Oct 30 · last seen now</p></div></div>
+<div class="li"><svg class="i i-20" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3.5" width="10" height="7" rx="1"></rect><path d="M1.5 12.5h13"></path></svg><div class="li-main"><p class="li-title">Laptop</p><p class="li-sub">Windows 11 · 2.0.0 · first seen Nov 2 · last seen today</p></div><button class="btn btn-danger btn-sm">Remove</button></div>
+<div class="li" style="border-bottom: 0;"><svg class="i i-20" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3.5" width="10" height="7" rx="1"></rect><path d="M1.5 12.5h13"></path></svg><div class="li-main"><p class="li-title">Office PC</p><p class="li-sub">Windows 10 · 1.9.3 · first seen Sep 12 · last seen Oct 1</p></div><button class="btn btn-danger btn-sm">Remove</button></div>
+</div>
+</div>
+<div class="panel" style="padding: 4px 16px;">
+<p class="eyebrow" style="margin: 12px 0 4px;">Minutes-lot rows · soonest to expire is used first</p>
+<div class="list" style="border-top: 0;">
+<div class="li"><div class="li-main"><p class="li-title">Plan minutes</p><p class="li-sub">87 of 400 left · expire Dec 1, when the next month's arrive</p></div><p class="li-num">87 min</p></div>
+<div class="li" style="border-bottom: 0;"><div class="li-main"><p class="li-title">Top-up</p><p class="li-sub">100 of 100 left · expire Nov 4, 2027</p></div><p class="li-num">100 min</p></div>
+</div>
+</div>
+<div class="panel" style="padding: 4px 16px;">
+<p class="eyebrow" style="margin: 12px 0 4px;">Ledger rows · one of each kind</p>
+<div class="list" style="border-top: 0;">
+<div class="li"><div class="li-main"><p class="li-title">Plan minutes</p><p class="li-sub">Nov 1</p></div><p class="li-num">+400</p></div>
+<div class="li"><div class="li-main"><p class="li-title">Session</p><p class="li-sub">Nov 3 · 42 minutes</p></div><p class="li-num minus">−42</p></div>
+<div class="li"><div class="li-main"><p class="li-title">Top-up</p><p class="li-sub">Nov 4</p></div><p class="li-num">+100</p></div>
+<div class="li"><div class="li-main"><p class="li-title">Practice</p><p class="li-sub">Nov 5 · 14 minutes at half rate</p></div><p class="li-num minus">−7</p></div>
+<div class="li" style="border-bottom: 0;"><div class="li-main"><p class="li-title">Expired</p><p class="li-sub">Dec 1 · plan minutes not used</p></div><p class="li-num minus">−18</p></div>
+</div>
+</div>
+</div>
+</section>
+
+</div>
+
+<section class="sec">
+<p class="sec-num">I</p>
+<h2 class="sec-title">Plan cards</h2>
+<p class="sec-note">Names and prices are placeholders: they are not decided (Q3). Buying, upgrading and billing open the browser.</p>
+<div class="grid-3" style="max-width: 1100px;">
+<div class="plan">
+<p class="plan-name">Trial</p>
+<p class="plan-price">Free <small>for 14 days</small></p>
+<ul class="feats">
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>30 minutes, sessions up to 10 minutes</li>
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>Fast answers</li>
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>2 computers, one practice session</li>
+</ul>
+<button class="btn btn-secondary" style="margin-top: auto;">Start the trial</button>
+<p class="small">Once per person and per computer. Needs a verified email.</p>
+</div>
+<div class="plan current">
+<p class="plan-name">Minutes <span class="tag" style="margin-left: 6px;">Your plan</span></p>
+<p class="plan-price">[PRICE] <small>a month</small></p>
+<ul class="feats">
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>400 minutes a month, sessions up to 120 minutes</li>
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>Smart answers</li>
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>3 computers, practice at half the minute rate</li>
+</ul>
+<button class="btn btn-secondary" style="margin-top: auto;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5M11.5 9.5v3.5h-9v-9H6"></path></svg>Manage billing</button>
+<p class="small">Renews Dec 1. Top-ups: +100 minutes, valid 12 months.</p>
+</div>
+<div class="plan">
+<p class="plan-name">Unlimited</p>
+<p class="plan-price">[PRICE] <small>a month</small></p>
+<ul class="feats">
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>Fair use, up to 60 hours a month</li>
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>Smart answers</li>
+<li><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"></path></svg>3 computers, practice included</li>
+</ul>
+<button class="btn btn-primary" style="margin-top: auto;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5M11.5 9.5v3.5h-9v-9H6"></path></svg>Upgrade</button>
+<p class="small">Opens your browser to finish.</p>
+</div>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":3300}}'>
+class Component extends DCLogic {
+renderVals() {
+var theme = this.props.theme ?? 'dark';
+return { boardClass: (theme === 'light' ? 'theme-light' : 'theme-dark') + ' board' };
+}
+}
+</script>
+</body>
+</html>

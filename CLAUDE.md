@@ -32,8 +32,13 @@ src/shared/      Runs in main, preloads and renderers, so no Electron and no DOM
                  account.
 tests/           unit/ (Node), renderer/ (happy-dom and @vue/test-utils), stealth/ (the rules readable in the source),
                  e2e/ (against the backend's local stack; skipped unless SOTTO_E2E=1).
-scripts/         sync-contracts.mjs: copies the hub's contract from the backend.
-docs/            The product docs (01–08), the design handoff, design.md, decisions.md, roadmap.md.
+scripts/         sync-contracts.mjs: copies the hub's contract from the backend. Checks run by hand, each with its usage
+                 in its first lines: app-drive.mjs (the built app driven through its own windows, against the local
+                 stack; it signs this computer out), oidc-cjs-check.mjs, contrast.mjs (the palette's WCAG ratios),
+                 pick-versions.mjs (the two-week rule), design-unbundle.mjs and design-split.mjs (reading a Claude
+                 Design export).
+docs/            The product docs (01–08), the design handoff, design.md (and design/canvas/, a copy of the canvas's
+                 files), decisions.md, roadmap.md.
 ```
 
 ## Commands

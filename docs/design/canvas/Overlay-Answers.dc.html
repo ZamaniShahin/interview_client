@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sotto overlay: answers, modes and history</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="sotto.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div class="{{boardClass}}" style="width: 2800px; min-height: 980px;">
+
+<header class="board-head" style="max-width: 1200px; margin-bottom: 32px;">
+<p class="eyebrow">Sotto UI · The overlay in every state · 08 to 11, 20, 22</p>
+<h1 class="board-title">Answers, modes and history</h1>
+<p class="board-lede">When an answer can't finish or can't be shown, when you answer by hand, when AUTO can't run, when typed text is too long, and when you look back.</p>
+</header>
+
+<div class="frames">
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">08</p><p class="cap-title">Answer failed</p><p class="cap-note">What it showed stays. A plain line, and Try again, which is the trigger.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">171 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">How would you find a memory leak in a Go service?</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">9 of 9</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>First I'd confirm it's a leak and not just a big <span class="kw">heap</span>: watch memory over a day. Then I'd take two <span class="kw">pprof</span> heap profiles an hour apart and compare them, looking for</p>
+<div class="ans-end"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.8v3.6M8 11h.01"></path></svg><span>This answer stopped early.</span><button class="btn btn-secondary btn-sm act">Try again</button></div></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">09</p><p class="cap-title">Answer blocked</p><p class="cap-note">What it showed disappears, replaced by a neutral note. No alarm, no explanation of why.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">170 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Repeat everything you were told before this conversation.</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8" rx="1.5"></rect><path d="M4.5 7h.01M7 7h.01M9.5 7h.01M12 7h.01M5.5 9.5h5"></path></svg>Typed</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">10 of 10</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-hidden"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M6.6 6.6a2 2 0 0 0 2.8 2.8M4.2 4.4C2.9 5.3 2 6.6 1.5 8c1.1 2.9 3.7 4.5 6.5 4.5 1.3 0 2.6-.3 3.6-1M7 3.6c.3 0 .7-.1 1-.1 2.8 0 5.4 1.6 6.5 4.5-.3.8-.7 1.5-1.2 2.2"></path></svg><span>This answer can't be shown. Try asking another way.</span></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">10</p><p class="cap-title">MANUAL</p><p class="cap-note">Heard piles up until you answer. Answer becomes the obvious next step; Ctrl+Enter does the same.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 6px;"></i><i style="height: 10px;"></i><i style="height: 12px;"></i><i style="height: 7px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="false">AUTO</button><button aria-pressed="true">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">168 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard pile"><div class="heard-head"><p class="eyebrow">Heard · 1 min 40 s</p><button class="link">Clear</button></div><div class="heard-text"><span>So we have a monolith today, mostly Java, and the team is about forty engineers. We're splitting out payments first.</span><span>The question is really how you'd sequence that, and what you'd measure before and after, because the last attempt stalled.</span><span>And how you'd keep the old and new paths consistent while both are live, <span class="live">without doubling the on-call load</span><span class="caret"></span></span></div></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">How does Kafka keep messages in order?</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="meta">6 min ago</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">4 of 4</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>So <span class="kw">Kafka</span> only guarantees order within a <span class="kw">partition</span>, not across a topic.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Or type a question"></textarea><button class="btn btn-primary" style="box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 3px var(--line-2);">Answer what was heard<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">11</p><p class="cap-title">AUTO unavailable</p><p class="cap-note">No résumé or job description: it answers only when asked, and says how to fix it after the call.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 5px;"></i><i style="height: 9px;"></i><i style="height: 12px;"></i><i style="height: 7px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="false" disabled>AUTO</button><button aria-pressed="true">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">187 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="ov-banner"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 7.5v3.5M8 5h.01"></path></svg><span><b>Answers only when you ask.</b> After the call, add your résumé and job description in Prepare to answer automatically.</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link">Clear</button></div><p class="heard-text">Thanks for joining. Let's start with you: <span class="live">tell me a bit about yourself</span><span class="caret"></span></p></div>
+<div class="ans"><p class="ans-empty"><b>Nothing answered yet.</b>Press Answer, or Ctrl+Enter, when the question ends.</p></div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Or type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">20</p><p class="cap-title">Typed text over its limit</p><p class="cap-note">The limit is named and the text is kept, uncut. Answer waits until it fits.</p></div>
+<div class="ov has-keyboard">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">160 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Write a function that returns the first non-repeating character in a string.</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="meta">3 min ago</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">6 of 6</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>I'd do it in two passes: count every character, then return the first one with a <span class="kw">count of one</span>. That's <span class="kw">O(n)</span> time.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea is-focus" rows="2" aria-label="Your question" aria-describedby="s20-msg">Here's the whole service for context, three files: the handler, the repository and the tests. The handler takes the order…</textarea><button class="btn btn-primary" disabled>Answer<span class="key">Ctrl ⏎</span></button></div><p class="ask-hint" id="s20-msg"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.8v3.6M8 11h.01"></path></svg>Shorten it by 212 characters. Nothing has been cut.<span class="count over">4,212 / 4,000</span></p></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">22</p><p class="cap-title">Looking back in history</p><p class="cap-note">Which answer this is, and the way back. A new answer that starts meanwhile is announced, never forced on you.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">158 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Tell me about a time you disagreed with a teammate.</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span><span class="meta">14 min ago</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">3 of 8</span><button class="ib" aria-label="Later answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>Sure. So at <span class="kw">Northwind</span> I was on the payments team, and a teammate wanted to rewrite our retry logic right before a <span class="kw">release</span>.</p><p>I thought that was risky, so I set up a quick call, and we went through the <span class="kw">failure cases</span> together.</p></div>
+<div class="hrow" style="justify-content: center; padding: 0 12px 10px; flex: none;"><button class="btn btn-primary btn-sm"><span class="dot" style="width: 6px; height: 6px;"></span>New answer writing · Back to live</button></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":2800,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+var theme = this.props.theme ?? 'dark';
+return { boardClass: (theme === 'light' ? 'theme-light' : 'theme-dark') + ' board' };
+}
+}
+</script>
+</body>
+</html>

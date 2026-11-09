@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sotto foundations</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="sotto.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div class="{{boardClass}}" style="width: 1440px; min-height: 4000px;">
+
+<header class="board-head">
+<p class="eyebrow">Sotto UI · Foundations</p>
+<h1 class="board-title">A neutral placeholder</h1>
+<p class="board-lede">System fonts, grays and amber key words, until Sotto has a brand (decisions.md, Q14). Nothing on this page is a brand: it is the smallest set that keeps the app calm, legible and consistent. Both themes are drawn. The overlay starts dark, over dark call windows; Settings offers light.</p>
+</header>
+
+<section class="sec">
+<p class="sec-num">01</p>
+<h2 class="sec-title">Color</h2>
+<p class="sec-note">Ratios are measured against surface-1, where answers and fields sit (WCAG 2.x): text needs 4.5:1, control edges and meters 3:1.</p>
+<div class="grid-2">
+
+<div class="theme-dark panel">
+<p class="eyebrow">Dark · the default</p>
+<p class="cap-note" style="margin: 0 0 12px;">Surfaces</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #111113; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-0</span><span class="spec" style="width: 76px;">#111113</span><span style="flex: 1; font-size: 13px;">The window</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #1A1A1D; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-1</span><span class="spec" style="width: 76px;">#1A1A1D</span><span style="flex: 1; font-size: 13px;">Regions, cards, fields</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #242428; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-2</span><span class="spec" style="width: 76px;">#242428</span><span style="flex: 1; font-size: 13px;">Raised: menus, banners, chips</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #2F2F34; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-3</span><span class="spec" style="width: 76px;">#2F2F34</span><span style="flex: 1; font-size: 13px;">Selected and hover</span></div>
+<p class="cap-note" style="margin: 20px 0 12px;">Text</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); color: #F4F4F5; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-0</span><span class="spec" style="width: 76px;">#F4F4F5</span><span style="flex: 1; font-size: 13px;">Headings, the question</span><span class="spec">15.8:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); color: #E4E4E7; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-1</span><span class="spec" style="width: 76px;">#E4E4E7</span><span style="flex: 1; font-size: 13px;">Body text and answers</span><span class="spec">13.7:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); color: #A1A1AA; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-2</span><span class="spec" style="width: 76px;">#A1A1AA</span><span style="flex: 1; font-size: 13px;">Secondary text, labels, status</span><span class="spec">6.8:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); color: #8E8E97; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-3</span><span class="spec" style="width: 76px;">#8E8E97</span><span style="flex: 1; font-size: 13px;">Hints, the live phrase; never on surface-3</span><span class="spec">5.4:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); color: #5C5C64; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-off</span><span class="spec" style="width: 76px;">#5C5C64</span><span style="flex: 1; font-size: 13px;">Disabled only, never text to read</span><span class="spec">2.6:1</span></div>
+<p class="cap-note" style="margin: 20px 0 12px;">Lines and edges</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); border: 1px solid rgba(255,255,255,.08); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">line</span><span class="spec" style="width: 76px;">white 8%</span><span style="flex: 1; font-size: 13px;">Dividers between rows</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); border: 1px solid rgba(255,255,255,.14); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">line-2</span><span class="spec" style="width: 76px;">white 14%</span><span style="flex: 1; font-size: 13px;">Card, menu and window edges</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); border: 1px solid #76767F; flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">edge</span><span class="spec" style="width: 76px;">#76767F</span><span style="flex: 1; font-size: 13px;">Edges of fields, checkboxes, switches</span><span class="spec">3.9:1</span></div>
+<p class="cap-note" style="margin: 20px 0 12px;">Meaning</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); color: #FBBF24; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">key</span><span class="spec" style="width: 76px;">#FBBF24</span><span style="flex: 1; font-size: 13px;">Key words in answers, and nothing else</span><span class="spec">10.4:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); display: grid; place-items: center; flex: none;"><span class="dot" style="color: #4ADE80;"></span></span><span class="spec" style="width: 96px; color: var(--text-0);">ok</span><span class="spec" style="width: 76px;">#4ADE80</span><span style="flex: 1; font-size: 13px;">Live and listening: dots and meters, never text</span><span class="spec">10.0:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); color: #FCA5A5; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">danger</span><span class="spec" style="width: 76px;">#FCA5A5</span><span style="flex: 1; font-size: 13px;">Delete and remove, outside a session</span><span class="spec">9.2:1</span></div>
+<div class="hrow" style="min-height: 44px;"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); outline: 2px solid #F4F4F5; outline-offset: -6px; flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">focus</span><span class="spec" style="width: 76px;">= text-0</span><span style="flex: 1; font-size: 13px;">The focus ring, 2 px with a 2 px gap</span><span class="spec">15.8:1</span></div>
+</div>
+
+<div class="theme-light panel">
+<p class="eyebrow">Light · in Settings</p>
+<p class="cap-note" style="margin: 0 0 12px;">Surfaces</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #F1F1F3; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-0</span><span class="spec" style="width: 76px;">#F1F1F3</span><span style="flex: 1; font-size: 13px;">The window</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #FFFFFF; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-1</span><span class="spec" style="width: 76px;">#FFFFFF</span><span style="flex: 1; font-size: 13px;">Regions, cards, fields</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #F7F7F8; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-2</span><span class="spec" style="width: 76px;">#F7F7F8</span><span style="flex: 1; font-size: 13px;">Raised: menus, banners, chips</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: #E6E6E9; box-shadow: inset 0 0 0 1px var(--line-2); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">surface-3</span><span class="spec" style="width: 76px;">#E6E6E9</span><span style="flex: 1; font-size: 13px;">Selected and hover</span></div>
+<p class="cap-note" style="margin: 20px 0 12px;">Text</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); color: #18181B; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-0</span><span class="spec" style="width: 76px;">#18181B</span><span style="flex: 1; font-size: 13px;">Headings, the question</span><span class="spec">17.7:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); color: #27272A; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-1</span><span class="spec" style="width: 76px;">#27272A</span><span style="flex: 1; font-size: 13px;">Body text and answers</span><span class="spec">14.9:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); color: #52525B; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-2</span><span class="spec" style="width: 76px;">#52525B</span><span style="flex: 1; font-size: 13px;">Secondary text, labels, status</span><span class="spec">7.7:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); color: #63636B; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-3</span><span class="spec" style="width: 76px;">#63636B</span><span style="flex: 1; font-size: 13px;">Hints, the live phrase</span><span class="spec">6.0:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); color: #A1A1AA; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">text-off</span><span class="spec" style="width: 76px;">#A1A1AA</span><span style="flex: 1; font-size: 13px;">Disabled only, never text to read</span><span class="spec">2.6:1</span></div>
+<p class="cap-note" style="margin: 20px 0 12px;">Lines and edges</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); border: 1px solid rgba(24,24,27,.08); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">line</span><span class="spec" style="width: 76px;">ink 8%</span><span style="flex: 1; font-size: 13px;">Dividers between rows</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); border: 1px solid rgba(24,24,27,.14); flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">line-2</span><span class="spec" style="width: 76px;">ink 14%</span><span style="flex: 1; font-size: 13px;">Card, menu and window edges</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); border: 1px solid #8A8A93; flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">edge</span><span class="spec" style="width: 76px;">#8A8A93</span><span style="flex: 1; font-size: 13px;">Edges of fields, checkboxes, switches</span><span class="spec">3.4:1</span></div>
+<p class="cap-note" style="margin: 20px 0 12px;">Meaning</p>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); color: #A15C07; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">key</span><span class="spec" style="width: 76px;">#A15C07</span><span style="flex: 1; font-size: 13px;">Key words, on surface-1 only (4.2:1 on surface-3)</span><span class="spec">5.2:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); display: grid; place-items: center; flex: none;"><span class="dot" style="color: #15803D;"></span></span><span class="spec" style="width: 96px; color: var(--text-0);">ok</span><span class="spec" style="width: 76px;">#15803D</span><span style="flex: 1; font-size: 13px;">Live and listening: dots and meters, never text</span><span class="spec">5.0:1</span></div>
+<div class="hrow" style="min-height: 44px; border-bottom: 1px solid var(--line);"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--line-2); color: #B91C1C; display: grid; place-items: center; font-weight: 600; flex: none;">Aa</span><span class="spec" style="width: 96px; color: var(--text-0);">danger</span><span class="spec" style="width: 76px;">#B91C1C</span><span style="flex: 1; font-size: 13px;">Delete and remove, outside a session</span><span class="spec">6.5:1</span></div>
+<div class="hrow" style="min-height: 44px;"><span style="width: 32px; height: 32px; border-radius: 6px; background: var(--surface-1); outline: 2px solid #18181B; outline-offset: -6px; flex: none;"></span><span class="spec" style="width: 96px; color: var(--text-0);">focus</span><span class="spec" style="width: 76px;">= text-0</span><span style="flex: 1; font-size: 13px;">The focus ring, 2 px with a 2 px gap</span><span class="spec">17.7:1</span></div>
+</div>
+
+</div>
+<div class="grid-3" style="margin-top: 24px;">
+<p class="callout"><b>Amber is only for key words.</b> A warning is a neutral banner with an icon and a word, so the eye never mixes the two.</p>
+<p class="callout"><b>No red during a session.</b> Problems are worded calmly. Danger is for deleting and removing, which happen outside a session.</p>
+<p class="callout"><b>Never color alone.</b> Every status pairs an icon with a word, so it reads in grayscale and to a screen reader.</p>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">02</p>
+<h2 class="sec-title">Type</h2>
+<p class="sec-note">Segoe UI Variable, then Segoe UI: on every Windows 11 computer, so nothing is fetched at runtime and nothing needs bundling. macOS (later) gets its system font. Code: Cascadia Mono where present, then Consolas. Sizes are at 100% scaling; Windows scales them up to 200%.</p>
+<div class="grid-2">
+<div class="panel">
+<p class="eyebrow">In the overlay · read in a glance</p>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Answer</p><p class="spec">16 / 24 · 400 · S 15, L 18</p></div><p style="font: 400 16px/24px var(--font-sans); color: var(--text-1);">So <span class="kw">Kafka</span> only guarantees order within a <span class="kw">partition</span>, not across a topic.</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Question</p><p class="spec">15 / 22 · 600</p></div><p style="font: 600 15px/22px var(--font-sans); color: var(--text-0);">How does Kafka keep messages in order?</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Heard</p><p class="spec">14 / 20 · live phrase text-3</p></div><p class="heard-text">Can you walk me through how you'd design a URL shortener, like, for <span class="live">millions of users a day</span><span class="caret"></span></p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Status</p><p class="spec">12 / 16 · 500 · tabular</p></div><p style="font: 500 12px/16px var(--font-sans); color: var(--text-2);">Listening · 187 min · Smart</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Label</p><p class="spec">11 / 16 · 600 · caps · 0.08em</p></div><p class="eyebrow" style="margin: 0;">Heard</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0;"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Code</p><p class="spec">13 / 20 · Cascadia Mono</p></div><p style="font: 400 13px/20px var(--font-mono); color: var(--text-1);">def first_unique(s: str) -&gt; str | None:</p></div>
+</div>
+<div class="panel">
+<p class="eyebrow">In the window · when there is time</p>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Title</p><p class="spec">24 / 32 · 600</p></div><p class="title" style="margin: 0;">Before your first session</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Heading</p><p class="spec">15 / 22 · 600</p></div><p class="h" style="margin: 0;">Minutes you can use now</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Body</p><p class="spec">14 / 20 · 400</p></div><p class="body">Sotto answers when the interviewer finishes a question.</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Small</p><p class="spec">12 / 16 · 400</p></div><p class="small">Laptop · Windows 11 · 2.0.0 · last seen today</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line);"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Label</p><p class="spec">11 / 16 · 600 · caps</p></div><p class="eyebrow" style="margin: 0;">Minutes</p></div>
+<div class="hrow" style="align-items: baseline; padding: 14px 0;"><div style="width: 190px; flex: none;"><p class="cap-title" style="margin: 0;">Figures</p><p class="spec">tabular numerals</p></div><p class="big">187 min · 1:12 · 3 of 7</p></div>
+</div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">03</p>
+<h2 class="sec-title">Space, shape, depth and focus</h2>
+<p class="sec-note">A 4 px spacing scale. Overlay controls are 28 px (icons) to 32 px (buttons), window controls 32 to 40 px: small targets suit a mouse, and none is under 24 px (WCAG 2.5.8).</p>
+<div class="grid-4">
+<div class="panel">
+<p class="eyebrow">Spacing</p>
+<div class="stack" style="gap: 10px;">
+<div class="hrow"><span class="spec" style="width: 28px;">4</span><span style="width: 4px; height: 12px; background: var(--text-2); border-radius: 2px;"></span></div>
+<div class="hrow"><span class="spec" style="width: 28px;">8</span><span style="width: 8px; height: 12px; background: var(--text-2); border-radius: 2px;"></span></div>
+<div class="hrow"><span class="spec" style="width: 28px;">12</span><span style="width: 12px; height: 12px; background: var(--text-2); border-radius: 2px;"></span></div>
+<div class="hrow"><span class="spec" style="width: 28px;">16</span><span style="width: 16px; height: 12px; background: var(--text-2); border-radius: 2px;"></span></div>
+<div class="hrow"><span class="spec" style="width: 28px;">24</span><span style="width: 24px; height: 12px; background: var(--text-2); border-radius: 2px;"></span></div>
+<div class="hrow"><span class="spec" style="width: 28px;">32</span><span style="width: 32px; height: 12px; background: var(--text-2); border-radius: 2px;"></span></div>
+<div class="hrow"><span class="spec" style="width: 28px;">48</span><span style="width: 48px; height: 12px; background: var(--text-2); border-radius: 2px;"></span></div>
+</div>
+</div>
+<div class="panel">
+<p class="eyebrow">Radii</p>
+<div class="stack" style="gap: 10px;">
+<div class="hrow"><span style="width: 40px; height: 28px; border: 1px solid var(--line-2); background: var(--surface-2); border-radius: 4px;"></span><span class="small">4 · badges, keys</span></div>
+<div class="hrow"><span style="width: 40px; height: 28px; border: 1px solid var(--line-2); background: var(--surface-2); border-radius: 6px;"></span><span class="small">6 · buttons, fields</span></div>
+<div class="hrow"><span style="width: 40px; height: 28px; border: 1px solid var(--line-2); background: var(--surface-2); border-radius: 8px;"></span><span class="small">8 · banners, code, cards</span></div>
+<div class="hrow"><span style="width: 40px; height: 28px; border: 1px solid var(--line-2); background: var(--surface-2); border-radius: 10px;"></span><span class="small">10 · menus, the window</span></div>
+<div class="hrow"><span style="width: 40px; height: 28px; border: 1px solid var(--line-2); background: var(--surface-2); border-radius: 12px;"></span><span class="small">12 · the overlay</span></div>
+</div>
+</div>
+<div class="panel">
+<p class="eyebrow">Elevation</p>
+<div class="stack" style="gap: 14px;">
+<div class="hrow"><span style="width: 56px; height: 36px; background: var(--surface-0); border-radius: 8px; border: 1px dashed var(--line-2);"></span><span class="small">Flat · surface-0</span></div>
+<div class="hrow"><span style="width: 56px; height: 36px; background: var(--surface-1); border: 1px solid var(--line); border-radius: 8px;"></span><span class="small">Card · surface-1, line</span></div>
+<div class="hrow"><span style="width: 56px; height: 36px; background: var(--surface-2); border-radius: 8px; box-shadow: var(--shadow-2), 0 0 0 1px var(--line-2);"></span><span class="small">Raised · menus</span></div>
+<div class="hrow"><span style="width: 56px; height: 36px; background: var(--surface-0); border-radius: 10px; box-shadow: var(--shadow-3), 0 0 0 1px var(--line-2);"></span><span class="small">Window · shadow-3, line-2</span></div>
+</div>
+</div>
+<div class="panel">
+<p class="eyebrow">Focus</p>
+<div class="stack" style="gap: 16px;">
+<div class="hrow"><button class="btn btn-secondary is-focus">Start session</button></div>
+<input class="input is-focus" type="text" value="Northwind payments" aria-label="Example field with focus">
+<p class="small">2 px ring in text-0 with a 2 px gap, on every control. The overlay gets the same ring when it has the keyboard, so you always know where typing goes.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">04</p>
+<h2 class="sec-title">Answers</h2>
+<p class="sec-note">Plain Markdown, written to be said aloud. Short first-person paragraphs; key words are the Markdown's bold italic, drawn amber, semibold and upright, two or three a paragraph. Nothing else: no tables, no images, no links that open (§7.3).</p>
+<div class="grid-2">
+<div class="panel" style="padding: 0; overflow: hidden;">
+<div class="ans" style="height: auto;">
+<div class="ans-head">
+<p class="ans-q">Tell me about a time you disagreed with a teammate.</p>
+<div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span></div>
+</div>
+<div class="ans-body">
+<p>Sure. So at <span class="kw">Northwind</span> I was on the payments team, and a teammate wanted to rewrite our retry logic right before a <span class="kw">release</span>.</p>
+<p>I thought that was risky, so instead of arguing in the channel I set up a quick call, and we went through the <span class="kw">failure cases</span> together. We found two bugs in the old code, fixed those first, and planned the rewrite for the next sprint.</p>
+<p style="margin: 0;">The release went out on time, and the rewrite later cut <span class="kw">duplicate charges</span> a lot.</p>
+</div>
+</div>
+<div style="border-top: 1px solid var(--line);">
+<div class="ans-head">
+<p class="ans-q">Consistent hashing</p>
+<div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h4A1.5 1.5 0 0 1 8 5v8a1.5 1.5 0 0 0-1.5-1.5h-4zM13.5 3.5h-4A1.5 1.5 0 0 0 8 5v8a1.5 1.5 0 0 1 1.5-1.5h4z"></path></svg>Study</span></div>
+</div>
+<div class="ans-body">
+<p><strong>What it is.</strong> A way to spread keys over servers so that adding or removing one moves only a few keys.</p>
+<ul>
+<li><strong>The ring.</strong> Servers and keys are hashed onto the same circle; a key belongs to the next server clockwise.</li>
+<li><strong>Virtual nodes.</strong> Each server appears many times on the ring, which evens out the load.</li>
+<li><strong>Where you'll meet it.</strong> Caches, sharded databases, load balancers.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="stack" style="gap: 24px;">
+<div class="panel">
+<p class="eyebrow">Code</p>
+<div class="code">
+<div class="code-head">Python<button class="link"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"></rect><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"></path></svg>Copy</button></div>
+<pre><div><span class="tk-k">from</span> collections <span class="tk-k">import</span> Counter</div><div>&#160;</div><div><span class="tk-k">def</span> first_unique(s: <span class="tk-t">str</span>) -&gt; <span class="tk-t">str</span> | <span class="tk-t">None</span>:</div><div>&#160;&#160;&#160;&#160;<span class="tk-c"># two passes: count, then find a count of one</span></div><div>&#160;&#160;&#160;&#160;counts = Counter(s)</div><div>&#160;&#160;&#160;&#160;<span class="tk-k">for</span> ch <span class="tk-k">in</span> s:</div><div>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;<span class="tk-k">if</span> counts[ch] == <span class="tk-t">1</span>:</div><div>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;<span class="tk-k">return</span> ch</div><div>&#160;&#160;&#160;&#160;<span class="tk-k">return</span> <span class="tk-t">None</span></div><div>&#160;</div><div>print(first_unique(<span class="tk-s">"swiss"</span>))</div></pre>
+</div>
+<p class="small" style="margin-top: 4px;">Blocks sit on their own background with the language named, and Copy. Lines never wrap: a long line scrolls inside its block. Inline code sits in the sentence: swap the hint for <span class="ic">Optional[str]</span>. No amber in code.</p>
+</div>
+<div class="panel">
+<p class="eyebrow">Diagram</p>
+<div class="dia" role="img" aria-label="Diagram: user, load balancer, API servers; the API servers use a cache, a key-value store and an ID generator">
+<span class="dia-node">User</span>
+<svg class="dia-arrow" viewBox="0 0 16 10" aria-hidden="true"><path d="M1 5h12M10 2l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span class="dia-node">Load balancer</span>
+<svg class="dia-arrow" viewBox="0 0 16 10" aria-hidden="true"><path d="M1 5h12M10 2l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span class="dia-node">API servers</span>
+<svg class="dia-fan" viewBox="0 0 18 90" style="height: 90px;" aria-hidden="true"><path d="M1 45h6M7 13v64M7 13h8M7 45h8M7 77h8M12 10l3 3-3 3M12 42l3 3-3 3M12 74l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<div class="dia-col"><span class="dia-node store">Cache</span><span class="dia-node store">Key-value store</span><span class="dia-node">ID generator</span></div>
+</div>
+<p class="small">One per system design answer, left to right, inside the answer. Services are boxes; data stores are rounder, so they read as a different kind without a legend. Arrows in text-2, labels 11 px.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section class="sec">
+<p class="sec-num">05</p>
+<h2 class="sec-title">Status, motion and icons</h2>
+<p class="sec-note">Calm and worded plainly. Each state has an icon and a word; the words are the ones the app shows.</p>
+<div class="grid-2">
+<div class="panel">
+<p class="eyebrow">States in the status strip</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 20px;">
+<span class="state"><span class="dot"></span>Live</span>
+<span class="state quiet"><span class="dot"></span>Starting…</span>
+<span class="stat on"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Paused</span>
+<span class="stat"><span class="meter" aria-hidden="true"><i style="height: 5px;"></i><i style="height: 9px;"></i><i style="height: 12px;"></i><i style="height: 7px;"></i></span>Listening</span>
+<span class="stat on"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 3v3h-3"></path></svg>Listening: reconnecting…</span>
+<span class="stat on"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 10v2M6 7v5M9 4v8M12 8v4M2 2l12 12"></path></svg>Listening is down</span>
+<span class="stat on"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M8 12.5h.01M5.8 10.2a3.2 3.2 0 0 1 4.4 0M3.6 8a6.2 6.2 0 0 1 2.6-1.6M9.9 6.4A6.2 6.2 0 0 1 12.4 8M1.5 5.6a9.3 9.3 0 0 1 2.4-1.7M7 3.3a9.3 9.3 0 0 1 7.5 2.3"></path></svg>Reconnecting…</span>
+<span class="stat on"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5"></rect></svg>Ended</span>
+</div>
+<p class="eyebrow">Banners in the overlay</p>
+<div class="stack" style="gap: 8px;">
+<div class="ov-banner" style="margin: 0;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 5v3l2 1.5"></path></svg><span><b>10 minutes left.</b></span></div>
+<div class="ov-banner" style="margin: 0;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg><span><b>Paused.</b> Minutes still count.</span><button class="btn btn-secondary btn-sm act">Resume</button></div>
+<div class="ov-banner" style="margin: 0;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.8v3.6M8 11h.01"></path></svg><span><b>Listening is down.</b> You can still type your question.</span></div>
+</div>
+<p class="eyebrow" style="margin-top: 20px;">Motion</p>
+<p class="body">Hover and press: 120 ms. Menus fade in over 160 ms. Answers and Heard grow in place, with no animation, and never move the line being read. Two things move by themselves: the listening meter and the writing dot. With reduced motion on, neither does. Nothing flashes, shakes or makes a sound.</p>
+</div>
+<div class="panel">
+<p class="eyebrow">Icons · 16 px, 1.6 px stroke, drawn in the app</p>
+<div class="grid-3" style="gap: 10px 16px;">
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg>Drag to move</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 6.5l-7 7M13.5 10.5l-3 3"></path></svg>Resize (◢ grip)</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg>More</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5l7 4.5-7 4.5z"></path></svg>Resume</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 3.5v4a2 2 0 0 1-2 2H3.5M6 7l-2.5 2.5L6 12"></path></svg>Answer now</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5"></path></svg>Spoken</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8" rx="1.5"></rect><path d="M4.5 7h.01M7 7h.01M9.5 7h.01M12 7h.01M5.5 9.5h5"></path></svg>Typed</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3l2.5 2.5L6 12.5 3 13l.5-3z"></path></svg>Tip</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h4A1.5 1.5 0 0 1 8 5v8a1.5 1.5 0 0 0-1.5-1.5h-4zM13.5 3.5h-4A1.5 1.5 0 0 0 8 5v8a1.5 1.5 0 0 1 1.5-1.5h4z"></path></svg>Study</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M5 6.5l2 1.5-2 1.5M8.5 10h2.5"></path></svg>Result</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5v-2h2M11.5 3.5h2v2M13.5 10.5v2h-2M4.5 12.5h-2v-2"></path></svg>Screen</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg>Earlier answer</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9M4 8.5l4 4 4-4"></path></svg>Back to live</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M6.6 6.6a2 2 0 0 0 2.8 2.8M4.2 4.4C2.9 5.3 2 6.6 1.5 8c1.1 2.9 3.7 4.5 6.5 4.5 1.3 0 2.6-.3 3.6-1M7 3.6c.3 0 .7-.1 1-.1 2.8 0 5.4 1.6 6.5 4.5-.3.8-.7 1.5-1.2 2.2"></path></svg>Hidden answer</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 7.5v3.5M8 5h.01"></path></svg>Info</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.8v3.6M8 11h.01"></path></svg>Attention</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Done</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 5v3l2 1.5"></path></svg>Minutes</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2L4 9h4l-1 5 5-7H8l1-5z"></path></svg>Fast tier</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2l5 2v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4z"></path></svg>Test hiding</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5l4 4-1.8.9-2.6 2.6.4 2.6-1 1-6-6 1-1 2.6.4 2.6-2.6zM5.5 10.5l-3 3"></path></svg>Prepared answer</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5M11.5 9.5v3.5h-9v-9H6"></path></svg>Opens the browser</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3.5" width="10" height="7" rx="1"></rect><path d="M1.5 12.5h13"></path></svg>Computer</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.5 8.5h6l.5-8.5"></path></svg>Delete, remove</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6.5h2.5L9 3.5v9L5.5 9.5H3zM11 6a3 3 0 0 1 0 4M12.8 4.3a5.5 5.5 0 0 1 0 7.4"></path></svg>Sound check</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><circle cx="6" cy="6.5" r="1"></circle><path d="M14 11l-3.5-3.5L4 13"></path></svg>Screenshot</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</span>
+<span class="hrow small" style="gap: 8px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</span>
+</div>
+<p class="small" style="margin-top: 16px;">Icons always come with a word, or are obvious on their own (pause, close). There are no tooltips: a screen share can see one.</p>
+</div>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":4000}}'>
+class Component extends DCLogic {
+renderVals() {
+var theme = this.props.theme ?? 'dark';
+return { boardClass: (theme === 'light' ? 'theme-light' : 'theme-dark') + ' board' };
+}
+}
+</script>
+</body>
+</html>

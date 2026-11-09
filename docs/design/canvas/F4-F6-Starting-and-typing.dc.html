@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sotto F4 and F6: starting a session, typing</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="sotto.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+</style>
+</helmet>
+<div class="{{boardClass}}" style="width: 3072px; min-height: 1760px;">
+
+<header class="board-head" style="max-width: 1200px; margin-bottom: 32px;">
+<p class="eyebrow">Sotto UI · Flows · F4, F6 · and state 01, no session</p>
+<h1 class="board-title">Starting a session, and typing</h1>
+<p class="board-lede">Home is state 01: start a session, see what is missing, see the minutes. The consent box is ticked every time and never remembered. Then the four ways to type into the overlay.</p>
+</header>
+
+<div class="frames wrap" style="gap: 56px 48px; width: 2976px;">
+
+<div class="frame">
+<div class="cap" style="width: 960px;"><p class="cap-num">F4 · a · state 01</p><p class="cap-title">Home, no session</p><p class="cap-note">What a session needs, at a glance. Start waits for the consent box.</p></div>
+<div class="win">
+<div class="win-bar"><span class="wordmark"><span class="mark" aria-hidden="true"></span>Sotto</span><div class="win-ctl"><button class="ib" aria-label="Minimize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"></path></svg></button><button class="ib" aria-label="Maximize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"></rect></svg></button><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></div></div>
+<div class="win-body">
+<nav class="nav" aria-label="Main">
+<a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</a>
+<div class="nav-foot"><p class="eyebrow" style="margin-bottom: 4px;">Minutes</p><p class="big">187 min left</p><p class="small">Minutes plan · renews Dec 1</p></div>
+</nav>
+<main class="main">
+<h1 class="title">Home</h1>
+<p class="lede">Start a session when the call begins; the overlay opens over it.</p>
+<div style="display: grid; grid-template-columns: 3fr 2fr; gap: 16px;">
+<div class="card">
+<p class="h">Ready for an interview</p>
+<div class="readiness">
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Résumé · updated Nov 4</p>
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Job description · Senior Backend Engineer, Payments</p>
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Sound check · passed Nov 4</p>
+</div>
+<label class="check" style="margin-top: 18px;"><input type="checkbox"><span>I have consent to record and transcribe this conversation</span></label>
+<div class="hrow" style="margin-top: 16px;"><button class="btn btn-primary btn-lg" disabled>Start session</button><span class="small">Tick the box to start.</span></div>
+</div>
+<div class="card"><p class="eyebrow">Minutes</p><p class="big">187 min left</p><p class="small" style="margin-top: 2px;">Minutes plan · renews Dec 1. Sessions up to 120 minutes.</p></div>
+</div>
+<p class="h" style="margin-top: 22px;">Recent interviews</p>
+<div class="list">
+<div class="li"><div class="li-main"><p class="li-title">Senior Backend Engineer, Payments</p><p class="li-sub">Nov 4 · 42 min · 11 answers</p></div><button class="btn btn-ghost btn-sm">Open</button></div>
+<div class="li"><div class="li-main"><p class="li-title">Platform Engineer</p><p class="li-sub">Nov 1 · 31 min · 8 answers</p></div><button class="btn btn-ghost btn-sm">Open</button></div>
+</div>
+</main>
+</div>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 960px;"><p class="cap-num">F4 · b</p><p class="cap-title">Consent ticked</p><p class="cap-note">Start is enabled. Pressing it hides this window and opens the overlay, Starting… (state 02).</p></div>
+<div class="win">
+<div class="win-bar"><span class="wordmark"><span class="mark" aria-hidden="true"></span>Sotto</span><div class="win-ctl"><button class="ib" aria-label="Minimize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"></path></svg></button><button class="ib" aria-label="Maximize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"></rect></svg></button><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></div></div>
+<div class="win-body">
+<nav class="nav" aria-label="Main">
+<a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</a>
+<div class="nav-foot"><p class="eyebrow" style="margin-bottom: 4px;">Minutes</p><p class="big">187 min left</p><p class="small">Minutes plan · renews Dec 1</p></div>
+</nav>
+<main class="main">
+<h1 class="title">Home</h1>
+<p class="lede">Start a session when the call begins; the overlay opens over it.</p>
+<div style="display: grid; grid-template-columns: 3fr 2fr; gap: 16px;">
+<div class="card">
+<p class="h">Ready for an interview</p>
+<div class="readiness">
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Résumé · updated Nov 4</p>
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Job description · Senior Backend Engineer, Payments</p>
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Sound check · passed Nov 4</p>
+</div>
+<label class="check" style="margin-top: 18px;"><input type="checkbox" checked><span>I have consent to record and transcribe this conversation</span></label>
+<div class="hrow" style="margin-top: 16px;"><button class="btn btn-primary btn-lg is-focus">Start session</button><span class="small">AUTO, smart answers.</span></div>
+</div>
+<div class="card"><p class="eyebrow">Minutes</p><p class="big">187 min left</p><p class="small" style="margin-top: 2px;">Minutes plan · renews Dec 1. Sessions up to 120 minutes.</p></div>
+</div>
+<p class="h" style="margin-top: 22px;">Recent interviews</p>
+<div class="list">
+<div class="li"><div class="li-main"><p class="li-title">Senior Backend Engineer, Payments</p><p class="li-sub">Nov 4 · 42 min · 11 answers</p></div><button class="btn btn-ghost btn-sm">Open</button></div>
+<div class="li"><div class="li-main"><p class="li-title">Platform Engineer</p><p class="li-sub">Nov 1 · 31 min · 8 answers</p></div><button class="btn btn-ghost btn-sm">Open</button></div>
+</div>
+</main>
+</div>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 960px;"><p class="cap-num">F4 · c</p><p class="cap-title">A live session on another computer</p><p class="cap-note">Settled words. Ending it there moves the session here; that one ends as "moved to another device".</p></div>
+<div class="win">
+<div class="win-bar"><span class="wordmark"><span class="mark" aria-hidden="true"></span>Sotto</span><div class="win-ctl"><button class="ib" aria-label="Minimize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"></path></svg></button><button class="ib" aria-label="Maximize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"></rect></svg></button><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></div></div>
+<div class="win-body">
+<nav class="nav" aria-label="Main">
+<a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</a>
+<div class="nav-foot"><p class="eyebrow" style="margin-bottom: 4px;">Minutes</p><p class="big">187 min left</p><p class="small">Minutes plan · renews Dec 1</p></div>
+</nav>
+<main class="main">
+<h1 class="title">Home</h1>
+<p class="lede">Start a session when the call begins; the overlay opens over it.</p>
+<div style="display: grid; grid-template-columns: 3fr 2fr; gap: 16px;">
+<div class="card">
+<p class="h">Ready for an interview</p>
+<div class="readiness">
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Résumé · updated Nov 4</p>
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Job description · Senior Backend Engineer, Payments</p>
+</div>
+<label class="check" style="margin-top: 16px;"><input type="checkbox" checked><span>I have consent to record and transcribe this conversation</span></label>
+<div class="confirm" role="group" aria-label="Another computer has a live session" style="margin-top: 14px;"><p class="confirm-q">You have a live session on <i>Laptop</i>. End it and start here?</p><p class="confirm-d">The answers so far stay in that computer's History.</p><div class="confirm-acts"><button class="btn btn-primary btn-sm">End it and start here</button><button class="btn btn-ghost btn-sm">Cancel</button></div></div>
+</div>
+<div class="card"><p class="eyebrow">Minutes</p><p class="big">187 min left</p><p class="small" style="margin-top: 2px;">Minutes plan · renews Dec 1. Sessions up to 120 minutes.</p></div>
+</div>
+</main>
+</div>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">F6 · a</p><p class="cap-title">Question</p><p class="cap-note">Answered as if the interviewer had asked it. The badge says Typed.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">175 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">What's the difference between a process and a thread?</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8" rx="1.5"></rect><path d="M4.5 7h.01M7 7h.01M9.5 7h.01M12 7h.01M5.5 9.5h5"></path></svg>Typed</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">6 of 6</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>A <span class="kw">process</span> has its own memory space; <span class="kw">threads</span> share their process's memory. So threads are cheaper to start and switch, but a bug in one can corrupt the others.</p><p>In Go I mostly think in <span class="kw">goroutines</span>, which the runtime schedules onto a few OS threads.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="true">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your question" placeholder="Type a question"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">F6 · b</p><p class="cap-title">Tip</p><p class="cap-note">A note that rewrites the last answer. The new version is a new answer; the old one stays in history.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">174 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Tell me about a time you disagreed with a teammate.</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3l2.5 2.5L6 12.5 3 13l.5-3z"></path></svg>Tip: “shorter”</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">7 of 7</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>Sure. At <span class="kw">Northwind</span> a teammate wanted to rewrite our retry logic right before a <span class="kw">release</span>. We walked through the <span class="kw">failure cases</span> together, fixed two bugs first, and shipped on time.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="false">Question</button><button aria-pressed="true">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="Your tip" placeholder="A note on the last answer, like “shorter”"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">F6 · c</p><p class="cap-title">Study</p><p class="cap-note">A longer explainer on a topic, for preparing: bold lead-ins and lists.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">173 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q">Consistent hashing</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h4A1.5 1.5 0 0 1 8 5v8a1.5 1.5 0 0 0-1.5-1.5h-4zM13.5 3.5h-4A1.5 1.5 0 0 0 8 5v8a1.5 1.5 0 0 1 1.5-1.5h4z"></path></svg>Study</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">8 of 8</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body" style="font-size: 15px; line-height: 22px;"><p><strong>What it is.</strong> A way to spread keys over servers so that adding or removing one moves only a few keys.</p><ul><li><strong>The ring.</strong> Servers and keys are hashed onto the same circle; a key belongs to the next server clockwise.</li><li><strong>Virtual nodes.</strong> Each server appears many times on the ring, which evens out the load.</li><li><strong>Where you'll meet it.</strong> Caches, sharded databases, load balancers.</li></ul></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="false">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="true">Study</button><button aria-pressed="false">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="A topic to study" placeholder="A topic to study"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 420px;"><p class="cap-num">F6 · d</p><p class="cap-title">Result</p><p class="cap-note">Paste what running the last answer's code printed, or its error; get the next step.</p></div>
+<div class="ov">
+<div class="ov-bar"><span class="drag" aria-hidden="true"><svg class="i" viewBox="0 0 16 16"><circle cx="6" cy="4" r=".9"></circle><circle cx="10" cy="4" r=".9"></circle><circle cx="6" cy="8" r=".9"></circle><circle cx="10" cy="8" r=".9"></circle><circle cx="6" cy="12" r=".9"></circle><circle cx="10" cy="12" r=".9"></circle></svg></span><span class="state"><span class="dot"></span>Live</span><span class="stat"><span class="meter" aria-hidden="true"><i style="height: 3px;"></i><i style="height: 4px;"></i><i style="height: 3px;"></i><i style="height: 3px;"></i></span>Listening</span><span class="spacer"></span><button class="ib" aria-label="Compact view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M6 13.5V10H2.5M10 13.5V10h3.5"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"></circle><circle cx="8" cy="8" r=".9"></circle><circle cx="12.5" cy="8" r=".9"></circle></svg></button></div>
+<div class="ov-strip"><div class="seg sm" role="group" aria-label="Answer mode"><button aria-pressed="true">AUTO</button><button aria-pressed="false">MANUAL</button></div><button class="btn btn-ghost btn-sm"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5v9M10 3.5v9"></path></svg>Pause</button><span class="spacer"></span><span class="stat">170 min</span><span class="vsep"></span><span class="stat">Smart</span></div>
+<div class="heard"><div class="heard-head"><p class="eyebrow">Heard</p><button class="link" disabled>Clear</button></div><p class="heard-text empty">Listening for the interviewer…</p></div>
+<div class="ans">
+<div class="ans-head"><p class="ans-q" style="font: 500 13px/20px var(--font-mono);">TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'</p><div class="ans-meta"><span class="kind"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M5 6.5l2 1.5-2 1.5M8.5 10h2.5"></path></svg>Result</span><span class="meta">now</span><nav class="pager" aria-label="Answers in this interview"><button class="ib" aria-label="Earlier answer"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5"></path></svg></button><span class="pager-pos">10 of 10</span><button class="ib" aria-label="Later answer" disabled><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"></path></svg></button></nav></div></div>
+<div class="ans-body"><p>That means the interpreter is older than <span class="kw">Python 3.10</span>, which added <span class="ic">str | None</span>. Swap the hint for <span class="kw">Optional</span>:</p>
+<div class="code"><div class="code-head">Python<button class="link"><svg class="i i-14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"></rect><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"></path></svg>Copy</button></div><pre><div><span class="tk-k">from</span> typing <span class="tk-k">import</span> Optional</div><div>&#160;</div><div><span class="tk-k">def</span> first_unique(s: <span class="tk-t">str</span>) -&gt; Optional[<span class="tk-t">str</span>]:</div></pre></div>
+<p>Then run it again.</p></div>
+</div>
+<div class="ask"><div class="seg sm" role="group" aria-label="Ask mode"><button aria-pressed="false">Question</button><button aria-pressed="false">Tip</button><button aria-pressed="false">Study</button><button aria-pressed="true">Result</button></div><div class="ask-row"><textarea class="textarea" rows="1" aria-label="What the code printed" placeholder="Paste what the code printed, or its error"></textarea><button class="btn btn-primary">Answer<span class="key">Ctrl ⏎</span></button></div></div>
+<span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" style="width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;"><path d="M11 4L4 11M11 7.5L7.5 11"></path></svg></span>
+</div>
+</div>
+
+<div class="frame">
+<div class="cap" style="width: 960px;"><p class="cap-num">F4 · d</p><p class="cap-title">Home, when AUTO can't run</p><p class="cap-note">A session can still start; it answers only when asked (state 11). The fix is here, before the call.</p></div>
+<div class="win">
+<div class="win-bar"><span class="wordmark"><span class="mark" aria-hidden="true"></span>Sotto</span><div class="win-ctl"><button class="ib" aria-label="Minimize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"></path></svg></button><button class="ib" aria-label="Maximize"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"></rect></svg></button><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></div></div>
+<div class="win-body">
+<nav class="nav" aria-label="Main">
+<a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.5L8 3l5.5 4.5V13H10V9.5H6V13H2.5z"></path></svg>Home</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"></path></svg>Prepare</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><circle cx="8" cy="8" r="2.5"></circle></svg>Practice</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 3v2.5h2.5M8 5.5V8l2 1.2"></path></svg>History</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>Account</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2"></circle><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2"></path></svg>Settings</a>
+<a href="#"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M6.3 6.2a1.8 1.8 0 0 1 3.4.8c0 1.2-1.7 1.5-1.7 2.5M8 11.2h.01"></path></svg>Help</a>
+<div class="nav-foot"><p class="eyebrow" style="margin-bottom: 4px;">Minutes</p><p class="big">187 min left</p><p class="small">Minutes plan · renews Dec 1</p></div>
+</nav>
+<main class="main">
+<h1 class="title">Home</h1>
+<p class="lede">Start a session when the call begins; the overlay opens over it.</p>
+<div class="banner" style="margin-bottom: 16px;"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 7.5v3.5M8 5h.01"></path></svg><span>Add your résumé and job description to answer automatically. Without them, Sotto answers only when you ask.</span><span class="act"><button class="btn btn-secondary btn-sm">Add them</button></span></div>
+<div style="display: grid; grid-template-columns: 3fr 2fr; gap: 16px;">
+<div class="card">
+<p class="h">Ready for an interview</p>
+<div class="readiness">
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Résumé · updated Nov 4</p>
+<p class="ready-row"><svg class="i no" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle></svg>Job description · not added</p>
+<p class="ready-row"><svg class="i yes" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M5.5 8.2l1.8 1.8 3.2-3.6"></path></svg>Sound check · passed Nov 4</p>
+</div>
+<label class="check" style="margin-top: 16px;"><input type="checkbox"><span>I have consent to record and transcribe this conversation</span></label>
+<div class="hrow" style="margin-top: 14px;"><button class="btn btn-primary btn-lg" disabled>Start session</button><span class="small">Starts in MANUAL.</span></div>
+</div>
+<div class="card"><p class="eyebrow">Minutes</p><p class="big">187 min left</p><p class="small" style="margin-top: 2px;">Minutes plan · renews Dec 1. Sessions up to 120 minutes.</p></div>
+</div>
+</main>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":3072,"height":1760}}'>
+class Component extends DCLogic {
+renderVals() {
+var theme = this.props.theme ?? 'dark';
+return { boardClass: (theme === 'light' ? 'theme-light' : 'theme-dark') + ' board' };
+}
+}
+</script>
+</body>
+</html>

@@ -7,6 +7,10 @@ Where the design lives, what it holds, and which code draws each part.
 **Sotto UI**: https://claude.ai/artifact/CVB8eNKEogsxZ8nYmUxDvT
 - Private to its owner; share it from its Share menu.
 - Drawn on 2026-11-06 from [design-handoff.md](design-handoff.md). Claude completed it after Claude Design's export covered only practice and history (backend decisions.md, 2026-11-06).
+- **A copy of its own files** is in [design/canvas/](design/canvas/), taken on 2026-11-09 (unchanged since 2026-11-06), so the design travels with the code:
+  - the boards (`*.dc.html`), `sotto.css` and `canvas.json`;
+  - they render only inside the canvas, whose page belongs to the Design artifact type;
+  - the canvas stays the source: change it there, then copy the files again.
 
 | Board | Holds |
 |---|---|
@@ -18,7 +22,7 @@ Where the design lives, what it holds, and which code draws each part.
 | Later phase | F11 (screenshots), F14 (Prepare), F15 (the coach strip and the 📌 card) |
 
 - **Practice (F12) and its history (F13)** are in Claude Design's export of 2026-11-06, which is not in this repository.
-- That export is styled with ARN Fintech's design system and must be redrawn on these tokens before it is built.
+- That export is styled with ARN Fintech's design system and must be redrawn on these tokens before it is built. For that reason it stays out of both repositories: Shahin keeps the file (`Sotto — interview practice.html`). `scripts/design-unbundle.mjs` and `scripts/design-split.mjs` make it readable.
 - Its open points are the backend's Q21–Q24.
 
 ## The placeholder look

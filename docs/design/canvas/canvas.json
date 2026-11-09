@@ -1,0 +1,52 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-06T21:30:00Z" },
+  "title": "Sotto UI",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 4000, "title": "Foundations" },
+    "Components-Overlay.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 4000, "title": "Components · the overlay" },
+    "Components-App.dc.html": { "x": 3040, "y": 0, "w": 1440, "h": 3300, "title": "Components · the app" },
+    "Overlay-Live.dc.html": { "x": 0, "y": 4440, "w": 2800, "h": 980, "title": "Overlay · the live loop (F5)" },
+    "Overlay-Answers.dc.html": { "x": 2880, "y": 4440, "w": 2800, "h": 980, "title": "Overlay · answers, modes, history" },
+    "Overlay-Trouble.dc.html": { "x": 0, "y": 5540, "w": 2800, "h": 980, "title": "Overlay · trouble (F7)" },
+    "Overlay-Time.dc.html": { "x": 2880, "y": 5540, "w": 3260, "h": 980, "title": "Overlay · minutes and endings" },
+    "F1-First-run.dc.html": { "x": 0, "y": 6960, "w": 3072, "h": 1760, "title": "F1 · First run" },
+    "F2-F3-Sign-in-and-devices.dc.html": { "x": 3152, "y": 6960, "w": 3072, "h": 1760, "title": "F2 · Signing in · F3 · Too many devices" },
+    "F4-F6-Starting-and-typing.dc.html": { "x": 0, "y": 8840, "w": 3072, "h": 1760, "title": "F4 · Starting a session · F6 · Typing" },
+    "F8-F9-Minutes-and-trial.dc.html": { "x": 3152, "y": 8840, "w": 3072, "h": 1760, "title": "F8 · Running out · F9 · The trial" },
+    "F10-Account.dc.html": { "x": 0, "y": 10720, "w": 3072, "h": 1760, "title": "F10 · The account · Settings" },
+    "Later-F11-F14-F15.dc.html": { "x": 0, "y": 12920, "w": 3072, "h": 1760, "title": "Later phase · F11 · F14 · F15" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Components-Overlay.dc.html",
+    "Components-App.dc.html",
+    "Overlay-Live.dc.html",
+    "Overlay-Answers.dc.html",
+    "Overlay-Trouble.dc.html",
+    "Overlay-Time.dc.html",
+    "F1-First-run.dc.html",
+    "F2-F3-Sign-in-and-devices.dc.html",
+    "F4-F6-Starting-and-typing.dc.html",
+    "F8-F9-Minutes-and-trial.dc.html",
+    "F10-Account.dc.html",
+    "Later-F11-F14-F15.dc.html"
+  ],
+  "notes": {
+    "t-found": { "x": 0, "y": -320, "text": "Foundations and components", "kind": "title1", "maxW": 4480 },
+    "t-overlay": { "x": 0, "y": 4160, "text": "The overlay in every state (§7.2)", "kind": "title1", "maxW": 6140 },
+    "t-flows": { "x": 0, "y": 6680, "text": "Flows F1–F10", "kind": "title1", "maxW": 6224 },
+    "t-later": { "x": 0, "y": 12640, "text": "Later phase: F11, F14, F15", "kind": "title1", "maxW": 3072 },
+    "n-placeholder": {
+      "x": 4560,
+      "y": 0,
+      "w": 420,
+      "text": "Neutral placeholder, not a brand (decisions.md, 2026-11-06): system fonts, grays, amber key words. Nothing of ARN's design system.\n\nPractice (F12) and practice history (F13) are in Claude Design's export; they map onto these tokens when they are redrawn.\n\nEvery board has a Theme tweak: dark (default) or light.",
+      "size": "m",
+      "fill": "gray"
+    }
+  },
+  "designSystems": []
+}
