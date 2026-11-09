@@ -115,7 +115,10 @@ function withReadiness(view: AccountView): AccountView {
 /** The account again: after sign-in, after a session, and when the user comes back from the browser. */
 async function refreshAccount(): Promise<void> {
   if (preview) {
-    setAppState({ auth: { status: 'signed-in', email: 'sam@example.com', name: 'Sam Rivera' }, account: withReadiness(previewAccount) });
+    setAppState({
+      auth: { status: 'signed-in', email: 'sam@example.com', name: 'Sam Rivera' },
+      account: withReadiness(previewAccount),
+    });
     return;
   }
   if (!auth || !accounts) return;
@@ -135,8 +138,10 @@ async function refreshAccount(): Promise<void> {
 }
 
 async function signIn(): Promise<CommandResult> {
-  if (preview || !auth) return { ok: false, code: ErrorCodes.Request.Unavailable, message: 'The preview has no sign-in.' };
-  if (session.running) return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'End the session first.' };
+  if (preview || !auth)
+    return { ok: false, code: ErrorCodes.Request.Unavailable, message: 'The preview has no sign-in.' };
+  if (session.running)
+    return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'End the session first.' };
   try {
     showProblem(null);
     await auth.signIn(openSignInPage);
@@ -182,7 +187,11 @@ function contextOf(documents: DocumentsView) {
 /** Keeps one document on this computer (Prepare, the first run); Home's readiness follows. */
 function setDocument(change: SetDocumentRequest): CommandResult {
   if (!store) {
-    return { ok: false, code: ErrorCodes.Request.Unavailable, message: "This computer's documents can't be kept right now." };
+    return {
+      ok: false,
+      code: ErrorCodes.Request.Unavailable,
+      message: "This computer's documents can't be kept right now.",
+    };
   }
   const documents = store.setDocument(change.field, change.text);
   setAppState({ documents, account: appState.account ? withReadiness(appState.account) : null });
@@ -207,7 +216,8 @@ async function openStore(): Promise<LocalStore> {
     } catch {
       showProblem({
         code: ErrorCodes.Request.Internal,
-        message: "Your saved documents and settings can't be read on this computer, so this run keeps them only until Sotto quits.",
+        message:
+          "Your saved documents and settings can't be read on this computer, so this run keeps them only until Sotto quits.",
       });
     }
   }
@@ -229,14 +239,21 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
       return { ok: false, code: ErrorCodes.Identity.Unauthenticated, message: 'Sign in first.' };
     }
     if (!loaded) await refreshAccount();
-    if (!loaded) return { ok: false, ...(appState.problem ?? problemFrom(new Error('The account could not be read.'))) };
+    if (!loaded)
+      return { ok: false, ...(appState.problem ?? problemFrom(new Error('The account could not be read.'))) };
     const signedIn = auth;
     const service = accounts;
     const documents = store?.documents();
     account = loaded;
     driver = new HubDriver({
       connect: (accessToken, deviceProof, events) =>
-        createLiveTransport({ apiBaseUrl: config.apiBaseUrl, clientVersion: app.getVersion(), accessToken, deviceProof, events }),
+        createLiveTransport({
+          apiBaseUrl: config.apiBaseUrl,
+          clientVersion: app.getVersion(),
+          accessToken,
+          deviceProof,
+          events,
+        }),
       accessToken: () => signedIn.accessToken(),
       connectProof: (accessToken) => service.connectProof(accessToken),
       proof: (method, accessToken) => service.hubProof(method, accessToken),
@@ -364,7 +381,9 @@ function stopHotkeys(): void {
 /** Sign-in and the account, made once the app is ready (safeStorage needs it). */
 async function createServices(): Promise<void> {
   // Without OS encryption nothing secret may touch the disk: the sign-in then lasts until the app quits.
-  const secrets: SecretStore = (await ElectronSecretStore.available()) ? new ElectronSecretStore() : new MemorySecretStore();
+  const secrets: SecretStore = (await ElectronSecretStore.available())
+    ? new ElectronSecretStore()
+    : new MemorySecretStore();
   const signedIn = new AuthSession({
     oidc: new OpenIdClient({
       issuer: config.oidcIssuer,
