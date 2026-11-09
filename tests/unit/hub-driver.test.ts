@@ -631,3 +631,48 @@ describe("the hub driver's proof at connect (1.12)", () => {
     expect(h.transports).toHaveLength(1);
   });
 });
+
+describe("the hub driver's documents for a session (1.14)", () => {
+  const context = { Name: 'Sam Rivera', Resume: 'Backend engineer.', JobDescription: 'Payments.', Notes: null };
+
+  it('sends this computer\'s documents once the session has started, keyed by the C# names', async () => {
+    const h = harness({ deps: { context } });
+
+    expect(await h.start()).toEqual({ ok: true });
+
+    const [started, setContext] = h.transports[0]!.connection.invocations;
+    expect([started!.method, setContext!.method]).toEqual(['StartSession', 'SetContext']);
+    expect(setContext!.request).toMatchObject(context);
+    expect((setContext!.request as { CommandId: string }).CommandId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('sends nothing when there are no documents', async () => {
+    const h = harness({ deps: { context: null } });
+    await h.start();
+    expect(h.transports[0]!.connection.methods()).toEqual(['StartSession']);
+  });
+
+  it('starts the session even when the server refuses the documents: it then answers only when asked', async () => {
+    const h = harness({
+      deps: { context },
+      connection: (t) => t.connection.replies.set('SetContext', () => ({ Ok: false, Code: 'too_long', Message: 'Too long.' })),
+    });
+
+    expect(await h.start()).toEqual({ ok: true });
+  });
+
+  it("doesn't send them again after a resume: the session kept them", async () => {
+    const h = harness({
+      deps: { context },
+      connection: (t, index) => {
+        if (index === 1) t.connection.replies.set('ResumeSession', () => ({ Ok: true, Value: { SessionId: 'session-1', Replayed: true, LastSeq: 0 } }));
+      },
+    });
+    await h.start();
+
+    h.transports[0]!.close(new Error('WebSocket closed with status code: 1006.'));
+    await vi.waitFor(() => expect(h.types().at(-1)).toBe('connectionRestored'));
+
+    expect(h.transports[1]!.connection.methods()).toEqual(['ResumeSession']);
+  });
+});

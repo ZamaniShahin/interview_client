@@ -1,8 +1,11 @@
 // The app's core process. It owns the windows, sign-in, the account, the session and its connection.
 // Renderers only draw: they reach main through the checked channels in src/shared/ipc.ts.
 import { app, clipboard, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
+import { join } from 'node:path';
+import type { AccountView } from '../shared/account';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
 import { ErrorCodes } from '../shared/contracts/sotto-contracts';
+import { answersOnItsOwn, type DocumentField, type DocumentsView, type SetDocumentRequest } from '../shared/documents';
 import type { AppWindowAction, CommandResult, OverlayWindowAction, StartSessionRequest } from '../shared/ipc';
 import { IpcChannels } from '../shared/ipc-channels';
 import { visibleAnswerIndex } from '../shared/live/view-state';
@@ -27,6 +30,10 @@ import { registerSessionHotkeys } from './session/hotkeys';
 import { PreviewDriver } from './session/preview-driver';
 import { SessionController, type SessionDriver } from './session/session-controller';
 import { SettingsStore } from './settings-store';
+import { databaseKey, openDatabase } from './storage/local-database';
+import { LocalStore, readinessFrom } from './storage/local-store';
+import { migrations } from './storage/schema';
+import { previewDocuments } from './preview/documents';
 import { createAppWindow } from './windows/app-window';
 import { openCaptureWindow } from './windows/capture-window';
 import { createOverlayWindow, overlaySize } from './windows/overlay-window';
@@ -45,6 +52,8 @@ let unregisterHotkeys: (() => void) | null = null;
 let auth: AuthSession | null = null;
 let accounts: AccountService | null = null;
 let loaded: LoadedAccount | null = null;
+/** This computer's documents and settings (1.14), once the database is open. */
+let store: LocalStore | null = null;
 let appState: AppState = { ...initialAppState, preview };
 
 const alive = (win: BrowserWindow | null): win is BrowserWindow => win !== null && !win.isDestroyed();
@@ -98,10 +107,15 @@ function problemFrom(error: unknown): Problem {
   return { code: ErrorCodes.Request.Unavailable, message: error instanceof Error ? error.message : String(error) };
 }
 
+/** The account as Home shows it, its readiness from this computer: the documents kept here and the sound check. */
+function withReadiness(view: AccountView): AccountView {
+  return store ? { ...view, readiness: readinessFrom(store.documents(), store.soundCheckAt()) } : view;
+}
+
 /** The account again: after sign-in, after a session, and when the user comes back from the browser. */
 async function refreshAccount(): Promise<void> {
   if (preview) {
-    setAppState({ auth: { status: 'signed-in', email: 'sam@example.com', name: 'Sam Rivera' }, account: previewAccount });
+    setAppState({ auth: { status: 'signed-in', email: 'sam@example.com', name: 'Sam Rivera' }, account: withReadiness(previewAccount) });
     return;
   }
   if (!auth || !accounts) return;
@@ -113,7 +127,7 @@ async function refreshAccount(): Promise<void> {
   }
   try {
     loaded = await accounts.load();
-    setAppState({ account: loaded.view });
+    setAppState({ account: withReadiness(loaded.view) });
     if (problemFromAccount) showProblem(null);
   } catch (error) {
     showProblem(problemFrom(error), true);
@@ -153,6 +167,53 @@ async function signOut(): Promise<void> {
   showProblem(null);
 }
 
+/** The documents as a session takes them (`SetContext`, keyed by the C# names), or none at all. */
+function contextOf(documents: DocumentsView) {
+  const text = (value: string) => (value.trim() === '' ? null : value);
+  const context = {
+    Name: text(documents.name),
+    Resume: text(documents.resume),
+    JobDescription: text(documents.jobDescription),
+    Notes: text(documents.notes),
+  };
+  return Object.values(context).some((value) => value !== null) ? context : null;
+}
+
+/** Keeps one document on this computer (Prepare, the first run); Home's readiness follows. */
+function setDocument(change: SetDocumentRequest): CommandResult {
+  if (!store) {
+    return { ok: false, code: ErrorCodes.Request.Unavailable, message: "This computer's documents can't be kept right now." };
+  }
+  const documents = store.setDocument(change.field, change.text);
+  setAppState({ documents, account: appState.account ? withReadiness(appState.account) : null });
+  return { ok: true };
+}
+
+/**
+ * This computer's database (1.14): encrypted in userData where the OS can encrypt, in memory otherwise and in the
+ * preview, which brings sample documents. A file that can't be opened leaves this run on memory alone, and says so.
+ */
+async function openStore(): Promise<LocalStore> {
+  if (preview) {
+    const sample = new LocalStore(openDatabase(null, null, migrations));
+    for (const [field, text] of Object.entries(previewDocuments)) sample.setDocument(field as DocumentField, text);
+    sample.soundCheckPassed();
+    return sample;
+  }
+  if (await ElectronSecretStore.available()) {
+    try {
+      const key = await databaseKey(new ElectronSecretStore());
+      return new LocalStore(openDatabase(join(app.getPath('userData'), 'sotto.db'), key, migrations));
+    } catch {
+      showProblem({
+        code: ErrorCodes.Request.Internal,
+        message: "Your saved documents and settings can't be read on this computer, so this run keeps them only until Sotto quits.",
+      });
+    }
+  }
+  return new LocalStore(openDatabase(null, null, migrations));
+}
+
 async function startSession(request: StartSessionRequest): Promise<CommandResult> {
   if (session.running) {
     return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'A session is already running.' };
@@ -171,7 +232,7 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
     if (!loaded) return { ok: false, ...(appState.problem ?? problemFrom(new Error('The account could not be read.'))) };
     const signedIn = auth;
     const service = accounts;
-    const { readiness } = loaded.view;
+    const documents = store?.documents();
     account = loaded;
     driver = new HubDriver({
       connect: (accessToken, deviceProof, events) =>
@@ -180,7 +241,8 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
       connectProof: (accessToken) => service.connectProof(accessToken),
       proof: (method, accessToken) => service.hubProof(method, accessToken),
       // AUTO answers from the résumé and the job description; without both a session starts in MANUAL (Home says so).
-      auto: readiness.resume !== null && readiness.jobDescription !== null,
+      auto: documents ? answersOnItsOwn(documents) : false,
+      context: documents ? contextOf(documents) : null,
       // Only after the user chose "Start here" on Home, once the server said the session is open elsewhere.
       takeOver: request.takeOver === true,
       // A purchase, a renewal or a refund while the session runs: the account's minutes and plan, read again.
@@ -350,6 +412,9 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     Menu.setApplicationMenu(null);
     denyPermissions(electronSession.defaultSession);
     if (!preview) await createServices();
+    store = await openStore();
+    settings.restore(store.settings(), (kept) => store?.saveSettings(kept));
+    setAppState({ documents: store.documents() });
 
     registerIpc({
       overlayWindow: () => overlayWindow,
@@ -365,6 +430,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       onOverlayWindow,
       onAppWindow,
       copyText: (text) => clipboard.writeText(text),
+      setDocument,
     });
 
     const win = createAppWindow();

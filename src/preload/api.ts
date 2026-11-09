@@ -1,5 +1,6 @@
 // What each window may ask of main: the whole surface, typed. Types only, so renderers can import it freely.
 import type { AppState } from '../shared/app-state';
+import type { SetDocumentRequest } from '../shared/documents';
 import type {
   AppWindowAction,
   CommandResult,
@@ -41,5 +42,7 @@ export interface AppApi extends SettingsApi {
   /** Reads the account again. */
   refresh(): Promise<void>;
   startSession(request: StartSessionRequest): Promise<CommandResult>;
+  /** Keeps one document on this computer; the state that follows carries it. */
+  setDocument(change: SetDocumentRequest): Promise<CommandResult>;
   window(action: AppWindowAction): void;
 }

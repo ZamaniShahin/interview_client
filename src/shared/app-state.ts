@@ -1,6 +1,7 @@
-// What the app window shows of the app as a whole: who is signed in, the account, and the one problem to explain.
-// Main owns it and sends it whole on every change.
+// What the app window shows of the app as a whole: who is signed in, the account, this computer's documents, and the
+// one problem to explain. Main owns it and sends it whole on every change.
 import type { AccountView } from './account';
+import { emptyDocuments, type DocumentsView } from './documents';
 
 export type AuthView =
   | { status: 'signed-out' }
@@ -24,6 +25,14 @@ export interface AppState {
   problem: Problem | null;
   /** Development's scripted preview (`npm run dev:preview`): no server, a sample account. */
   preview: boolean;
+  /** What answers are grounded in, as kept on this computer (1.14). */
+  documents: DocumentsView;
 }
 
-export const initialAppState: AppState = { auth: { status: 'signed-out' }, account: null, problem: null, preview: false };
+export const initialAppState: AppState = {
+  auth: { status: 'signed-out' },
+  account: null,
+  problem: null,
+  preview: false,
+  documents: emptyDocuments,
+};

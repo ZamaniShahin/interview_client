@@ -1,8 +1,9 @@
-// The app window's view of main's state: sign-in, the account, the last problem. Main owns all of it and says when it
+// The app window's view of main's state: sign-in, the account, this computer's documents, the last problem. Main owns all of it and says when it
 // changes; the store only follows, and forwards what the user asks for.
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { initialAppState, type AppState } from '../../shared/app-state';
+import type { SetDocumentRequest } from '../../shared/documents';
 import type { CommandResult } from '../../shared/ipc';
 
 export const useAppStore = defineStore('app', () => {
@@ -13,6 +14,7 @@ export const useAppStore = defineStore('app', () => {
   const auth = computed(() => state.value.auth);
   const account = computed(() => state.value.account);
   const problem = computed(() => state.value.problem);
+  const documents = computed(() => state.value.documents);
   const signedIn = computed(() => state.value.auth.status === 'signed-in');
 
   async function load(): Promise<void> {
@@ -51,5 +53,25 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.startSession(takeOver ? { consent: true, takeOver: true } : { consent: true });
   }
 
-  return { state, loaded, auth, account, problem, signedIn, load, signIn, cancelSignIn, signOut, refresh, startSession };
+  /** Keeps one document on this computer; the state main sends next carries it. */
+  function setDocument(change: SetDocumentRequest): Promise<CommandResult> {
+    return window.appApi.setDocument(change);
+  }
+
+  return {
+    state,
+    loaded,
+    auth,
+    account,
+    problem,
+    documents,
+    signedIn,
+    load,
+    signIn,
+    cancelSignIn,
+    signOut,
+    refresh,
+    startSession,
+    setDocument,
+  };
 });

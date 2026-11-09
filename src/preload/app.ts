@@ -17,6 +17,7 @@ const api: AppApi = {
   signOut: () => ipcRenderer.invoke(IpcChannels.appSignOut),
   refresh: () => ipcRenderer.invoke(IpcChannels.appRefresh),
   startSession: (request) => ipcRenderer.invoke(IpcChannels.appStartSession, request),
+  setDocument: (change) => ipcRenderer.invoke(IpcChannels.appSetDocument, change),
   window: (action) => ipcRenderer.send(IpcChannels.appWindow, action),
   getSettings: () => ipcRenderer.invoke(IpcChannels.settingsGet),
   setSettings: (patch) => ipcRenderer.invoke(IpcChannels.settingsSet, patch),

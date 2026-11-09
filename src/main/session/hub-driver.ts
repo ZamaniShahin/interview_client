@@ -12,6 +12,7 @@ import {
   type AudioFrame,
   type LiveClient,
   type LiveHub,
+  type SetContextRequest,
 } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult } from '../../shared/ipc';
 import type { LiveAction, LiveEvent } from '../../shared/live/reducer';
@@ -30,6 +31,11 @@ export interface HubDriverDependencies {
   proof: (method: 'StartSession' | 'ResumeSession', accessToken: string) => Promise<string>;
   /** Start in AUTO (the default); MANUAL when the user chose it. */
   auto: boolean;
+  /**
+   * This computer's documents, sent once the session has started (`SetContext`), keyed by the C# names. AUTO answers
+   * only once the résumé and the job description are in (the server's rule). Null sends none.
+   */
+  context?: Omit<SetContextRequest, 'CommandId'> | null;
   /**
    * End the account's live session on another device and start here. Only after the user said yes to it, never by
    * default (the contract's `TakeOver`).
@@ -102,6 +108,7 @@ export class HubDriver implements SessionDriver {
       }
       this.sessionId = ack.Value.SessionId;
       this.openUpload(opened.hub);
+      await this.sendContext(opened.hub);
       return { ok: true };
     } catch (error) {
       // The server refuses a connection after the handshake, by closing it with the reason: that beats whatever the
@@ -163,6 +170,16 @@ export class HubDriver implements SessionDriver {
     // A stream that fails ends with its connection; the next resume opens another.
     void hub.uploadAudio(upload).catch(() => {});
     for (const frame of this.recent) upload.next(frame);
+  }
+
+  /**
+   * This computer's documents for the session, once, right after it starts: a resume keeps them on the server. A
+   * refusal or a drop leaves the session running without them, answering only when asked, as the strip then says.
+   */
+  private async sendContext(hub: LiveHub): Promise<void> {
+    const context = this.deps.context;
+    if (!context) return;
+    await hub.setContext({ CommandId: randomUUID(), ...context }).catch(() => undefined);
   }
 
   /**

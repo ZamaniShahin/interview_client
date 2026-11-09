@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AskMode } from '../../src/shared/contracts/sotto-contracts';
+import { setDocumentSchema } from '../../src/shared/documents';
 import { copyTextSchema, overlayCommandSchema, overlayWindowActionSchema, startSessionSchema } from '../../src/shared/ipc';
 import { settingsPatchSchema } from '../../src/shared/settings';
 
@@ -59,5 +60,29 @@ describe("what an answer's Copy may hand main (1.13)", () => {
     expect(copyTextSchema.safeParse('x'.repeat(100_001)).success).toBe(false);
     expect(copyTextSchema.safeParse({ text: 'code' }).success).toBe(false);
     expect(copyTextSchema.safeParse(42).success).toBe(false);
+  });
+});
+
+describe('what the app window may keep as a document (1.14)', () => {
+  it.each([
+    ['name', 200],
+    ['resume', 50_000],
+    ['jobDescription', 30_000],
+    ['notes', 5_000],
+  ] as const)('takes a %s up to its limit of %i characters, and refuses one past it', (field, limit) => {
+    expect(setDocumentSchema.safeParse({ field, text: 'x'.repeat(limit) }).success).toBe(true);
+    const over = setDocumentSchema.safeParse({ field, text: 'x'.repeat(limit + 1) });
+    expect(over.success).toBe(false);
+    expect(over.error?.issues[0]?.message).toBe('too_long');
+  });
+
+  it('takes an empty text, which removes the document', () => {
+    expect(setDocumentSchema.safeParse({ field: 'resume', text: '' }).success).toBe(true);
+  });
+
+  it('refuses a document it has no place for, extra fields, and anything but text', () => {
+    expect(setDocumentSchema.safeParse({ field: 'prepDoc', text: 'x' }).success).toBe(false);
+    expect(setDocumentSchema.safeParse({ field: 'resume', text: 'x', path: 'C:\resume.pdf' }).success).toBe(false);
+    expect(setDocumentSchema.safeParse({ field: 'resume', text: 42 }).success).toBe(false);
   });
 });

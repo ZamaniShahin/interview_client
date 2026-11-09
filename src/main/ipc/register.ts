@@ -3,6 +3,7 @@
 import { ipcMain, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import type { AppState } from '../../shared/app-state';
 import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
+import { setDocumentSchema, type SetDocumentRequest } from '../../shared/documents';
 import {
   appWindowActionSchema,
   copyTextSchema,
@@ -34,6 +35,8 @@ export interface IpcDependencies {
   onAppWindow: (action: AppWindowAction) => void;
   /** Puts text on the clipboard: main's, since the overlay never takes focus and a renderer's clipboard wants it. */
   copyText: (text: string) => void;
+  /** Keeps one document on this computer (checked against its limit). */
+  setDocument: (change: SetDocumentRequest) => CommandResult;
 }
 
 const invalid: CommandResult = { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'That request was not valid.' };
@@ -96,6 +99,15 @@ export function registerIpc(deps: IpcDependencies): void {
       return { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'Tick the consent box to start.' };
     }
     return deps.startSession(parsed.data);
+  });
+
+  ipcMain.handle(IpcChannels.appSetDocument, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = setDocumentSchema.safeParse(payload);
+    if (parsed.success) return deps.setDocument(parsed.data);
+    return parsed.error.issues.some((issue) => issue.message === 'too_long')
+      ? { ok: false, code: ErrorCodes.Field.TooLong, message: 'That is longer than Sotto can take.' }
+      : invalid;
   });
 
   ipcMain.handle(IpcChannels.settingsGet, (event) => (fromEither(event) ? deps.settings.get() : refuse('a Sotto window')));

@@ -27,6 +27,8 @@ export const IpcChannels = {
   appRefresh: 'app:refresh',
   /** app window → main (invoke): start a session; the consent box must be ticked, every time. */
   appStartSession: 'app:start-session',
+  /** app window → main (invoke): one document's whole text, kept on this computer (Prepare, the first run). */
+  appSetDocument: 'app:set-document',
   /** any window → main (invoke): the settings. */
   settingsGet: 'settings:get',
   /** any window → main (invoke): change some settings. */

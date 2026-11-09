@@ -25,6 +25,7 @@ async function home(problem: Problem | null = null) {
     signOut: vi.fn(async () => {}),
     refresh: vi.fn(async () => {}),
     startSession: vi.fn(async () => ({ ok: true as const })),
+    setDocument: vi.fn(async () => ({ ok: true as const })),
     window: vi.fn(),
     getSettings: vi.fn(),
     setSettings: vi.fn(),

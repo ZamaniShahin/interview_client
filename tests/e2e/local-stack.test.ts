@@ -17,10 +17,13 @@ import { MemorySecretStore } from '../../src/main/auth/secret-store';
 import { createLiveTransport } from '../../src/main/connection/live-connection';
 import { DeviceIdentity } from '../../src/main/device/device-identity';
 import { signDeviceProof } from '../../src/main/device/proof';
-import { HubDriver } from '../../src/main/session/hub-driver';
+import { HubDriver, type HubDriverDependencies } from '../../src/main/session/hub-driver';
 import { SessionController } from '../../src/main/session/session-controller';
 import { AskMode, ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
 import { signUpInBrowser } from './keycloak-browser';
+
+/** The documents a session takes, as the driver sends them (`SetContext`). */
+type SessionDocuments = NonNullable<HubDriverDependencies['context']>;
 
 const issuer = process.env['SOTTO_OIDC_ISSUER'] ?? 'http://localhost:8080/realms/sotto';
 const apiBaseUrl = process.env['SOTTO_API_BASE_URL'] ?? 'http://localhost:5180';
@@ -90,7 +93,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
 
     // 1.12: a live session over the hub, driven as the overlay drives it.
     // The connection opens with this computer's proof (backend docs/04 §6); the server refuses one that isn't.
-    const driverWith = (forgeProof: boolean) =>
+    const driverWith = ({ forgeProof = false, auto = false, context = null as SessionDocuments | null } = {}) =>
       new HubDriver({
         connect: (accessToken, deviceProof, events) =>
           createLiveTransport({
@@ -103,15 +106,16 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
         accessToken: () => auth.accessToken(),
         connectProof: (token) => accounts.connectProof(token),
         proof: (method, token) => accounts.hubProof(method, token),
-        auto: false,
+        auto,
+        context,
       });
-    expect(await new SessionController(() => {}).start(driverWith(true))).toMatchObject({
+    expect(await new SessionController(() => {}).start(driverWith({ forgeProof: true }))).toMatchObject({
       ok: false,
       code: ErrorCodes.Identity.DeviceProofInvalid,
     });
 
     const session = new SessionController(() => {});
-    const driver = driverWith(false);
+    const driver = driverWith();
 
     expect(await session.start(driver)).toEqual({ ok: true });
     expect(await session.command({ type: 'ask', mode: AskMode.Question, text: 'What is a mutex?' })).toEqual({
@@ -148,6 +152,31 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     // The server sends SessionEnded before it answers EndSession: the answer must still arrive.
     expect(await session.command({ type: 'endSession' })).toEqual({ ok: true });
     await vi.waitFor(() => expect(session.current.phase).toBe('ended'), { timeout: 15_000, interval: 100 });
+
+    // 1.14: a session in AUTO with this computer's documents. The server answers on its own only once SetContext
+    // has brought the résumé and the job description, so a heard question answered with no Trigger proves they came.
+    const withDocuments = new SessionController(() => {});
+    const documents: SessionDocuments = {
+      Name: 'Sam Rivera',
+      Resume: 'Backend engineer, 7 years: payments in Go and Kafka.',
+      JobDescription: 'Senior Backend Engineer, Payments.',
+      Notes: null,
+    };
+    expect(await withDocuments.start(driverWith({ auto: true, context: documents }))).toEqual({ ok: true });
+    withDocuments.audio(
+      new TextEncoder().encode('SOTTO-SCRIPT final: How do you keep a ledger consistent?'),
+      Date.now(),
+    );
+    await vi.waitFor(
+      () => {
+        const answer = withDocuments.current.answers.at(-1);
+        expect(answer?.question).toBe('How do you keep a ledger consistent?');
+        expect(answer?.ending).toBe('done');
+      },
+      { timeout: 30_000, interval: 100 },
+    );
+    expect(await withDocuments.command({ type: 'endSession' })).toEqual({ ok: true });
+    await vi.waitFor(() => expect(withDocuments.current.phase).toBe('ended'), { timeout: 15_000, interval: 100 });
 
     // Renewal rotates the refresh token, and the new one is kept; signing out forgets it.
     const before = await secrets.get('refresh-token');
