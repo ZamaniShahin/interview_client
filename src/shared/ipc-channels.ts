@@ -31,4 +31,9 @@ export const IpcChannels = {
   settingsSet: 'settings:set',
   /** main → every window: the settings changed. */
   settingsChanged: 'settings:changed',
+  /**
+   * main → capture window (1.11): the port its frames go back through. It carries no payload of its own, so it has no
+   * schema or handler; main checks every message that comes back over the port (main/capture/audio-capture.ts).
+   */
+  capturePort: 'capture:port',
 } as const;

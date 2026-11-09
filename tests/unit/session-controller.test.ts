@@ -7,7 +7,12 @@ import { SessionController, type SessionCommand, type SessionDriver } from '../.
 
 class FakeDriver implements SessionDriver {
   readonly commands: SessionCommand[] = [];
+  readonly frames: number[] = [];
   dispatch: (action: LiveAction) => void = () => {};
+
+  audio(pcm: Uint8Array): void {
+    this.frames.push(pcm[0]!);
+  }
 
   async start(dispatch: (action: LiveAction) => void): Promise<CommandResult> {
     this.dispatch = dispatch;
@@ -34,6 +39,18 @@ describe('the session controller in main', () => {
   });
 
   afterEach(() => vi.useRealTimers());
+
+  it("hands the call's sound to the running session's driver, and to nobody once it ended", async () => {
+    const driver = new FakeDriver();
+    controller.audio(Uint8Array.of(1), 1);
+    await controller.start(driver);
+
+    controller.audio(Uint8Array.of(2), 2);
+    driver.dispatch({ type: 'ended', reason: 'user' });
+    controller.audio(Uint8Array.of(3), 3);
+
+    expect(driver.frames).toEqual([2]);
+  });
 
   it('refuses commands when no session runs', async () => {
     const result = await controller.command({ type: 'clear' });

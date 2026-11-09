@@ -1,10 +1,12 @@
+import type { Subject } from '@microsoft/signalr';
 import { describe, expect, it, vi } from 'vitest';
 import type { LiveTransport } from '../../src/main/connection/live-connection';
-import { HubDriver, type HubDriverDependencies } from '../../src/main/session/hub-driver';
+import { HubDriver, resendFrames, type HubDriverDependencies } from '../../src/main/session/hub-driver';
 import {
   AskMode,
   ErrorCodes,
   SessionPhase,
+  type AudioFrame,
   type HubConnectionLike,
   type LiveClient,
   type SessionSnapshot,
@@ -30,7 +32,22 @@ class FakeConnection implements HubConnectionLike {
     return result as T;
   }
 
-  async send(): Promise<void> {}
+  /** The streams the driver opened (`UploadAudio`), and what came over each, as SignalR would read them. */
+  readonly streams: { method: string; items: AudioFrame[]; completed: boolean }[] = [];
+
+  async send(method: string, ...args: unknown[]): Promise<void> {
+    const stream = { method, items: [] as AudioFrame[], completed: false };
+    this.streams.push(stream);
+    // SignalR subscribes to a stream argument as the call is made, as this does.
+    (args[0] as Subject<AudioFrame>).subscribe({
+      next: (item) => stream.items.push(item),
+      error: () => {},
+      complete: () => {
+        stream.completed = true;
+      },
+    });
+  }
+
   on(): void {}
   off(): void {}
 
@@ -394,5 +411,94 @@ describe('the hub driver', () => {
 
     expect(h.transports).toHaveLength(1);
     expect(h.types()).not.toContain('connectionLost');
+  });
+});
+
+const pcm = (n: number) => Uint8Array.from({ length: 8 }, () => n % 256);
+const seqs = (frames: AudioFrame[]) => frames.map((f) => f.Seq);
+
+describe("the hub driver's audio upload (1.12)", () => {
+  it("streams the call's sound once the session starts, numbered from 0, keyed by the C# names", async () => {
+    const h = harness();
+    await h.start();
+
+    h.driver.audio(pcm(1), 1_000);
+    h.driver.audio(pcm(2), 1_100);
+
+    const [stream] = h.transports[0]!.connection.streams;
+    expect(stream!.method).toBe('UploadAudio');
+    expect(stream!.items).toEqual([
+      { Seq: 0, CapturedAtMs: 1_000, Pcm: pcm(1) },
+      { Seq: 1, CapturedAtMs: 1_100, Pcm: pcm(2) },
+    ]);
+  });
+
+  it('sends nothing before the session started', async () => {
+    const h = harness();
+    h.driver.audio(pcm(1), 1_000);
+
+    await h.start();
+
+    expect(h.transports[0]!.connection.streams[0]!.items).toEqual([]);
+  });
+
+  it('sends nothing while paused, and goes on numbering where it left off', async () => {
+    const h = harness();
+    await h.start();
+    const events = h.transports[0]!.events;
+    h.driver.audio(pcm(1), 1);
+
+    events.status({ Seq: 1, AtMs: 1, Auto: true, Paused: true, Stt: 'ok' });
+    h.driver.audio(pcm(2), 2);
+    events.status({ Seq: 2, AtMs: 2, Auto: true, Paused: false, Stt: 'ok' });
+    h.driver.audio(pcm(3), 3);
+
+    expect(seqs(h.transports[0]!.connection.streams[0]!.items)).toEqual([0, 1]);
+    expect(h.transports[0]!.connection.streams[0]!.items[1]!.Pcm).toEqual(pcm(3));
+  });
+
+  it('sends the newest 10 s again after a resume, then carries on, with frames from the drop among them', async () => {
+    const h = harness({
+      connection: (t, index) => {
+        if (index === 1) t.connection.replies.set('ResumeSession', () => ({ Ok: true, Value: { SessionId: 'session-1', Replayed: true, LastSeq: 0 } }));
+      },
+    });
+    await h.start();
+    for (let i = 0; i < 120; i++) h.driver.audio(pcm(i), i);
+
+    h.transports[0]!.close(new Error('WebSocket closed with status code: 1006.'));
+    // Captured while the connection was down: kept among the newest.
+    h.driver.audio(pcm(120), 120);
+    await vi.waitFor(() => expect(h.types().at(-1)).toBe('connectionRestored'));
+    h.driver.audio(pcm(121), 121);
+
+    expect(resendFrames).toBe(100);
+    const resumed = h.transports[1]!.connection.streams[0]!;
+    expect(resumed.method).toBe('UploadAudio');
+    expect(seqs(resumed.items)).toEqual(Array.from({ length: 101 }, (_, i) => 21 + i));
+  });
+
+  it('leaves the stream to end with its connection when the session is closed here, and sends nothing after', async () => {
+    const h = harness();
+    await h.start();
+
+    h.driver.dispose();
+    h.driver.audio(pcm(1), 1);
+
+    // Completing it would queue a message SignalR sends only after the stop, which refuses it, unhandled.
+    const [stream] = h.transports[0]!.connection.streams;
+    expect(h.transports[0]!.stopped).toBe(true);
+    expect(stream!.completed).toBe(false);
+    expect(stream!.items).toEqual([]);
+  });
+
+  it('sends nothing once the server ended the session', async () => {
+    const h = harness();
+    await h.start();
+    h.transports[0]!.events.sessionEnded({ Seq: 1, AtMs: 1, Reason: 'user' });
+
+    h.driver.audio(pcm(1), 1);
+
+    expect(h.transports[0]!.connection.streams[0]!.items).toEqual([]);
   });
 });

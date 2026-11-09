@@ -28,7 +28,7 @@ const mailpit = process.env['SOTTO_MAILPIT_URL'] ?? 'http://localhost:8025';
 const clientVersion = '0.1.0';
 
 describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local stack', () => {
-  it('signs up in the browser, registers this computer, and gets an answer in a live session', async () => {
+  it('signs up in the browser, registers this computer, and gets answers in a live session, to a typed question and to the sound it uploads', async () => {
     // 1.10: sign in, as the app does it, with only the browser scripted.
     const secrets = new MemorySecretStore();
     const auth = new AuthSession({
@@ -95,6 +95,25 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
         const answer = session.current.answers.at(-1);
         expect(answer?.ending).toBe('done');
         expect(answer?.text).toContain('Sure, here is the answer.');
+      },
+      { timeout: 30_000, interval: 100 },
+    );
+
+    // 1.12: the call's sound goes up the hub's audio stream, as main hands it over from capture (1.11). The local
+    // stack's scripted speech-to-text reads a frame starting "SOTTO-SCRIPT " as a transcript line, so the words come
+    // back as heard: proof that the frames reached the session, in order.
+    session.audio(new TextEncoder().encode('SOTTO-SCRIPT partial: How would you'), Date.now());
+    session.audio(new TextEncoder().encode('SOTTO-SCRIPT final: How would you shard a database?'), Date.now());
+    await vi.waitFor(() => expect(session.current.heard.finished).toBe('How would you shard a database?'), {
+      timeout: 15_000,
+      interval: 100,
+    });
+    expect(await session.command({ type: 'trigger', text: null })).toEqual({ ok: true });
+    await vi.waitFor(
+      () => {
+        const answer = session.current.answers.at(-1);
+        expect(answer?.question).toBe('How would you shard a database?');
+        expect(answer?.ending).toBe('done');
       },
       { timeout: 30_000, interval: 100 },
     );

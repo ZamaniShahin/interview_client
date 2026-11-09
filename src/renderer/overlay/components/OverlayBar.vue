@@ -6,7 +6,16 @@ import SIcon from '../../shared/components/SIcon.vue';
 import SIconButton from '../../shared/components/SIconButton.vue';
 import ListeningMeter from './ListeningMeter.vue';
 
-defineProps<{ phase: Phase; paused: boolean; listening: Listening; compact: boolean; menuOpen: boolean; minutesLeft: number | null }>();
+defineProps<{
+  phase: Phase;
+  paused: boolean;
+  listening: Listening;
+  /** The call's sound, 0…1, once capture reports it (1.11). */
+  level: number | null;
+  compact: boolean;
+  menuOpen: boolean;
+  minutesLeft: number | null;
+}>();
 const emit = defineEmits<{ toggleCompact: []; toggleMenu: []; close: [] }>();
 </script>
 
@@ -24,7 +33,7 @@ const emit = defineEmits<{ toggleCompact: []; toggleMenu: []; close: [] }>();
       <span v-if="paused" class="stat"><ListeningMeter flat />Not listening</span>
       <span v-else-if="listening === 'reconnecting'" class="stat on"><SIcon name="reconnect" :size="14" />Listening: reconnecting…</span>
       <span v-else-if="listening === 'down'" class="stat on"><SIcon name="listeningDown" :size="14" />Listening is down</span>
-      <span v-else class="stat"><ListeningMeter />Listening</span>
+      <span v-else class="stat"><ListeningMeter :level="level" />Listening</span>
     </template>
 
     <span class="spacer" />

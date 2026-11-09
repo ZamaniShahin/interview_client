@@ -26,7 +26,7 @@ Node 24 runs everything. Node 24.15 or later also avoids an engine warning from 
 `npm run dev` talks to the backend's local stack ([below](#talking-to-a-local-backend)):
 - **Sign in** on Home: the browser opens Keycloak's page, and the app carries on when you're done;
 - tick the consent box and press **Start session**: the session runs on the server, over the hub;
-- until audio capture (1.11), answers come from what you type.
+- the session listens to this computer's sound, and the strip's meter follows it. Heard shows its words only when the AppHost has an OpenAI key: the scripted stand-ins ignore real sound. Answers also come from what you type.
 
 `npm run dev:preview` plays a scripted interview instead of the server:
 - tick the consent box on Home and press **Start session**;
@@ -55,7 +55,13 @@ A packaged build never runs the preview.
 - **A live session over the hub:** `StartSession` with a device proof, the overlay's commands, and after a drop `ResumeSession` with `LastSeq`, redrawing from a snapshot when the replay is incomplete. Past the server's 2 minutes, the session ends.
 - **An end-to-end test** against the local stack, opt-in ([below](#talking-to-a-local-backend)).
 
-**Not yet:** audio capture (1.11) and so `UploadAudio`, Mermaid and syntax colors in answers (1.13), the first run (1.14), the local database, packaging hardening.
+**The contract synced, 2026-11-09:** the session's minutes (`Usage`) and its endings (`SessionEnding`), the account's `EntitlementsUpdated`, and the takeover on Home.
+
+**Audio capture and its upload, 2026-11-09** (1.11, and 1.12 but for the proof at connect; [details](#audio-capture-details-111)):
+- **This computer's sound**, captured as it plays, framed for the server, and streamed up `UploadAudio`; the newest 10 s go again after a resume.
+- **The meter and the warnings** (Q18): the strip's meter follows the sound; a warning when nothing has been heard for 20 s; a lost device reopened, with words while it is.
+
+**Not yet:** the device proof at connect (the rest of 1.12), Mermaid and syntax colors in answers (1.13), the first run (1.14), the microphone (with the coach, 3.7), the local database, packaging hardening.
 
 ## Tech decisions
 
@@ -68,12 +74,12 @@ A packaged build never runs the preview.
 | Build | **electron-vite** (Vite for main, preload and renderer) | fast dev server and HMR; one config | webpack, Electron Forge's bundlers | added |
 | UI framework | **Vue 3** (Composition API) + **Pinia** for state | the team's framework | React | added |
 | Component library | **none inside overlay windows**; small custom components | every control must follow the stealth rules (no `title`, no native `<select>` popup, no cursor changes); a library fights them | Vuetify in the overlay (fine for a future web admin) | built |
-| Server connection | **@microsoft/signalr** + MessagePack protocol, **in the main process** | tokens never reach a renderer; an overlay reload doesn't drop the session | the connection in the renderer | wired (1.12); audio upload with 1.11 |
+| Server connection | **@microsoft/signalr** + MessagePack protocol, **in the main process** | tokens never reach a renderer; an overlay reload doesn't drop the session | the connection in the renderer | wired (1.12), the audio upload included; the proof at connect is left |
 | Contracts | TypeScript types **generated** from the server's C# hub interfaces (`src/shared/contracts/`, never hand-edited), copied from the backend's `contracts/sotto-contracts.ts` by `npm run contracts:sync`. Field keys are the C# names, as on the wire | a misspelled message or field fails at compile time | v1's hand-matched strings | built |
 | Login | **OIDC auth code + PKCE in the system browser** with a loopback redirect, via **openid-client** (panva) in main | RFC 8252; no password form inside the app | an embedded login window | added (6.8.8), bundled into main (it ships as ES modules only) |
 | Token storage | refresh token + device private key encrypted with Electron **safeStorage**; access token in memory only. Refresh tokens rotate, and **sending an old one ends the sign-in** (checked on Keycloak 26.6.4, backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §10): refresh one request at a time, store each new refresh token before using it, and treat `invalid_grant` as "sign in again" | OS-user-bound encryption (DPAPI or Keychain) | keytar (archived), plain files | built |
 | Device key | ECDSA P-256 made with Node `crypto`; device proof = a compact JWS per request (backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §6) | binds tokens to this installation | — | built |
-| Audio capture | hidden **capture window**: Windows system audio via `setDisplayMediaRequestHandler({audio: 'loopback'})`, mic via `getUserMedia`; an **AudioWorklet** mixes down, resamples to 24 kHz and makes PCM16 100 ms frames | no Python sidecar; Chromium handles devices | v1's Python `soundcard` | 1.11 |
+| Audio capture | hidden **capture window**: Windows system audio via `setDisplayMediaRequestHandler({audio: 'loopback'})`, mic via `getUserMedia`; Web Audio mixes down and resamples to 24 kHz, and an **AudioWorklet** makes PCM16 100 ms frames | no Python sidecar; Chromium handles devices | v1's Python `soundcard` | built for the loopback (1.11); the mic with the coach (3.7) |
 | macOS audio | **open (Q6)**: Electron's own loopback support if enough, otherwise a small native helper | — | — | Phase 5 |
 | Coach transcription | **on the device**: sherpa-onnx or Vosk, picked by a spike (Q5); the mic never leaves the machine | privacy, zero server cost | cloud STT for the mic | 3.7 |
 | Markdown | **markdown-it** (`html: false`) + **DOMPurify**; **highlight.js**; **Mermaid** (lazy, `securityLevel: "strict"`) | a safe, standard renderer for model output | v1's hand-written renderer | markdown-it and DOMPurify added; highlight.js and Mermaid at 1.13 |
@@ -108,7 +114,7 @@ app window (Vue): Home, Prepare, Practice, History, Account,   selector window: 
   Settings, Help — outside sessions; NO network, NO Node          least-privilege preload
 ```
 
-- **The main process owns every network connection.** Renderers have `connect-src 'none'` (the build sets the Content Security Policy). Events arrive from the hub in main and go to the overlay over IPC. Audio frames go from the capture window to main through a `MessagePort` (transferable buffers), then up the hub stream.
+- **The main process owns every network connection.** Renderers have `connect-src 'none'` (the build sets the Content Security Policy). Events arrive from the hub in main and go to the overlay over IPC. Audio frames go from the capture window to main through a `MessagePort`, copied (Electron drops a message that transfers a buffer to main), then up the hub stream.
 - **Only the interviewer's (loopback) audio is uploaded.** The mic feeds only the on-device coach, the echo gate, the local recording, and practice answers (as text).
 - **The app window** (backend decisions.md, Q15, decided 2026-11-09 as the UI canvas proposed): outside a session the app gets a roomier window, 960 × 640 with a sidebar; during one it steps aside for the overlay.
 
@@ -135,11 +141,15 @@ Ported from v1 (`ui/main.js`, KNOWN_ISSUES #12–#13). Break one and the overlay
 
 ## Audio capture details (1.11)
 
-- AudioWorklet: take the first channel, resample to 24 kHz, convert float → PCM16, cut 100 ms frames (4,800 bytes), stamp each with `seq` and a timestamp.
-- Keep the newest ~10 s in a ring buffer; after a reconnect, re-send it (the server drops frames it has seen).
-- Device switched or unplugged → reopen after 1.5 s (v1 behavior), with status shown.
-- **Echo gate (for the coach):** while the loopback level is above the threshold (v1 `COACH_ECHO_RMS` 0.008, hold 0.6 s), feed silence to the coach. During practice read-aloud, gate up to 60 s (v1 `MOCK_TTS_MAX_S`).
-- A level meter plus a warning after ~20 s of no interviewer audio (v1 roadmap Q1: "no captions and no errors" was v1's silent failure). The meter is drawn (`ListeningMeter.vue`); it moves once capture reports levels.
+Built 2026-11-09 for the interviewer's side; the choices are in [docs/decisions.md](docs/decisions.md) §6.
+- **The capture window** (`src/main/windows/capture-window.ts`, `src/renderer/capture/`) is hidden and never shown, on its own session, the only one allowed to capture. It asks Chromium for display media with `audio: 'loopback'`: what this computer plays. The screen's video track that comes with it is stopped at once. Echo cancellation, noise suppression and automatic gain control are off.
+- **Framing:** Web Audio mixes down to one channel (speaker rules) and resamples to 24 kHz; an AudioWorklet converts float → PCM16 and cuts 100 ms frames (4,800 bytes; `src/shared/audio/frames.ts`).
+- **To main** over a `MessageChannelMain` port, the frames copied: Electron drops a message that transfers a buffer to a main-process port. Main takes only 4,800-byte frames (`src/main/capture/audio-capture.ts`).
+- **Up the hub:** `UploadAudio` streams each frame with its `Seq` and capture time. The newest 100 frames (10 s) are kept and sent again after a resume; the server drops those it has seen. Nothing goes while paused.
+- **Device switched or unplugged** → reopen after 1.5 s (v1 behavior); meanwhile the strip says "Can't hear this computer's sound."
+- **The meter and the no-sound warning** (Q18; v1 roadmap Q1: "no captions and no errors" was v1's silent failure). The strip's meter (`ListeningMeter.vue`) shows the loudest of each 200 ms. After 20 s with nothing heard since capture opened, the strip says "No sound from this computer yet." (`src/main/capture/no-sound-watch.ts`).
+- **On a real computer:** `npm run build && node scripts/capture-check.mjs` captures 6 s and prints what arrived. Play something first.
+- **Echo gate (for the coach, 3.7):** while the loopback level is above the threshold (v1 `COACH_ECHO_RMS` 0.008, hold 0.6 s), feed silence to the coach. During practice read-aloud, gate up to 60 s (v1 `MOCK_TTS_MAX_S`).
 
 ## Features that run on the device
 

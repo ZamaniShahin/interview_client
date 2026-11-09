@@ -11,6 +11,8 @@ import { AccountService, type LoadedAccount } from './account/account-service';
 import { ApiError, RestClient } from './api/rest-client';
 import { AuthSession, NotSignedIn, SignInCancelled } from './auth/auth-session';
 import { ElectronSecretStore } from './auth/electron-secret-store';
+import { AudioCapture } from './capture/audio-capture';
+import { runCaptureCheck } from './capture/capture-check';
 import { startLoopback } from './auth/loopback';
 import { OpenIdClient, SignInExpired } from './auth/oidc';
 import { MemorySecretStore, type SecretStore } from './auth/secret-store';
@@ -26,6 +28,7 @@ import { PreviewDriver } from './session/preview-driver';
 import { SessionController, type SessionDriver } from './session/session-controller';
 import { SettingsStore } from './settings-store';
 import { createAppWindow } from './windows/app-window';
+import { openCaptureWindow } from './windows/capture-window';
 import { createOverlayWindow, overlaySize } from './windows/overlay-window';
 import { denyPermissions } from './windows/stealth';
 
@@ -50,7 +53,18 @@ const settings = new SettingsStore((changed) => applySettings(changed));
 
 const session = new SessionController((state) => {
   if (alive(overlayWindow)) overlayWindow.webContents.send(IpcChannels.overlayState, state);
-  if (state.phase === 'ended') stopHotkeys();
+  if (state.phase === 'ended') {
+    stopHotkeys();
+    capture.stop();
+  }
+});
+
+// The call's sound while a session runs (1.11): each frame to the session, which uploads it (1.12), and how capture
+// is going to the overlay (the meter, Q18's warning, a device being reopened).
+const capture = new AudioCapture({
+  open: openCaptureWindow,
+  onFrame: (pcm, capturedAtMs) => session.audio(pcm, capturedAtMs),
+  onStatus: (status) => session.dispatch({ type: 'capture', status }),
 });
 
 function applySettings(changed: Settings): void {
@@ -187,6 +201,8 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
     return result;
   }
   startHotkeys();
+  // Listening starts once the session does: no sound is captured before the server took it on.
+  capture.start();
   return result;
 }
 
@@ -211,6 +227,7 @@ function openOverlay(): void {
 /** After an ended session's overlay is closed, or a start that failed: back to the window. */
 function closeSession(): void {
   stopHotkeys();
+  capture.stop();
   session.reset();
   if (alive(overlayWindow)) overlayWindow.destroy();
   overlayWindow = null;
@@ -317,7 +334,10 @@ async function createServices(): Promise<void> {
 // Every renderer runs sandboxed, whatever a window's options say.
 app.enableSandbox();
 
-if (!app.requestSingleInstanceLock()) {
+// Development only: the capture path on this computer, checked with nothing shown (scripts/capture-check.mjs).
+if (!app.isPackaged && process.argv.includes('--capture-check')) {
+  runCaptureCheck();
+} else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
@@ -361,5 +381,8 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.on('window-all-closed', () => app.quit());
-  app.on('will-quit', () => stopHotkeys());
+  app.on('will-quit', () => {
+    stopHotkeys();
+    capture.stop();
+  });
 }

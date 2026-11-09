@@ -75,3 +75,42 @@ describe("the overlay's words", () => {
     expect(overlayBanner(live({ phase: 'reconnecting', ending: endingSoon }))?.icon).toBe('reconnect');
   });
 });
+
+describe("the overlay's words about this computer's sound", () => {
+  const capture = (change: Partial<LiveViewState['capture']>) => ({
+    level: null,
+    noSound: false,
+    down: false,
+    ...change,
+  });
+
+  it('says when the device is lost, and that it is trying again', () => {
+    expect(overlayBanner(live({ capture: capture({ down: true }) }))).toEqual({
+      icon: 'attention',
+      lead: "Can't hear this computer's sound.",
+      rest: 'Trying again…',
+    });
+  });
+
+  it('says when nothing has been heard yet, and what to check', () => {
+    expect(overlayBanner(live({ capture: capture({ noSound: true }) }))).toMatchObject({
+      lead: 'No sound from this computer yet.',
+      rest: 'Check that the call plays on this computer.',
+    });
+  });
+
+  it('puts a lost device above being paused, and being paused above no sound yet', () => {
+    expect(overlayBanner(live({ paused: true, capture: capture({ down: true }) }))?.lead).toBe(
+      "Can't hear this computer's sound.",
+    );
+    expect(overlayBanner(live({ paused: true, capture: capture({ noSound: true }) }))?.lead).toBe('Paused.');
+  });
+
+  it('puts reconnecting and an ending above both', () => {
+    const lost = capture({ down: true, noSound: true });
+    expect(overlayBanner(live({ phase: 'reconnecting', capture: lost }))?.icon).toBe('reconnect');
+    expect(
+      overlayBanner(live({ ending: { reason: SessionEndReasons.MaxLength, secondsLeft: 30 }, capture: lost }))?.icon,
+    ).toBe('clock');
+  });
+});

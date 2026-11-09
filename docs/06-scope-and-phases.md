@@ -9,7 +9,7 @@ Goal: an internal user runs a real mock interview end to end on Windows.
 | # | Client checkpoint | What it gives the user |
 |---|---|---|
 | 1.10 | **Sign-in**: the system browser, then back to the app | an account on this computer, staying signed in |
-| 1.11 | **Capturing the call's audio** on Windows: what the computer plays, never the microphone | the interviewer is heard |
+| 1.11 | **Capturing the call's audio** on Windows: what the computer plays, never the microphone; a level meter, and a warning when nothing is heard (Q18) | the interviewer is heard, and a call playing elsewhere is noticed |
 | 1.12 | **The live connection**, owned by the app's core process, reconnecting by itself | a session that survives network drops |
 | 1.13 | **The overlay**: Heard, the answer, answer history ‹ ›, the ask bar, the status; **the stealth rules, each with its test** | the product itself |
 | 1.14 | **First run**: the setup wizard, with the OpenAI notice, sign-in and device, name / résumé / job description, the sound check, the hotkeys and 🛡 Test hiding | a new user set up in minutes, and told what is sent where |
@@ -69,7 +69,7 @@ Also on the server in Phase 3: practice (3.3), and resuming a session on another
   - Microsoft and LinkedIn sign-in;
   - an optional encrypted sync of the answer bank and settings;
   - more languages than English;
-  - v1's own never-built ideas: an audio level meter, tip buttons, company / role / coding-language fields, per-company presets, remapping hotkeys.
+  - v1's own never-built ideas: tip buttons, company / role / coding-language fields, per-company presets, remapping hotkeys. The audio level meter came with 1.11 (Q18).
 
 ## What the server can do today
 

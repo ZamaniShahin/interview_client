@@ -7,6 +7,18 @@ export type Listening = 'ok' | 'reconnecting' | 'down';
 /** `reconnecting` is the connection to Sotto; listening has its own state. */
 export type Phase = 'idle' | 'starting' | 'live' | 'reconnecting' | 'ended';
 
+/** How capturing the call's sound is going (1.11), as main's capture reports it. */
+export interface CaptureStatus {
+  /** The meter's level, 0…1; null while no frame has come. */
+  level: number | null;
+  /** Nothing heard from this computer since capture opened, for about 20 s (Q18). */
+  noSound: boolean;
+  /** The device was lost or refused; capture is reopening it. */
+  down: boolean;
+}
+
+export const idleCapture: CaptureStatus = { level: null, noSound: false, down: false };
+
 /** How an answer finished, or that it hasn't yet (the handoff's §7.2, states 5 to 9). */
 export type AnswerEnding = 'writing' | 'done' | 'stopped' | 'failed' | 'hidden';
 
@@ -34,6 +46,8 @@ export interface LiveViewState {
   autoAvailable: boolean;
   paused: boolean;
   listening: Listening;
+  /** This computer's sound, as captured (1.11): the meter, and whether it reaches Sotto at all. */
+  capture: CaptureStatus;
   /** The interviewer's finished words, and the phrase still being spoken. */
   heard: { finished: string; live: string };
   /** This interview's answers, oldest first. */
@@ -62,6 +76,7 @@ export const initialLiveState: LiveViewState = {
   autoAvailable: true,
   paused: false,
   listening: 'ok',
+  capture: idleCapture,
   heard: { finished: '', live: '' },
   answers: [],
   viewing: null,

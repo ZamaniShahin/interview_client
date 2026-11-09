@@ -97,6 +97,7 @@ function confirm(): void {
       :phase="s.phase"
       :paused="s.paused"
       :listening="s.listening"
+      :level="s.capture.level"
       :compact="compact"
       :menu-open="menuOpen"
       :minutes-left="s.minutesLeft"

@@ -50,6 +50,7 @@ export default defineConfig({
         input: {
           overlay: resolve('src/preload/overlay.ts'),
           app: resolve('src/preload/app.ts'),
+          capture: resolve('src/preload/capture.ts'),
         },
       },
     },
@@ -62,6 +63,8 @@ export default defineConfig({
         input: {
           overlay: resolve('src/renderer/overlay/index.html'),
           app: resolve('src/renderer/app/index.html'),
+          // The hidden capture window (1.11); its AudioWorklet is built from main.ts's `?worker&url` import.
+          capture: resolve('src/renderer/capture/index.html'),
         },
       },
     },

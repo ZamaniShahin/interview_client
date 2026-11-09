@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Four bars beside "Listening". Their heights follow the interviewer's level once capture reports it (1.11); until
-// then they hold still. Flat and grey when nothing is being listened to.
+// Four bars beside "Listening". Their heights follow the call's level as capture reports it (1.11), five times a
+// second; until the first report they hold still. Flat and grey when nothing is being listened to.
 import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{ level?: number | null; flat?: boolean }>(), { level: null, flat: false });

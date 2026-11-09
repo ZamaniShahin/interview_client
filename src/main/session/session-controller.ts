@@ -11,6 +11,8 @@ export interface SessionDriver {
   /** Starts the session; events come back through `dispatch`. `state` reads the current view (a resume needs LastSeq). */
   start(dispatch: (action: LiveAction) => void, state: () => LiveViewState): Promise<CommandResult>;
   command(command: SessionCommand): Promise<CommandResult>;
+  /** One 100 ms frame of the call's sound (1.11), as captured; the hub uploads it (1.12), the preview ignores it. */
+  audio?(pcm: Uint8Array, capturedAtMs: number): void;
   /** Stops listening and drops timers or the connection. Safe to call twice. */
   dispose(): void;
 }
@@ -66,6 +68,11 @@ export class SessionController {
       if (command.type === 'clearHeard') this.dispatch({ type: 'heardCleared' });
     }
     return result;
+  }
+
+  /** A frame of the call's sound, for the running session's driver; nothing when no session runs. */
+  audio(pcm: Uint8Array, capturedAtMs: number): void {
+    if (this.running) this.driver?.audio?.(pcm, capturedAtMs);
   }
 
   /** After the overlay is closed on an ended session. */

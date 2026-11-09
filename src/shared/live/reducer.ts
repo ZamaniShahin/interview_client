@@ -10,7 +10,14 @@ import {
   type LiveClient,
   type SessionSnapshot,
 } from '../contracts/sotto-contracts';
-import { initialLiveState, type AnswerView, type Listening, type LiveViewState, type Tier } from './view-state';
+import {
+  initialLiveState,
+  type AnswerView,
+  type CaptureStatus,
+  type Listening,
+  type LiveViewState,
+  type Tier,
+} from './view-state';
 
 /**
  * The hub's events about the session. `entitlementsUpdated` is the account's, not the session's: it has no `Seq`, and
@@ -36,6 +43,8 @@ export type LiveAction =
   | { type: 'heardCleared' }
   /** The server accepted a command: the session is in use, so an inactivity notice no longer holds. */
   | { type: 'commandAccepted' }
+  /** How capturing this computer's sound is going (main's capture, 1.11). */
+  | { type: 'capture'; status: CaptureStatus }
   /** Look at an earlier answer by index, or follow the newest again (null). */
   | { type: 'view'; index: number | null }
   /** Minutes and tier come from the account until the hub carries usage (backend 2.4). */
@@ -59,6 +68,8 @@ export function reduceLive(state: LiveViewState, action: LiveAction): LiveViewSt
       return { ...state, heard: { finished: '', live: '' } };
     case 'commandAccepted':
       return state.ending?.reason === SessionEndReasons.Inactive ? { ...state, ending: null } : state;
+    case 'capture':
+      return { ...state, capture: action.status };
     case 'view':
       return { ...state, viewing: clampView(state, action.index) };
     case 'account':

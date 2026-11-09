@@ -200,3 +200,12 @@ describe("the session's minutes and its endings", () => {
     expect(run(ending(SessionEndReasons.MaxLength), { type: 'starting' }).ending).toBeNull();
   });
 });
+
+describe("this computer's sound, as captured (1.11)", () => {
+  it('follows what main reports, and starts the next session idle', () => {
+    const reported = run({ type: 'capture', status: { level: 0.6, noSound: false, down: false } });
+    expect(reported.capture).toEqual({ level: 0.6, noSound: false, down: false });
+
+    expect(reduceLive(reported, { type: 'starting' }).capture).toEqual({ level: null, noSound: false, down: false });
+  });
+});

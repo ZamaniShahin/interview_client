@@ -461,6 +461,38 @@ async function run() {
   const overlay = await connectPage('overlay/index.html');
   await waitFor('the session to start', async () => /MANUAL|AUTO/.test(await textOf(overlay)), 20_000);
   note('overlay strip:', (await textOf(overlay)).split('\n').filter(Boolean).slice(0, 6).join(' | '));
+
+  // 1.11: the call's sound is captured while the session runs, and the strip's meter follows it. The meter holds still
+  // at 5, 9, 12 and 7 px until the first frame reaches main, so leaving that proves frames flow; silence lays it at
+  // 3 px, sound raises it.
+  const capturing = await waitFor(
+    'the capture window',
+    async () => (await targets(9222)).find((t) => t.type === 'page' && t.url.includes('capture/index.html')),
+    10_000,
+  );
+  note('capture window open:', capturing.url.split('/').slice(-2).join('/'));
+  const meterBars = () =>
+    overlay.eval(`(() => {
+      const m = document.querySelector('.meter:not(.flat)');
+      return m ? [...m.querySelectorAll('i')].map((i) => parseInt(i.style.height, 10)) : null;
+    })()`);
+  await waitFor(
+    'the meter to follow a level',
+    async () => {
+      const bars = await meterBars();
+      return bars && bars.join() !== '5,9,12,7';
+    },
+    10_000,
+  );
+  // How loud, over two seconds: it depends on what this computer plays, so it is noted, not checked.
+  let tallest = [3, 3, 3, 3];
+  for (let i = 0; i < 10; i++) {
+    const bars = await meterBars();
+    if (bars && bars[2] > tallest[2]) tallest = bars;
+    await sleep(200);
+  }
+  note('meter follows a level; tallest bars in 2 s:', tallest.map((h) => `${h}px`).join(' '));
+
   await overlay.eval(`(() => {
     const t = document.querySelector('textarea');
     t.focus();
@@ -495,6 +527,12 @@ async function run() {
     15_000,
   );
   note('overlay says:', ended.replace(/\s+/g, ' ').trim());
+  await waitFor(
+    'the capture window to close with the session',
+    async () => !(await targets(9222)).some((t) => t.url.includes('capture/index.html')),
+    10_000,
+  );
+  note('capture window closed');
   must(
     await overlay.eval(
       `(() => { const b = [...document.querySelectorAll('.ended-foot button')].find((b) => b.innerText.includes('Close')); b?.click(); return !!b; })()`,

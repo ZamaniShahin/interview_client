@@ -60,7 +60,13 @@ export function overlayBanner(state: LiveViewState): OverlayBanner | null {
       ? { icon: 'clock', lead, rest: `${rest} Ask a question to keep it.` }
       : { icon: 'clock', lead, rest };
   }
+  // This computer's sound (1.11; the canvas calls it "this computer's sound"). A lost device outranks being paused;
+  // no sound yet doesn't, since a paused session isn't listening anyway.
+  if (state.capture.down) return { icon: 'attention', lead: "Can't hear this computer's sound.", rest: 'Trying again…' };
   if (state.paused) return { icon: 'pause', lead: 'Paused.', rest: 'Minutes still count.' };
+  if (state.capture.noSound) {
+    return { icon: 'attention', lead: 'No sound from this computer yet.', rest: 'Check that the call plays on this computer.' };
+  }
   if (state.listening === 'down') {
     return state.answers.length === 0 && !state.heard.finished
       ? { icon: 'attention', lead: "Listening isn't available right now.", rest: 'Type your questions; listening starts by itself when it can.' }

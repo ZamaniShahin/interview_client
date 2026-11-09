@@ -3,11 +3,13 @@
 // the last sequence number it saw. The server keeps a suspended session for 2 minutes (backend docs/02 §11); past
 // that, or if the server says it expired, the session ends here too.
 import { randomUUID } from 'node:crypto';
+import { Subject } from '@microsoft/signalr';
 import {
   createLiveHub,
   ErrorCodes,
   SessionEndReasons,
   type Ack,
+  type AudioFrame,
   type LiveClient,
   type LiveHub,
 } from '../../shared/contracts/sotto-contracts';
@@ -48,6 +50,12 @@ interface Opened {
   closeError: () => Error | null;
 }
 
+/**
+ * The newest 10 s of the call's sound (100 frames): what a resume sends again (client README, "Audio capture
+ * details"). The server drops a frame it has seen, by its `Seq`, so sending one twice is harmless.
+ */
+export const resendFrames = 100;
+
 const unreachable: CommandResult = {
   ok: false,
   code: ErrorCodes.Request.Unavailable,
@@ -64,6 +72,11 @@ export class HubDriver implements SessionDriver {
   private pending = 0;
   private dispatch: (action: LiveAction) => void = () => {};
   private state: () => LiveViewState = () => initialLiveState;
+  /** The audio stream on the current connection (`UploadAudio`); null between a drop and its resume. */
+  private upload: Subject<AudioFrame> | null = null;
+  /** The session's frames are numbered from 0, across reconnects: the server keeps the highest it has seen. */
+  private nextSeq = 0;
+  private readonly recent: AudioFrame[] = [];
 
   constructor(private readonly deps: HubDriverDependencies) {}
 
@@ -85,6 +98,7 @@ export class HubDriver implements SessionDriver {
         return toResult(ack);
       }
       this.sessionId = ack.Value.SessionId;
+      this.openUpload(opened.hub);
       return { ok: true };
     } catch (error) {
       // The server refuses a connection after the handshake, by closing it with the reason: that beats whatever the
@@ -112,12 +126,40 @@ export class HubDriver implements SessionDriver {
     }
   }
 
+  /**
+   * A frame of the call's sound: numbered, kept among the newest 10 s, and streamed up when a connection carries the
+   * session. Between a drop and its resume it only waits among the newest. Nothing goes while paused: the server
+   * drops paused audio anyway (backend docs/02 §4).
+   */
+  audio(pcm: Uint8Array, capturedAtMs: number): void {
+    if (!this.sessionId || this.disposed || this.ended || this.state().paused) return;
+    const frame: AudioFrame = { Seq: this.nextSeq++, CapturedAtMs: capturedAtMs, Pcm: pcm };
+    this.recent.push(frame);
+    if (this.recent.length > resendFrames) this.recent.shift();
+    this.upload?.next(frame);
+  }
+
   dispose(): void {
     this.disposed = true;
     const transport = this.transport;
     this.transport = null;
     this.hub = null;
+    // The upload ends with the connection, as the server expects (LiveHub.UploadAudio), and isn't completed first:
+    // SignalR queues a stream's completion on a promise it never handles, sent only after this stop, which refuses it.
+    this.upload = null;
     void transport?.stop().catch(() => {});
+  }
+
+  /**
+   * Opens the audio stream on a connection (`UploadAudio`, a call that lasts as long as the connection), and sends
+   * the newest frames first: after a resume, the server takes the ones it hadn't seen.
+   */
+  private openUpload(hub: LiveHub): void {
+    const upload = new Subject<AudioFrame>();
+    this.upload = upload;
+    // A stream that fails ends with its connection; the next resume opens another.
+    void hub.uploadAudio(upload).catch(() => {});
+    for (const frame of this.recent) upload.next(frame);
   }
 
   /**
@@ -178,6 +220,8 @@ export class HubDriver implements SessionDriver {
     if (transport !== this.transport || this.disposed || !this.sessionId || this.state().phase === 'ended') return;
     this.transport = null;
     this.hub = null;
+    // The stream went with its connection; frames wait among the newest until the resume.
+    this.upload = null;
     this.dispatch({ type: 'connectionLost' });
     void this.resume();
   }
@@ -212,6 +256,7 @@ export class HubDriver implements SessionDriver {
           const snapshot = await hub.getState();
           if (snapshot.Ok && snapshot.Value) this.dispatch({ type: 'snapshot', snapshot: snapshot.Value });
         }
+        this.openUpload(hub);
         this.dispatch({ type: 'connectionRestored' });
         return;
       } catch {
