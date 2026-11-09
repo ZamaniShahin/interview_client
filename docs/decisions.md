@@ -182,3 +182,9 @@ The server's licence registry (backend 2.16, Shahin's request) puts a plan on an
 | Date | Decision |
 |---|---|
 | 2026-11-09 | **The limit has words of its own**: at connect, `rate_limited` can only be the user's three connections, so a refused start says "Sotto is connected on too many of your computers right now. Close it on one, or wait a minute, then try again." During a resume the app keeps trying, as for any refused connection, and a place comes free within 90 s. Checked by the hub driver's unit test of every connect refusal |
+
+## 13. Taken in session on 2026-11-09, secret scanning (backend Q30; open to revision)
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | **The client's first CI is a secret scan**: `.github/workflows/secrets.yml`, the same as the backend's (gitleaks 8.30.1, the release binary checked against its SHA-256, the whole history, findings redacted), on every push and pull request. Its history had no findings, so it needs no allowlist. The build, tests and signed releases (4.2) come with their own workflows |
