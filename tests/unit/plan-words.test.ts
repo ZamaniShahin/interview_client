@@ -71,6 +71,42 @@ describe("the plan's words, state by state (F10 · d)", () => {
     expect(words.detail).toBe('Unlimited plan · renews Dec 1');
   });
 
+  it('says a licence is given by Sotto, with no end or until its end', () => {
+    const team = account(
+      {
+        id: 'team',
+        name: 'Team',
+        licensed: true,
+        renews: false,
+        until: null,
+        periodMinutes: null,
+        fairUseMinutes: 1_000_000,
+      },
+      { minutes: null },
+    );
+
+    expect(planWords(team)).toEqual({
+      eyebrow: 'Minutes',
+      headline: 'Unlimited',
+      detail: 'Team plan · given by Sotto',
+      tag: 'Licence',
+    });
+    expect(planWords(account({ licensed: true, renews: false, until: 'Jan 8' }))).toEqual({
+      eyebrow: 'Minutes',
+      headline: '187 min left',
+      detail: 'Credits plan · given by Sotto until Jan 8',
+      tag: 'Licence · until Jan 8',
+    });
+  });
+
+  it('sells nothing on top of a licence: no top-up, no plan, no billing page', () => {
+    const licensed = account({ licensed: true, renews: false });
+
+    expect(topUpsOffered(licensed)).toEqual([]);
+    expect(plansOffered(licensed)).toEqual([]);
+    expect(subscribed(licensed)).toBe(false);
+  });
+
   it('says a payment is due, and by when', () => {
     expect(planWords(account({ state: 'past_due', until: 'Nov 9' }))).toEqual({
       eyebrow: 'Minutes',

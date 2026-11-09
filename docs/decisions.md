@@ -166,3 +166,13 @@ What the screens offer comes from the server's catalog, and the account's words 
 | 2026-11-09 | **The ledger and the computers each have a page under Account** (F10 · b, c), with "Account ›" to go back. The ledger pages by "Show earlier", 20 entries at a time; a read of the account in between starts it again from its first page. **Signing out asks first** (F10 · e), in the canvas's words |
 | 2026-11-09 | **The preview plays the account's changes too** (`src/main/preview/billing.ts`): a top-up or a plan arrives 1.5 s after it is bought, the trial starts, a computer is removed and the ledger's earlier page comes, with no server, so `npm run dev:preview` and the app tests walk the flows |
 | 2026-11-09 | **The checks**: unit tests for the words, the mapping, the account service's requests and proofs, and the wait for a payment (with fake timers); renderer tests for every screen and state; the app tests buy a top-up in the preview and watch it arrive; the end-to-end test runs the trial, a top-up, a plan, a cancellation, the portal and the device limit against the local stack, paying with the backend's `tools/local-purchase.mjs`; and `scripts/app-drive.mjs` does the same through the built app's own windows. The trial is once per computer, so on a computer that had one the drive checks the app's refusal and starts it from a stand-in |
+
+## 11. Taken in session on 2026-11-09, a plan given by Sotto (2.16; open to revision)
+
+The server's licence registry (backend 2.16, Shahin's request) puts a plan on an account with no payment. The entitlements say so (`licensed`), and the app follows.
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | **A licensed plan says who gave it, not when it renews**: "Team plan · given by Sotto" (or "… given by Sotto until Jan 31"), the tag "Licence", and on Account "Given by Sotto, with no end: nothing to pay." It never renews, so the renewal words never show |
+| 2026-11-09 | **A licensed account is offered nothing to buy**: no plan cards, no top-up, no trial, and "Change plan" only for a subscriber. The server would refuse a trial anyway (`trial_not_available`) while any plan is in effect. Once the licence ends or is revoked, the account has no plan and the offers come back |
+| 2026-11-09 | **The checks**: unit tests for the words and the mapping, a renderer test of Account with a licence (the sidebar's words included), and an end-to-end test against the local stack in which the backend's staff tools (`tools/staff.mjs`, with a session of the test's own through `SOTTO_STAFF_SESSION`) give a new email the Team plan before it signs up, then revoke it |

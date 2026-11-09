@@ -6,6 +6,7 @@ What Sotto sells, how use is counted, and what the client shows. **Every number 
 
 - **Accounts, not license keys.** A user signs in to an account, and the account has a plan. The server checks the plan on every action; the app's copy of it only drives what the screens show.
 - **Subscriptions with live minutes**, plus **top-up packs**. Prices aren't decided yet (Q3, [08](08-open-questions.md)). For orientation, LockedIn AI sells 400 minutes a month for $69.99 and unlimited for $119.99.
+- **A plan given by Sotto** (2.16): our staff can give an email a plan with no payment, for ourselves and for testers (the server's licence registry). It goes on the account once that email is verified. The app shows it as "given by Sotto", with its end if it has one, and offers nothing to buy, no trial and no top-up while it lasts. A licence revoked or ended leaves the account with no plan.
 - **Personal accounts** first: one user, one seat. Team plans (an organization with several seats and an admin who invites people) come later.
 
 ## The plans (initial defaults)

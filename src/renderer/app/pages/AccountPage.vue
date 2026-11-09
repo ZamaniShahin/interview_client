@@ -38,6 +38,10 @@ const planLine = computed(() => {
   const { plan } = current;
   switch (plan.state) {
     case 'active':
+      if (plan.licensed)
+        return plan.until
+          ? `Given by Sotto until ${plan.until}: nothing to pay.`
+          : 'Given by Sotto, with no end: nothing to pay.';
       if (!plan.until) return '';
       return plan.renews ? `Renews ${plan.until}` : `Runs until ${plan.until}, then stops.`;
     case 'past_due':
@@ -120,7 +124,7 @@ async function signOut(): Promise<void> {
                 Manage billing
               </SButton>
               <SButton
-                v-if="isSubscribed || canBuy"
+                v-if="isSubscribed || (canBuy && !account.plan.licensed)"
                 size="sm"
                 variant="ghost"
                 :external="isSubscribed"

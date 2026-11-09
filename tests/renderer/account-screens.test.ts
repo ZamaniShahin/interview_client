@@ -92,6 +92,29 @@ describe('the account page (F10)', () => {
     expect(main()).toContain(line);
   });
 
+  it('shows a licence as given by Sotto, with no billing to manage and nothing to buy', async () => {
+    const team = account(
+      {
+        id: 'team',
+        name: 'Team',
+        licensed: true,
+        renews: false,
+        until: null,
+        periodMinutes: null,
+        fairUseMinutes: 1_000_000,
+      },
+      { minutes: null },
+    );
+    const { main, button, footer } = await shell({ account: team }, {}, 'Account');
+
+    expect(main()).toContain('Team Licence');
+    expect(main()).toContain('Given by Sotto, with no end: nothing to pay.');
+    expect(button('Manage billing')).toBeUndefined();
+    expect(button('Change plan')).toBeUndefined();
+    expect(button('Top up +100 minutes')).toBeUndefined();
+    expect(footer()).toContain('Team plan · given by Sotto');
+  });
+
   it('lets someone without a paid plan pick one, in the browser', async () => {
     const { main, click, button, api } = await shell({ account: noPlan() }, {}, 'Account');
 

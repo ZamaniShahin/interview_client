@@ -1,15 +1,18 @@
 // Checkpoint 2.13 end to end, against the backend's whole local stack (`dotnet run --project src/Sotto.AppHost`): the
 // account as the app reads it, with the catalog; the trial started from this computer; a top-up and a plan bought, the
 // payment finished as the local provider's webhook (the backend's tools/local-purchase.mjs plays the provider); the
-// billing portal; and the device limit, met by a third computer and resolved by replacing one.
+// billing portal; and the device limit, met by a third computer and resolved by replacing one. Then 2.16's licence:
+// staff give an email a plan with the backend's tools/staff.mjs, and its owner's app shows it as given.
 //
 //   SOTTO_E2E=1 npx vitest run tests/e2e
 //
 // The backend's repository is found next to this one (../backend/interview_backend), or at SOTTO_BACKEND. Each run
-// leaves one user (client-e2e-billing-<time>@example.com) in the local Keycloak and database.
+// leaves two users (client-e2e-billing-<time>@example.com, client-e2e-licence-<time>@example.com) in the local Keycloak
+// and database, and a revoked licence in the registry.
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AccountService } from '../../src/main/account/account-service';
 import { purchaseArrived } from '../../src/main/account/payment-watch';
@@ -20,7 +23,7 @@ import { OpenIdClient } from '../../src/main/auth/oidc';
 import { MemorySecretStore } from '../../src/main/auth/secret-store';
 import { DeviceIdentity } from '../../src/main/device/device-identity';
 import { ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
-import { planWords, trialOffered } from '../../src/shared/plan-words';
+import { planWords, plansOffered, topUpsOffered, trialOffered } from '../../src/shared/plan-words';
 import { signUpInBrowser } from './keycloak-browser';
 
 const issuer = process.env['SOTTO_OIDC_ISSUER'] ?? 'http://localhost:8080/realms/sotto';
@@ -33,6 +36,14 @@ const clientVersion = '0.1.0';
 function pay(checkoutUrl: string, ...args: string[]): string {
   return execFileSync(process.execPath, [resolve(backend, 'tools', 'local-purchase.mjs'), checkoutUrl, ...args], {
     encoding: 'utf8',
+  });
+}
+
+/** The backend's staff tools, as an admin of the local staff realm runs them, with a session of this run's own. */
+function staff(session: string, ...args: string[]): string {
+  return execFileSync(process.execPath, [resolve(backend, 'tools', 'staff.mjs'), ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, SOTTO_STAFF_SESSION: session },
   });
 }
 
@@ -160,6 +171,82 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the account and plan screens 
       account = (await fourth.load()).view;
       expect(account.devices.map((d) => d.name).sort()).toEqual(['Desk e2e', 'Fourth e2e']);
       expect(account.deviceRemovals.left).toBe(1);
+    },
+  );
+});
+
+describe.skipIf(process.env['SOTTO_E2E'] !== '1')('a licence given by staff, against the local stack (2.16)', () => {
+  it(
+    'shows the plan as given by Sotto, with nothing to buy or start, until it is revoked',
+    { timeout: 120_000 },
+    async () => {
+      const session = join(tmpdir(), `sotto-e2e-staff-${randomBytes(6).toString('hex')}.json`);
+      const email = `client-e2e-licence-${Date.now()}@example.com`;
+      try {
+        staff(session, 'login', '--local-admin');
+
+        // Given before its owner signs up, as for a tester: it waits for the email, verified.
+        expect(staff(session, 'licence', 'grant', email, '--reason', 'Client e2e: a licence before sign-up')).toContain(
+          'Pending',
+        );
+
+        const auth = new AuthSession({
+          oidc: new OpenIdClient({
+            issuer,
+            clientId: 'desktop',
+            scopes: 'openid email profile offline_access',
+            allowHttp: true,
+          }),
+          secrets: new MemorySecretStore(),
+          loopback: () => startLoopback(60_000),
+        });
+        const password = `E2e-${randomBytes(12).toString('base64url')}9!`;
+        await auth.signIn((url) => signUpInBrowser(url, { email, password, mailpit }));
+        const rest = new RestClient({
+          baseUrl: apiBaseUrl,
+          clientVersion,
+          accessToken: (options) => auth.accessToken(options),
+        });
+        const desk = new AccountService({
+          rest,
+          device: new DeviceIdentity(new MemorySecretStore()),
+          appVersion: clientVersion,
+          platform: 'windows',
+          fingerprint: async () => randomBytes(32).toString('hex'),
+          deviceName: () => 'Licensed e2e',
+        });
+
+        // At the first sign-in the licence is on the account: the Team plan, for good, with nothing to pay.
+        let account = (await desk.load()).view;
+        expect(account.plan).toMatchObject({
+          id: 'team',
+          name: 'Team',
+          state: 'active',
+          renews: false,
+          licensed: true,
+        });
+        expect(account.plan.until).toBeNull();
+        expect(planWords(account)).toMatchObject({ detail: 'Team plan · given by Sotto', tag: 'Licence' });
+        expect(trialOffered(account)).toBeNull();
+        expect(plansOffered(account)).toEqual([]);
+        expect(topUpsOffered(account)).toEqual([]);
+        await expect(desk.startTrial()).rejects.toMatchObject({ code: ErrorCodes.Licensing.TrialNotAvailable });
+
+        // Revoked, the plan ends at once: the app offers the plans and the trial again.
+        const id = /^(\S+)\s+active\s/m.exec(staff(session, 'licences', '--email', email))?.[1];
+        expect(id).toBeTruthy();
+        staff(session, 'licence', 'revoke', id!, '--reason', 'Client e2e: revoked at the end of the run');
+        account = (await desk.load()).view;
+        expect(account.plan).toMatchObject({ state: 'none', licensed: false });
+        expect(plansOffered(account).map((p) => p.id)).toEqual(['credits_monthly', 'unlimited']);
+        expect(trialOffered(account)).not.toBeNull();
+      } finally {
+        try {
+          staff(session, 'logout');
+        } catch {
+          // The session file goes with the temp folder anyway.
+        }
+      }
     },
   );
 });

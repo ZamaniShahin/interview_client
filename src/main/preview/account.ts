@@ -11,6 +11,7 @@ export const previewAccount: AccountView = {
     state: 'active',
     until: 'Dec 1',
     renews: true,
+    licensed: false,
     daysLeft: 22,
     periodMinutes: 400,
     fairUseMinutes: null,

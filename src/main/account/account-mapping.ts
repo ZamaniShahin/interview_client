@@ -29,6 +29,7 @@ export interface EntitlementsDto {
   renews: boolean;
   trialUsed: boolean;
   trialEndsAt: string | null;
+  licensed: boolean;
 }
 
 export interface CreditsDto {
@@ -120,6 +121,7 @@ export function toAccountView(sources: AccountSources, now: Date): AccountView {
       state: planStates.includes(entitlements.state as PlanState) ? (entitlements.state as PlanState) : 'none',
       until: entitlements.validUntil ? shortDate(entitlements.validUntil, now) : null,
       renews: entitlements.renews,
+      licensed: entitlements.licensed,
       daysLeft: entitlements.validUntil ? daysUntil(entitlements.validUntil, now) : null,
       periodMinutes: limits.liveMinutesPerPeriod,
       fairUseMinutes: limits.fairUseMinutesPerPeriod,

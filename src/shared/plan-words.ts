@@ -28,6 +28,14 @@ export function planWords(account: AccountView): PlanWords {
       };
     }
     case 'active':
+      if (plan.licensed) {
+        return {
+          eyebrow: 'Minutes',
+          headline: left,
+          detail: plan.until ? `${named} · given by Sotto until ${plan.until}` : `${named} · given by Sotto`,
+          tag: plan.until ? `Licence · until ${plan.until}` : 'Licence',
+        };
+      }
       return plan.renews
         ? {
             eyebrow: 'Minutes',
@@ -72,6 +80,8 @@ export function trialOffered(account: AccountView): TrialOffer | null {
  */
 export function topUpsOffered(account: AccountView): TopUpOffer[] {
   const { plan, catalog } = account;
+  // A licence is given, not bought: nothing is sold on top of it.
+  if (plan.licensed) return [];
   const hasMinutes =
     plan.periodMinutes !== null && (plan.state === 'active' || plan.state === 'past_due' || plan.state === 'trialing');
   return catalog?.purchases && hasMinutes ? catalog.topUps : [];
@@ -82,13 +92,15 @@ export function topUpsOffered(account: AccountView): TopUpOffer[] {
  * `already_subscribed`), and none where nothing can be bought.
  */
 export function plansOffered(account: AccountView): PlanOffer[] {
-  return account.catalog?.purchases && !subscribed(account) ? account.catalog.plans : [];
+  return account.catalog?.purchases && !subscribed(account) && !account.plan.licensed ? account.catalog.plans : [];
 }
 
 /** A paid plan that renews or was paid for: changing it, the card or cancelling happen in the provider's portal. */
 export function subscribed(account: AccountView): boolean {
   const { plan } = account;
-  return (plan.state === 'active' || plan.state === 'past_due') && plan.id !== null && plan.id !== 'trial';
+  return (
+    !plan.licensed && (plan.state === 'active' || plan.state === 'past_due') && plan.id !== null && plan.id !== 'trial'
+  );
 }
 
 /** A plan card's lines (F9 · c): "400 minutes a month, sessions up to 120", "Smart answers · 3 computers". */

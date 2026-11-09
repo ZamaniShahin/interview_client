@@ -62,6 +62,7 @@ function sources(change: Partial<AccountSources> = {}): AccountSources {
       renews: true,
       trialUsed: true,
       trialEndsAt: null,
+      licensed: false,
     },
     credits: {
       balance: 442,
@@ -148,6 +149,7 @@ describe("the account's view, from the REST API's", () => {
       state: 'active',
       until: 'Dec 1',
       renews: true,
+      licensed: false,
       daysLeft: 23,
       periodMinutes: 600,
       fairUseMinutes: null,
@@ -173,6 +175,24 @@ describe("the account's view, from the REST API's", () => {
     const plan = toAccountView(sources({ entitlements: entitled({ renews: false }) }), now).plan;
 
     expect(plan).toMatchObject({ state: 'active', renews: false, until: 'Dec 1' });
+  });
+
+  it('reads a licence as given, never renewing, with no end when it has none', () => {
+    const plan = toAccountView(
+      sources({
+        entitlements: entitled({ planId: 'team', planName: 'Team', licensed: true, renews: false, validUntil: null }),
+      }),
+      now,
+    ).plan;
+
+    expect(plan).toMatchObject({
+      id: 'team',
+      name: 'Team',
+      licensed: true,
+      renews: false,
+      until: null,
+      daysLeft: null,
+    });
   });
 
   it('has no date or days left for a plan without an end', () => {

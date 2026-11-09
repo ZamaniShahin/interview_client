@@ -43,8 +43,10 @@ export interface PlanView {
   state: PlanState;
   /** When the plan renews, ends, or (past due) must be paid by: "Dec 1"; null without one. */
   until: string | null;
-  /** Whether the plan goes on past `until` by itself; never a trial or a cancelled plan. */
+  /** Whether the plan goes on past `until` by itself; never a trial, a cancelled plan or a licence. */
   renews: boolean;
+  /** Given by Sotto through its licence registry, with no payment (backend 2.16): no billing for it here. */
+  licensed: boolean;
   /** Whole days left until `until` (trial · 9 days left); null without one. */
   daysLeft: number | null;
   /** Live minutes a period gives; null on Unlimited, which has `fairUseMinutes` instead. */

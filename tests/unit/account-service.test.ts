@@ -112,6 +112,7 @@ function entitlements(features: string[]) {
     renews: true,
     trialUsed: false,
     trialEndsAt: null,
+    licensed: false,
   };
 }
 
