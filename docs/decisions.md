@@ -19,6 +19,8 @@ What this repository settled, who settled it, and what was chosen while building
 | 2026-11-09 | **1.13 adds its three packages as the README plans**: highlight.js (code colors in answers), Mermaid (diagrams, loaded only when an answer has one, strict mode) and Playwright (end-to-end tests of the real windows); exact versions at least two weeks old, from npmjs only | Shahin (asked with options) |
 | 2026-11-09 | **1.14 stores on this computer in the encrypted database the README plans**: better-sqlite3-multiple-ciphers, one SQLite file in main, its key in safeStorage, the schema of backend docs/07 §5. 1.14 keeps the résumé, the job description, the settings and the first-run notice's acknowledgment there; history and the answer bank use the same database later | Shahin (asked with options) |
 | 2026-11-09 | **2.13's plan cards come from the server's catalog** (`GET /api/v1/billing/catalog`): the plans and top-ups with their ids, names, minutes and limits, so the app hard-codes none of them. Prices stay on the payment page until Q3 is settled | Shahin (asked with options) |
+| 2026-11-09 | **The remaining checkpoints add their planned packages** as the README lists them: @electron/fuses (4.1, build time only), pdfjs-dist and mammoth (3.10, reading PDF and Word files on the device) and electron-updater (4.2); exact versions at least two weeks old, from npm only. The coach engine (Q5) and Sentry stay separate questions | Shahin (asked with options) |
+| 2026-11-09 | **Claude builds what is left before deployment** (backend decisions.md §1): the rest of Phase 3's client checkpoints and Phase 4's, in Claude's order, each with its tests | Shahin |
 
 ## 2. Taken in session while building the skeleton (open to revision)
 
