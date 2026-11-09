@@ -42,6 +42,7 @@ class FakeRest {
       emailVerified: true,
       displayName: 'Sam',
       createdAt: '2026-11-01T12:00:00Z',
+      deviceRemovals: { left: 2, max: 3, windowDays: 30, nextFreesAt: '2026-12-06T12:00:00Z' },
     }));
     this.answer('GET /api/v1/me/entitlements', () => entitlements(['smart_tier', 'practice']));
     this.answer('GET /api/v1/me/credits', () => ({ balance: 120, lots: [] }));
@@ -49,6 +50,23 @@ class FakeRest {
     this.answer('GET /api/v1/devices', () => [device('d1')]);
     this.answer('POST /api/v1/devices', () => device('d1'));
     this.answer('GET /api/v1/devices/current', () => device('d1'));
+    this.answer('GET /api/v1/billing/catalog', () => ({
+      purchases: true,
+      plans: [
+        {
+          id: 'credits_monthly',
+          name: 'Credits',
+          features: ['live', 'smart_tier'],
+          limits: { liveMinutesPerPeriod: 400, fairUseMinutesPerPeriod: null, maxSessionMinutes: 120, devices: 3 },
+        },
+      ],
+      topUps: [{ id: 'topup_100', minutes: 100, validDays: 365 }],
+      trial: null,
+    }));
+    this.answer('POST /api/v1/me/trial', () => entitlements(['live']));
+    this.answer('POST /api/v1/billing/checkout', () => ({ url: 'https://billing.example/checkout/cs_1' }));
+    this.answer('POST /api/v1/billing/portal', () => ({ url: 'https://billing.example/portal/cus_1' }));
+    this.answer('DELETE /api/v1/devices/d2', () => undefined);
   }
 
   /** Replaces a route's answers; the last one repeats. */
@@ -62,6 +80,10 @@ class FakeRest {
 
   post<T>(path: string, options?: RequestOptions): Promise<T> {
     return this.handle('POST', path, options) as Promise<T>;
+  }
+
+  delete<T>(path: string, options?: RequestOptions): Promise<T> {
+    return this.handle('DELETE', path, options) as Promise<T>;
   }
 
   private async handle(method: string, path: string, options: RequestOptions = {}): Promise<unknown> {
@@ -87,6 +109,9 @@ function entitlements(features: string[]) {
     features,
     limits: { liveMinutesPerPeriod: 600, fairUseMinutesPerPeriod: null, maxSessionMinutes: 120, devices: 3 },
     validUntil: null,
+    renews: true,
+    trialUsed: false,
+    trialEndsAt: null,
   };
 }
 
@@ -238,5 +263,167 @@ describe('the account service', () => {
     await expect(service.connectProof('connection-token')).rejects.toMatchObject({
       code: ErrorCodes.Identity.DeviceNotRegistered,
     });
+  });
+
+  it('reads what is for sale with the account, and still shows the account when the catalog fails', async () => {
+    expect((await service.load()).view.catalog?.topUps).toEqual([{ id: 'topup_100', minutes: 100, validDays: 365 }]);
+
+    rest.answer('GET /api/v1/billing/catalog', refuse(503, ErrorCodes.Request.Unavailable));
+    const loaded = await service.load();
+
+    expect(loaded.view.catalog).toBeNull();
+    expect(loaded.view.plan.name).toBe('Pro');
+  });
+
+  it('reads the removals left and the first page of the ledger with the account', async () => {
+    const { view } = await service.load();
+
+    expect(view.deviceRemovals).toEqual({ left: 2, max: 3, windowDays: 30, nextFreesOn: 'Dec 6' });
+    expect(rest.routes()).toContain('GET /api/v1/me/credits/ledger?limit=20');
+  });
+
+  it('reads the minutes only once the plan is read, and the ledger after the minutes', async () => {
+    await service.load();
+
+    const routes = rest.routes();
+    const at = (route: string) => routes.indexOf(route);
+    expect(at('GET /api/v1/me/credits')).toBeGreaterThan(at('GET /api/v1/me/entitlements'));
+    expect(at('GET /api/v1/me/credits/ledger?limit=20')).toBeGreaterThan(at('GET /api/v1/me/credits'));
+  });
+
+  it("reads the ledger's earlier page before the given entry", async () => {
+    rest.answer('GET /api/v1/me/credits/ledger?before=21&limit=20', () => ({
+      entries: [
+        {
+          number: 20,
+          type: 'grant_plan',
+          minutes: 400,
+          balanceAfter: 400,
+          sessionId: null,
+          createdAt: '2026-10-01T12:00:00Z',
+        },
+      ],
+      next: null,
+    }));
+
+    const page = await service.ledgerPage(21);
+
+    expect(page).toEqual({
+      entries: [{ number: 20, date: 'Oct 1', kind: 'Plan minutes', detail: '', minutes: 400, balanceAfter: 400 }],
+      next: null,
+    });
+  });
+
+  it('starts the trial with a proof from this computer, for that request', async () => {
+    await service.load();
+
+    await service.startTrial();
+
+    const trial = rest.calls.find((call) => call.path === '/api/v1/me/trial')!;
+    expect(trial.method).toBe('POST');
+    expect(trial.proof!.header['kid']).toBe('d1');
+    expect(trial.proof!.payload).toMatchObject({ htm: 'POST', htu: '/api/v1/me/trial' });
+  });
+
+  it.each([
+    ErrorCodes.Identity.EmailNotVerified,
+    ErrorCodes.Licensing.TrialAlreadyUsed,
+    ErrorCodes.Licensing.TrialNotAvailable,
+    ErrorCodes.Identity.AccountSuspended,
+  ])("passes the trial's refusal on with the server's code: %s", async (code) => {
+    await service.load();
+    rest.answer('POST /api/v1/me/trial', refuse(409, code));
+
+    await expect(service.startTrial()).rejects.toMatchObject({ code });
+  });
+
+  it('starts no trial before this computer is registered', async () => {
+    await expect(service.startTrial()).rejects.toMatchObject({ code: ErrorCodes.Identity.DeviceNotRegistered });
+    expect(rest.routes()).not.toContain('POST /api/v1/me/trial');
+  });
+
+  it.each([[{ planId: 'credits_monthly' }], [{ topUpId: 'topup_100' }]])(
+    'asks for a checkout of %j, with no proof, and answers with its page',
+    async (purchase) => {
+      const url = await service.checkout(purchase);
+
+      const checkout = rest.calls.find((call) => call.path === '/api/v1/billing/checkout')!;
+      expect(checkout.body).toEqual(purchase);
+      expect(checkout.proof).toBeNull();
+      expect(url).toBe('https://billing.example/checkout/cs_1');
+    },
+  );
+
+  it.each([
+    ErrorCodes.Billing.AlreadySubscribed,
+    ErrorCodes.Licensing.NoEntitlement,
+    ErrorCodes.Billing.BillingUnavailable,
+  ])("passes a checkout's refusal on: %s", async (code) => {
+    rest.answer('POST /api/v1/billing/checkout', refuse(409, code));
+
+    await expect(service.checkout({ planId: 'credits_monthly' })).rejects.toMatchObject({ code });
+  });
+
+  it('opens the billing portal with a proof from this computer', async () => {
+    await service.load();
+
+    expect(await service.portal()).toBe('https://billing.example/portal/cus_1');
+    const portal = rest.calls.find((call) => call.path === '/api/v1/billing/portal')!;
+    expect(portal.proof!.payload).toMatchObject({ htm: 'POST', htu: '/api/v1/billing/portal' });
+  });
+
+  it("passes the portal's refusal on when nothing was bought yet", async () => {
+    await service.load();
+    rest.answer('POST /api/v1/billing/portal', refuse(404, ErrorCodes.Billing.NoBillingCustomer));
+
+    await expect(service.portal()).rejects.toMatchObject({ code: ErrorCodes.Billing.NoBillingCustomer });
+  });
+
+  it('removes another computer with a proof from this one, signed for that path', async () => {
+    await service.load();
+
+    await service.removeDevice('d2');
+
+    const removal = rest.calls.find((call) => call.method === 'DELETE')!;
+    expect(removal.path).toBe('/api/v1/devices/d2');
+    expect(removal.proof!.header['kid']).toBe('d1');
+    expect(removal.proof!.payload).toMatchObject({ htm: 'DELETE', htu: '/api/v1/devices/d2' });
+  });
+
+  it("passes a removal's refusal on at the removal cap", async () => {
+    await service.load();
+    rest.answer('DELETE /api/v1/devices/d2', refuse(429, ErrorCodes.Identity.DeviceRemovalLimitReached));
+
+    await expect(service.removeDevice('d2')).rejects.toMatchObject({
+      code: ErrorCodes.Identity.DeviceRemovalLimitReached,
+    });
+  });
+
+  it("lists the account's computers and the removals left when this one can't be added", async () => {
+    rest.answer('GET /api/v1/devices', () => [device('d1'), device('d2'), device('d3')]);
+
+    const limit = await service.deviceLimit();
+
+    expect(limit.devices.map((d) => d.id)).toEqual(['d1', 'd2', 'd3']);
+    expect(limit.devices.some((d) => d.isThisComputer)).toBe(false);
+    expect(limit.limit).toBe(3);
+    expect(limit.removals).toEqual({ left: 2, max: 3, windowDays: 30, nextFreesOn: 'Dec 6' });
+  });
+
+  it('adds this computer in place of the one named, in one registration', async () => {
+    rest.answer('POST /api/v1/devices', () => device('d9'));
+
+    expect(await service.replaceDevice('d2')).toBe('d9');
+
+    const registration = rest.calls.find((call) => call.method === 'POST')!;
+    expect(registration.body).toMatchObject({ name: 'Test PC', replacesDeviceId: 'd2' });
+    expect(registration.proof!.payload).toMatchObject({ htm: 'POST', htu: '/api/v1/devices' });
+    expect(await identity.id()).toBe('d9');
+  });
+
+  it('registers without naming a device to replace when there is room', async () => {
+    await service.load();
+
+    expect(rest.calls.find((call) => call.method === 'POST')!.body).not.toHaveProperty('replacesDeviceId');
   });
 });

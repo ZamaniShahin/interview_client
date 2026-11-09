@@ -41,6 +41,22 @@ export const IpcChannels = {
   appHidingTest: 'app:hiding-test',
   /** app window → main (send): open the sign-in page again, or copy its link (F1 · 2). */
   appSignInPage: 'app:sign-in-page',
+  /** app window → main (invoke): start the free trial from this computer (F9 · a). */
+  appStartTrial: 'app:start-trial',
+  /** app window → main (invoke): buy a plan or a top-up; the provider's page opens in the browser (F8). */
+  appBuy: 'app:buy',
+  /** app window → main (invoke): the provider's billing portal, in the browser (Manage billing, F10). */
+  appBillingPortal: 'app:billing-portal',
+  /** app window → main (invoke): the purchase being waited for: open its page again, or stop waiting (F8 · b). */
+  appPayment: 'app:payment',
+  /** app window → main (invoke): remove one of the account's other computers (F10 · c). */
+  appRemoveDevice: 'app:remove-device',
+  /** app window → main (invoke): add this computer in place of one of the account's, at the limit (F3 · b). */
+  appReplaceDevice: 'app:replace-device',
+  /** app window → main (invoke): the ledger's earlier page ("Show earlier", F10 · b). */
+  appLedgerMore: 'app:ledger-more',
+  /** app window → main (send): the window said it: the after-call offer (F8 · a) or the quiet line (F8 · c). */
+  appDismiss: 'app:dismiss',
   /** any window → main (invoke): the settings. */
   settingsGet: 'settings:get',
   /** any window → main (invoke): change some settings. */

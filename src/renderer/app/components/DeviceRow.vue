@@ -1,13 +1,15 @@
 <script setup lang="ts">
 // A computer of the account. Removing one asks first, in place: it is signed out and can never be added back, and
-// the account may remove 3 in 30 days (the server enforces both).
+// the removal cap applies (the server enforces both; the page that lists the rows says how many removals are left).
 import { ref } from 'vue';
 import type { DeviceView } from '../../../shared/account';
 import SButton from '../../shared/components/SButton.vue';
 import SConfirm from '../../shared/components/SConfirm.vue';
 import SIcon from '../../shared/components/SIcon.vue';
 
-const props = defineProps<{ device: DeviceView; canRemove: boolean }>();
+const props = withDefaults(defineProps<{ device: DeviceView; canRemove: boolean; detail?: string }>(), {
+  detail: "It is signed out and can't be added back.",
+});
 const emit = defineEmits<{ remove: [id: string] }>();
 const confirming = ref(false);
 
@@ -40,7 +42,7 @@ function remove(): void {
     <SConfirm
       v-if="confirming"
       :question="`Remove ${device.name}?`"
-      detail="It is signed out and can't be added back."
+      :detail="detail"
       :confirm-label="`Remove ${device.name}`"
       destructive
       @confirm="remove"

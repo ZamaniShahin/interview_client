@@ -8,17 +8,24 @@ import {
   acknowledgeNoticeSchema,
   appWindowActionSchema,
   copyTextSchema,
+  deviceIdSchema,
+  dismissSchema,
   hidingTestActionSchema,
   IpcChannels,
   overlayCommandSchema,
   overlayWindowActionSchema,
+  paymentActionSchema,
+  purchaseSchema,
   signInPageActionSchema,
   soundCheckActionSchema,
   startSessionSchema,
   type AppWindowAction,
   type CommandResult,
+  type DismissTarget,
   type HidingTestAction,
   type OverlayWindowAction,
+  type PaymentAction,
+  type PurchaseRequest,
   type SignInPageAction,
   type SoundCheckAction,
   type StartSessionRequest,
@@ -49,6 +56,14 @@ export interface IpcDependencies {
   soundCheck: (action: SoundCheckAction) => Promise<CommandResult>;
   hidingTest: (action: HidingTestAction) => CommandResult;
   signInPage: (action: SignInPageAction) => void;
+  startTrial: () => Promise<CommandResult>;
+  buy: (purchase: PurchaseRequest) => Promise<CommandResult>;
+  billingPortal: () => Promise<CommandResult>;
+  payment: (action: PaymentAction) => Promise<CommandResult>;
+  removeDevice: (deviceId: string) => Promise<CommandResult>;
+  replaceDevice: (deviceId: string) => Promise<CommandResult>;
+  ledgerMore: () => Promise<CommandResult>;
+  dismiss: (target: DismissTarget) => void;
 }
 
 const invalid: CommandResult = {
@@ -143,6 +158,42 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromApp(event)) return;
     const parsed = signInPageActionSchema.safeParse(payload);
     if (parsed.success) deps.signInPage(parsed.data);
+  });
+
+  ipcMain.handle(IpcChannels.appStartTrial, (event) => (fromApp(event) ? deps.startTrial() : invalid));
+
+  ipcMain.handle(IpcChannels.appBuy, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = purchaseSchema.safeParse(payload);
+    return parsed.success ? deps.buy(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appBillingPortal, (event) => (fromApp(event) ? deps.billingPortal() : invalid));
+
+  ipcMain.handle(IpcChannels.appPayment, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = paymentActionSchema.safeParse(payload);
+    return parsed.success ? deps.payment(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appRemoveDevice, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = deviceIdSchema.safeParse(payload);
+    return parsed.success ? deps.removeDevice(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appReplaceDevice, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = deviceIdSchema.safeParse(payload);
+    return parsed.success ? deps.replaceDevice(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appLedgerMore, (event) => (fromApp(event) ? deps.ledgerMore() : invalid));
+
+  ipcMain.on(IpcChannels.appDismiss, (event, payload: unknown) => {
+    if (!fromApp(event)) return;
+    const parsed = dismissSchema.safeParse(payload);
+    if (parsed.success) deps.dismiss(parsed.data);
   });
 
   ipcMain.handle(IpcChannels.appSetDocument, (event, payload: unknown): CommandResult => {

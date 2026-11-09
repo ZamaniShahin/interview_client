@@ -8,20 +8,22 @@
 //   node scripts/app-drive.mjs . app-drive.log      # the app's own output goes to the log
 //
 // Needs the backend's local stack running (`dotnet run --project src/Sotto.AppHost` there), Windows, and Electron's
-// binary (`npm run dev` or `npm start` downloads it once). It signs Sotto out on this computer before it starts and
+// binary (`npm run dev` or `npm start` downloads it once). Purchases are paid the way the provider would, by the
+// backend's tools/local-purchase.mjs (the backend is found next to this repository, or at SOTTO_BACKEND). It signs Sotto out on this computer before it starts and
 // again at the end, so don't run it where a real sign-in must be kept. Each run leaves one test user
 // (app-drive-<time>@example.com) in the local Keycloak and database. It reads the UI's words, so a change of wording
 // can break it.
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import { createWriteStream, existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 const [clientDir, logPath] = process.argv.slice(2);
 const KC = 'http://localhost:8080/realms/sotto';
-const API = 'http://localhost:5180';
 const MAILPIT = 'http://localhost:8025';
+const API = 'http://localhost:5180';
 const CLIENT_ID = 'desktop';
+const BACKEND = process.env.SOTTO_BACKEND || join(clientDir ?? '.', '..', 'backend', 'interview_backend');
 
 const step = (msg) => console.log(`\n== ${msg}`);
 const note = (...a) => console.log('  ', ...a);
@@ -31,6 +33,8 @@ const fail = (msg) => {
 /** Fails the run with `msg` unless `value` holds. */
 const must = (value, msg) => value || fail(msg);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+/** The minutes as Home shows them: a plan's "187 min left", or a trial's "30 min · 14 days" (F9 · b). */
+const minutesShown = /\d+ min left|\d+ min · \d+ days?/;
 
 async function waitFor(what, fn, timeoutMs = 30_000, everyMs = 250) {
   const end = Date.now() + timeoutMs;
@@ -127,8 +131,11 @@ async function verificationLink(email) {
   fail('no verification email');
 }
 
-/** A new user with a verified email and the trial started, made outside the app (it has no trial button yet). */
-async function createTrialUser() {
+/**
+ * A new user with a verified email and no plan yet, made outside the app: the app's own button starts the trial. A
+ * trial is once per computer too, so on a computer that already had one, `trialOutside` starts it from a stand-in.
+ */
+async function createUser() {
   const discovery = await (await fetch(`${KC}/.well-known/openid-configuration`)).json();
   const redirect = `http://127.0.0.1:${49152 + crypto.randomInt(10000)}/callback`;
   const verifier = b64url(crypto.randomBytes(32));
@@ -173,55 +180,58 @@ async function createTrialUser() {
   );
   const tokens = await tokenRes.json();
   if (!tokenRes.ok) fail(`token: ${JSON.stringify(tokens)}`);
+  note('user:', email, '| no plan yet: the app starts the trial');
 
-  const api = (path, init = {}) =>
-    fetch(`${API}${path}`, {
-      ...init,
-      headers: { authorization: `Bearer ${tokens.access_token}`, ...(init.headers ?? {}) },
-    });
-  const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
-  const { kty, crv, x, y } = publicKey.export({ format: 'jwk' });
-  const proof = (htm, htu, keyHeader) => {
-    const header = { alg: 'ES256', typ: 'sotto-device-proof+jwt', ...keyHeader };
-    const payload = {
-      htm,
-      htu,
-      iat: Math.floor(Date.now() / 1000),
-      jti: b64url(crypto.randomBytes(24)),
-      ath: b64url(sha256(tokens.access_token)),
+  /** The trial from a stand-in computer, removed again after, so the app's computer stays the account's only one. */
+  async function trialOutside() {
+    const api = (path, init = {}) =>
+      fetch(`${API}${path}`, {
+        ...init,
+        headers: { authorization: `Bearer ${tokens.access_token}`, ...(init.headers ?? {}) },
+      });
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
+    const { kty, crv, x, y } = publicKey.export({ format: 'jwk' });
+    const proof = (htm, htu, keyHeader) => {
+      const header = { alg: 'ES256', typ: 'sotto-device-proof+jwt', ...keyHeader };
+      const payload = {
+        htm,
+        htu,
+        iat: Math.floor(Date.now() / 1000),
+        jti: b64url(crypto.randomBytes(24)),
+        ath: b64url(sha256(tokens.access_token)),
+      };
+      const input = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
+      return `${input}.${b64url(crypto.sign('sha256', Buffer.from(input), { key: privateKey, dsaEncoding: 'ieee-p1363' }))}`;
     };
-    const input = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
-    return `${input}.${b64url(crypto.sign('sha256', Buffer.from(input), { key: privateKey, dsaEncoding: 'ieee-p1363' }))}`;
-  };
-  must((await api('/api/v1/me')).ok, '/me');
-  let res = await api('/api/v1/devices', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-device-proof': proof('POST', '/api/v1/devices', { jwk: { kty, crv, x, y } }),
-    },
-    body: JSON.stringify({
-      name: 'Driver',
-      platform: 'windows',
-      appVersion: '0.1.0',
-      fingerprint: crypto.randomBytes(32).toString('hex'),
-    }),
-  });
-  const device = await res.json();
-  if (res.status !== 201) fail(`device: ${res.status} ${JSON.stringify(device)}`);
-  res = await api('/api/v1/me/trial', {
-    method: 'POST',
-    headers: { 'x-device-proof': proof('POST', '/api/v1/me/trial', { kid: device.id }) },
-  });
-  const trial = await res.json();
-  if (!res.ok) fail(`trial: ${res.status} ${JSON.stringify(trial)}`);
-  // This stand-in device is removed again, so the app's computer is the account's only one.
-  res = await api(`/api/v1/devices/${device.id}`, {
-    method: 'DELETE',
-    headers: { 'x-device-proof': proof('DELETE', `/api/v1/devices/${device.id}`, { kid: device.id }) },
-  });
-  note('user:', email, '| plan:', trial.planName, trial.state, '| driver device removed:', res.status);
-  return { email, password };
+    let res = await api('/api/v1/devices', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-device-proof': proof('POST', '/api/v1/devices', { jwk: { kty, crv, x, y } }),
+      },
+      body: JSON.stringify({
+        name: 'Driver',
+        platform: 'windows',
+        appVersion: '0.1.0',
+        fingerprint: crypto.randomBytes(32).toString('hex'),
+      }),
+    });
+    const device = await res.json();
+    if (res.status !== 201) fail(`device: ${res.status} ${JSON.stringify(device)}`);
+    res = await api('/api/v1/me/trial', {
+      method: 'POST',
+      headers: { 'x-device-proof': proof('POST', '/api/v1/me/trial', { kid: device.id }) },
+    });
+    const trial = await res.json();
+    if (!res.ok) fail(`trial: ${res.status} ${JSON.stringify(trial)}`);
+    res = await api(`/api/v1/devices/${device.id}`, {
+      method: 'DELETE',
+      headers: { 'x-device-proof': proof('DELETE', `/api/v1/devices/${device.id}`, { kid: device.id }) },
+    });
+    note('trial started outside the app:', trial.planName, trial.state, '| stand-in computer removed:', res.status);
+  }
+
+  return { email, password, trialOutside };
 }
 
 // ---- Chrome's DevTools protocol, over Node's WebSocket -------------------------------------------------------------
@@ -351,8 +361,8 @@ async function run() {
   rmSync(join(appData, 'Sotto', 'secrets'), { recursive: true, force: true });
   for (const suffix of ['', '-wal', '-shm']) rmSync(join(appData, 'Sotto', `sotto.db${suffix}`), { force: true });
 
-  step('A user with a verified email and a trial (outside the app)');
-  const { email, password } = await createTrialUser();
+  step('A user with a verified email and no plan yet (outside the app)');
+  const { email, password, trialOutside } = await createUser();
 
   step('Launch 1: the first run, its setup opening by itself');
   launch('1');
@@ -406,6 +416,31 @@ async function run() {
   note('Setup, step 3: Your documents (skipped)');
   must(await clickButton(home, 'Skip for now'), 'no Skip for now');
 
+  step('The trial, started from the setup: the sound check is a session, and needs minutes (F9 · a)');
+  must(await clickButton(home, 'Start the trial'), 'no Start the trial at the sound check');
+  const outcome = await waitFor(
+    'the trial to start, or the server to refuse it',
+    async () => {
+      const shown = await textOf(home);
+      if (shown.includes('Start the sound check')) return 'started';
+      return /already used[^\n]*/.exec(shown)?.[0] ?? null;
+    },
+    30_000,
+  );
+  if (outcome === 'started') {
+    note('the trial started from the app: the step now offers the sound check');
+  } else {
+    // Once per person and per computer: this computer had a trial in an earlier run, and the app says the server's words.
+    note('the app says:', outcome);
+    await trialOutside();
+    await home.eval('window.appApi.refresh()');
+    await waitFor(
+      'the sound check, with the trial',
+      async () => (await textOf(home)).includes('Start the sound check'),
+      30_000,
+    );
+  }
+
   step('The sound check, a session of its own on the server');
   must(await clickButton(home, 'Start the sound check'), 'no Start the sound check');
   await waitFor(
@@ -420,18 +455,19 @@ async function run() {
   await waitFor('Test hiding', async () => (await textOf(home)).includes('Check it once with a real share.'));
   must(await clickButton(home, 'Skip the test'), 'no Skip the test');
 
-  await waitFor('the account on Home', async () => (await textOf(home)).includes('min left'), 30_000);
+  await waitFor('the account on Home', async () => minutesShown.test(await textOf(home)), 30_000);
   const signedIn = await textOf(home);
   note(
     'Home minutes card:',
-    signedIn.match(/(\d+ min left)/)?.[1],
+    signedIn.match(minutesShown)?.[0],
     '|',
-    signedIn.match(/([^\n]*plan[^\n]*renews[^\n]*)/)?.[1] ?? signedIn.match(/([^\n]* plan[^\n]*)/)?.[1],
+    signedIn.match(/(Ends [^\n]*)/)?.[1] ?? signedIn.match(/([^\n]* plan[^\n]*)/)?.[1],
   );
+  note('the line:', signedIn.match(/(Your trial has started[^\n]*)/)?.[1] ?? 'none');
 
   step('The account page');
   must(await clickButton(home, 'Account'), 'no Account in the sidebar');
-  await waitFor('the account page', async () => /minutes ledger/i.test(await textOf(home)));
+  await waitFor('the account page', async () => /Minutes you can use now/i.test(await textOf(home)));
   const account = await textOf(home);
   note('who:', account.match(/([^\n]*•••@example\.com)/)?.[1]);
   note(
@@ -440,7 +476,7 @@ async function run() {
     '| computers:',
     account.match(/Computers\s*\n([^\n]+)/i)?.[1],
   );
-  note('this computer:', account.match(/([^\n]*\n[^\n]*now)/)?.[1]?.replace(/\s+/g, ' '));
+  note('computers card:', account.match(/(This computer[^\n]*)/)?.[1]);
   must(await clickButton(home, 'Home'), 'no Home in the sidebar');
 
   step('What this computer stored');
@@ -467,10 +503,10 @@ async function run() {
   main = await connectMain();
   await stubBrowser(main);
   home = await connectPage('app/index.html');
-  await waitFor('the account on Home after restart', async () => (await textOf(home)).includes('min left'), 30_000);
+  await waitFor('the account on Home after restart', async () => minutesShown.test(await textOf(home)), 30_000);
   note(
     'Home after restart:',
-    (await textOf(home)).match(/(\d+ min left)/)?.[1],
+    (await textOf(home)).match(minutesShown)?.[0],
     '| browser opened:',
     await main.eval('globalThis.__opened.length'),
     'times',
@@ -574,18 +610,87 @@ async function run() {
 
   step('The ledger after the session');
   must(await clickButton(home, 'Account'), 'no Account in the sidebar');
-  await sleep(1500);
+  await waitFor('the account page', async () => /Minutes you can use now/i.test(await textOf(home)));
+  must(await clickButton(home, 'The ledger'), 'no The ledger');
+  await waitFor('the ledger', async () => (await textOf(home)).includes('Every change to your minutes, newest first.'));
   const ledger = (await textOf(home))
-    .split(/minutes ledger/i)[1]
-    ?.split('Sign out')[0]
+    .split('Every change to your minutes, newest first.')[1]
     ?.trim()
     .split('\n')
     .filter(Boolean)
-    .slice(0, 8);
+    .slice(0, 12);
   note(ledger?.join(' | '));
+  must(await clickButton(home, 'Account ›'), 'no Account ›');
+  await waitFor('the account page', async () => /Minutes you can use now/i.test(await textOf(home)));
 
-  step('Sign out');
+  // 2.13: buying in the browser. The stubbed browser keeps each page the app opens; the purchase tool pays it.
+  const opened = () => main.eval('globalThis.__opened.slice()');
+  const pay = (url, ...args) =>
+    execFileSync(process.execPath, [join(BACKEND, 'tools', 'local-purchase.mjs'), url, ...args], {
+      encoding: 'utf8',
+    }).trim();
+  const nextOpened = async (what, count) => waitFor(what, async () => (await opened())[count] ?? null, 20_000);
+
+  step('A top-up, bought in the browser: the window waits, and the minutes arrive by themselves (F8 · b, c)');
+  let seen = (await opened()).length;
+  must(await clickButton(home, 'Top up +100 minutes'), 'no Top up +100 minutes');
+  const topUpUrl = await nextOpened('the checkout page to open', seen++);
+  must(topUpUrl.startsWith('https://'), `opened a page that is not https: ${topUpUrl}`);
+  note('opened:', new URL(topUpUrl).origin + new URL(topUpUrl).pathname.split('/').slice(0, 2).join('/') + '/…');
+  await waitFor('the window to wait for the payment', async () =>
+    (await textOf(home)).includes('Finish in your browser.'),
+  );
+  note('the window says: Finish in your browser. | the provider:', pay(topUpUrl).split('\n').join(' | '));
+  await waitFor(
+    'the minutes to arrive by themselves',
+    async () => /100 minutes added\. They last until/.test(await textOf(home)),
+    30_000,
+  );
+  note('the window says:', (await textOf(home)).match(/100 minutes added\.[^\n]*/)?.[0]);
+  must(await clickButton(home, 'OK'), 'no OK on the line');
+
+  step('A plan, chosen in the app and bought in the browser (F9 · c)');
+  must(await clickButton(home, 'Change plan'), 'no Change plan');
+  await waitFor('the plans', async () => (await textOf(home)).includes('Choose Credits'));
+  note(
+    'cards:',
+    (await textOf(home)).match(/400 minutes a month[^\n]*/)?.[0],
+    '|',
+    (await textOf(home)).match(/Fair use[^\n]*/)?.[0],
+  );
+  must(await clickButton(home, 'Choose Credits'), 'no Choose Credits');
+  const planUrl = await nextOpened('the checkout page to open', seen++);
+  note('the provider:', pay(planUrl).split('\n').join(' | '));
+  await waitFor('the plan to arrive by itself', async () => /Credits plan started/.test(await textOf(home)), 30_000);
+  const onPlan = await textOf(home);
+  note(
+    'the window says:',
+    onPlan.match(/Credits plan started[^\n]*/)?.[0],
+    '| plan:',
+    onPlan.match(/Credits Active/)?.[0],
+    '| minutes now:',
+    // The trial's minutes end with it: the plan's month and the top-up's minutes are what is left.
+    onPlan.match(/Minutes you can use now\s*\n\s*(\d+ min)/i)?.[1],
+  );
+  must(/Minutes you can use now\s*\n\s*500 min/i.test(onPlan), "the plan's minutes are not with the top-up's");
+  must(await clickButton(home, 'OK'), 'no OK on the line');
+
+  step("Manage billing: the provider's portal, in the browser");
+  must(await clickButton(home, 'Manage billing'), 'no Manage billing');
+  const portalUrl = await nextOpened('the portal to open', seen);
+  note('opened:', new URL(portalUrl).origin + '/portal/…');
+
+  step('Sign out, after the confirmation (F10 · e)');
   must(await clickButton(home, 'Sign out'), 'no Sign out');
+  await waitFor('the confirmation', async () => (await textOf(home)).includes('Sign out of Sotto on this computer?'));
+  must(
+    await home.eval(`(() => {
+      const b = [...document.querySelectorAll('.confirm button')].find((b) => b.innerText.trim() === 'Sign out');
+      b?.click();
+      return !!b;
+    })()`),
+    'no Sign out in the confirmation',
+  );
   await waitFor('"Not signed in."', async () => (await textOf(home)).includes('Not signed in.'));
   note(
     'Account says: Not signed in. Stored now:',

@@ -1,21 +1,40 @@
 <script setup lang="ts">
 // Home: state 01, no session. Sign-in when it isn't done, what a session needs, the minutes, and Start, which waits for
-// the consent box. The box is ticked every time and never remembered (F4).
+// the consent box. The box is ticked every time and never remembered (F4). Above them, what the account needs now: a
+// purchase being finished in the browser (F8 · b), the offer after a session that ran out (F8 · a), the trial or the
+// plans when there is no plan (F9), and one quiet line when something arrived (F8 · c).
 import { computed, ref } from 'vue';
 import { ErrorCodes } from '../../../shared/contracts/sotto-contracts';
+import { planWords, trialOffered } from '../../../shared/plan-words';
 import SBanner from '../../shared/components/SBanner.vue';
 import SButton from '../../shared/components/SButton.vue';
 import SCheckbox from '../../shared/components/SCheckbox.vue';
 import SIcon from '../../shared/components/SIcon.vue';
 import { useAppStore } from '../app-store';
+import AfterCallOffer from '../components/AfterCallOffer.vue';
+import PaymentWait from '../components/PaymentWait.vue';
+import PlanPicker from '../components/PlanPicker.vue';
 import ProblemBanner from '../components/ProblemBanner.vue';
 import SignInBanner from '../components/SignInBanner.vue';
+import TrialOffer from '../components/TrialOffer.vue';
 
 const store = useAppStore();
 const consent = ref(false);
 const starting = ref(false);
 
 const readiness = computed(() => store.account?.readiness ?? null);
+const words = computed(() => (store.account ? planWords(store.account) : null));
+const minutesDetail = computed(() => {
+  const plan = store.account?.plan;
+  if (!words.value || !plan) return '';
+  return plan.maxSessionMinutes > 0
+    ? `${words.value.detail}. Sessions up to ${plan.maxSessionMinutes} minutes.`
+    : words.value.detail;
+});
+// No plan: the trial for someone who never had one (F9 · a), the plans otherwise (F9 · c).
+const noPlan = computed(() => store.account?.plan.state === 'none');
+const offerTrial = computed(() => (store.account ? trialOffered(store.account) !== null : false));
+const showPlans = ref(false);
 const autoReady = computed(() => !!(readiness.value?.resume && readiness.value?.jobDescription));
 const canStart = computed(() => store.signedIn && store.account !== null);
 // The server refused because the account's session is open elsewhere: starting again takes it over (J7), and the
@@ -44,6 +63,23 @@ async function start(): Promise<void> {
 
     <ProblemBanner class="gap" />
     <SignInBanner class="gap" />
+    <SBanner v-if="store.notice" tone="done" class="gap">
+      {{ store.notice }}
+      <template #actions><SButton size="sm" variant="ghost" @click="store.dismiss('notice')">OK</SButton></template>
+    </SBanner>
+    <PaymentWait class="gap" />
+    <AfterCallOffer class="gap" @plans="showPlans = true" />
+    <template v-if="noPlan && !store.payment">
+      <TrialOffer v-if="offerTrial" class="gap" @plans="showPlans = true" />
+      <section v-else class="gap card" aria-labelledby="no-plan-title">
+        <h2 id="no-plan-title" class="h">{{ store.account?.trial.endsOn ? 'Your trial has ended' : 'No plan' }}</h2>
+        <p class="small">
+          Your documents, prepared answers and history stay on this computer. Pick a plan to start sessions; it opens
+          your browser.
+        </p>
+      </section>
+    </template>
+    <PlanPicker v-if="(showPlans || (noPlan && !offerTrial)) && !store.payment" class="gap" />
     <SBanner v-if="store.signedIn && readiness && !autoReady" tone="info" class="gap">
       Add your résumé and job description to answer automatically. Without them, Sotto answers only when you ask.
     </SBanner>
@@ -80,20 +116,15 @@ async function start(): Promise<void> {
         </div>
       </div>
       <div class="card">
-        <p class="eyebrow">Minutes</p>
-        <template v-if="store.account?.minutes">
-          <p class="big num">{{ store.account.minutes.usable }} min left</p>
-          <p class="small">
-            {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn">
-              · renews {{ store.account.plan.renewsOn }}</template
-            >
-          </p>
+        <template v-if="words">
+          <p class="eyebrow">{{ words.eyebrow }}</p>
+          <p class="big num">{{ words.headline }}</p>
+          <p class="small">{{ minutesDetail }}</p>
         </template>
-        <template v-else-if="store.account">
-          <p class="big">Unlimited</p>
-          <p class="small">{{ store.account.plan.name }} plan · fair use applies</p>
+        <template v-else>
+          <p class="eyebrow">Minutes</p>
+          <p class="small">Shown once you're signed in.</p>
         </template>
-        <p v-else class="small">Shown once you're signed in.</p>
       </div>
     </div>
   </section>

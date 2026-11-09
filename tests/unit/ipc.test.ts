@@ -4,9 +4,13 @@ import { setDocumentSchema } from '../../src/shared/documents';
 import {
   acknowledgeNoticeSchema,
   copyTextSchema,
+  deviceIdSchema,
+  dismissSchema,
   hidingTestActionSchema,
   overlayCommandSchema,
   overlayWindowActionSchema,
+  paymentActionSchema,
+  purchaseSchema,
   signInPageActionSchema,
   soundCheckActionSchema,
   startSessionSchema,
@@ -120,5 +124,53 @@ describe('what the setup may ask of main (1.14)', () => {
       expect(schema.safeParse('delete').success).toBe(false);
       expect(schema.safeParse({ action: 'start' }).success).toBe(false);
     }
+  });
+});
+
+describe('what the account screens may ask of main (2.13)', () => {
+  it.each([
+    [{ planId: 'credits_monthly' }],
+    [{ planId: 'unlimited' }],
+    [{ topUpId: 'topup_100' }],
+    [{ planId: 'a'.repeat(64) }],
+  ])('takes a purchase of one plan or one top-up: %j', (purchase) => {
+    expect(purchaseSchema.safeParse(purchase).success).toBe(true);
+  });
+
+  it.each([
+    [{}],
+    [{ planId: 'credits_monthly', topUpId: 'topup_100' }],
+    [{ planId: '' }],
+    [{ planId: 'a'.repeat(65) }],
+    [{ planId: 'Credits Monthly' }],
+    [{ planId: '../admin' }],
+    [{ topUpId: 100 }],
+    [{ priceId: 'price_1' }],
+    ['credits_monthly'],
+    [null],
+  ])('refuses anything else as a purchase: %j', (purchase) => {
+    expect(purchaseSchema.safeParse(purchase).success).toBe(false);
+  });
+
+  it('takes a device id only as the server writes one, since it goes into a path', () => {
+    expect(deviceIdSchema.safeParse('01970000-0000-7000-8000-000000000002').success).toBe(true);
+    for (const id of [
+      '',
+      'd2',
+      '../../me',
+      '01970000-0000-7000-8000-00000000000',
+      '01970000-0000-7000-8000-000000000002/x',
+      42,
+      null,
+    ]) {
+      expect(deviceIdSchema.safeParse(id).success).toBe(false);
+    }
+  });
+
+  it('knows the wait for a payment and what can be put away by their few words', () => {
+    expect(paymentActionSchema.options).toEqual(['open', 'cancel']);
+    expect(dismissSchema.options).toEqual(['offer', 'notice']);
+    expect(paymentActionSchema.safeParse('pay').success).toBe(false);
+    expect(dismissSchema.safeParse('problem').success).toBe(false);
   });
 });

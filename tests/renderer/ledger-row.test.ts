@@ -5,6 +5,7 @@ import LedgerRow from '../../src/renderer/app/components/LedgerRow.vue';
 import type { LedgerEntry } from '../../src/shared/account';
 
 const entry = (change: Partial<LedgerEntry>): LedgerEntry => ({
+  number: 7,
   date: 'Nov 8',
   kind: 'Session',
   detail: '42 minutes',

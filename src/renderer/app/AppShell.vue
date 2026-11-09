@@ -1,10 +1,13 @@
 <script setup lang="ts">
 // The window outside sessions: its own chrome, the sidebar, and the page. During a session it steps aside and the
-// overlay takes over; it comes back when the session is closed. The setup (F1) takes the whole window, framed as Setup.
+// overlay takes over; it comes back when the session is closed. The setup (F1) takes the whole window, framed as Setup,
+// and so does a computer that can't be added at the device limit (F3).
 import { computed, onMounted, ref } from 'vue';
+import { planWords } from '../../shared/plan-words';
 import { useSettings } from '../shared/use-settings';
 import { useAppStore } from './app-store';
 import SideNav from './components/SideNav.vue';
+import DeviceLimitScreen from './DeviceLimitScreen.vue';
 import WindowChrome from './components/WindowChrome.vue';
 import AccountPage from './pages/AccountPage.vue';
 import HelpPage from './pages/HelpPage.vue';
@@ -35,7 +38,8 @@ const store = useAppStore();
 useSettings(window.appApi);
 onMounted(() => void store.load());
 
-const minutes = computed(() => store.account?.minutes ?? null);
+// The plan's words, the same as Home's and Account's: the state always has one (F10 · d).
+const words = computed(() => (store.account ? planWords(store.account) : null));
 const signedOutWords = computed(() => {
   switch (store.auth.status) {
     case 'signing-in':
@@ -52,7 +56,19 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
 </script>
 
 <template>
-  <div v-if="store.setup" class="shell">
+  <!-- The device limit comes first, even during the setup: until a computer is removed, this one can't sign in. -->
+  <div v-if="store.deviceLimit" class="shell">
+    <WindowChrome
+      subtitle="Setup"
+      :maximizable="false"
+      @minimize="windowAction('minimize')"
+      @close="windowAction('close')"
+    />
+    <main class="main setup">
+      <DeviceLimitScreen />
+    </main>
+  </div>
+  <div v-else-if="store.setup" class="shell">
     <WindowChrome
       subtitle="Setup"
       :maximizable="false"
@@ -72,20 +88,15 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
     <div class="body">
       <SideNav :items="pages" :current="current" @select="(id) => (current = id)">
         <template #footer>
-          <p class="eyebrow">Minutes</p>
-          <template v-if="store.account && minutes">
-            <p class="big num">{{ minutes.usable }} min left</p>
-            <p class="small">
-              {{ store.account.plan.name }} plan<template v-if="store.account.plan.renewsOn">
-                · renews {{ store.account.plan.renewsOn }}</template
-              >
-            </p>
+          <template v-if="words">
+            <p class="eyebrow">{{ words.eyebrow }}</p>
+            <p class="big num">{{ words.headline }}</p>
+            <p class="small">{{ words.detail }}</p>
           </template>
-          <template v-else-if="store.account">
-            <p class="big">Unlimited</p>
-            <p class="small">{{ store.account.plan.name }} plan</p>
+          <template v-else>
+            <p class="eyebrow">Minutes</p>
+            <p class="small">{{ signedOutWords }}</p>
           </template>
-          <p v-else class="small">{{ signedOutWords }}</p>
         </template>
       </SideNav>
       <main class="main">

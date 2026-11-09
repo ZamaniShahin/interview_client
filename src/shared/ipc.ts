@@ -80,3 +80,24 @@ export type StartSessionRequest = z.infer<typeof startSessionSchema>;
 
 /** What a command returns to a window: it worked, or a code from `ErrorCodes` and plain words. */
 export type CommandResult = { ok: true } | { ok: false; code: string; message: string };
+
+/** The ids the server's catalog uses (`credits_monthly`, `topup_100`): checked here only for shape; the server decides. */
+const productIdSchema = z.string().regex(/^[a-z0-9_]{1,64}$/);
+
+/** A plan or a top-up, exactly one, as `POST /api/v1/billing/checkout` takes it. */
+export const purchaseSchema = z.union([
+  z.object({ planId: productIdSchema }).strict(),
+  z.object({ topUpId: productIdSchema }).strict(),
+]);
+export type PurchaseRequest = z.infer<typeof purchaseSchema>;
+
+/** A device id as the server writes it (a UUID): it goes into a request path, so nothing else may. */
+export const deviceIdSchema = z.uuid();
+
+/** The purchase being waited for: open its page again, or stop waiting (F8 · b). */
+export const paymentActionSchema = z.enum(['open', 'cancel']);
+export type PaymentAction = z.infer<typeof paymentActionSchema>;
+
+/** What the window has said and puts away: the after-call offer (F8 · a), or the quiet line (F8 · c). */
+export const dismissSchema = z.enum(['offer', 'notice']);
+export type DismissTarget = z.infer<typeof dismissSchema>;

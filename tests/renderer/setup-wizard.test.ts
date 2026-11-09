@@ -228,6 +228,68 @@ describe('the setup, step by step (1.14)', () => {
     expect(wrapper.text()).toContain("Your plan doesn't include live sessions.");
   });
 
+  it('offers the trial at the sound check to a new user, since the check needs minutes (2.13)', async () => {
+    const noPlan = {
+      ...previewAccount,
+      plan: { ...previewAccount.plan, id: null, name: 'No plan', state: 'none' as const, until: null, renews: false },
+      trial: { used: false, endsOn: null },
+      minutes: { usable: 0, lots: [] },
+    };
+    const { api, wrapper, click, button } = await shell({ acknowledged: true }, { ...signedIn, account: noPlan });
+    await click('Continue');
+    await click('Skip for now');
+
+    expect(button('Start the sound check')).toBeUndefined();
+    expect(wrapper.text()).toContain('The trial is free: 30 minutes over 14 days, no card needed.');
+    await click('Start the trial');
+
+    expect(api.startTrial).toHaveBeenCalledOnce();
+    expect(api.soundCheck).not.toHaveBeenCalled();
+  });
+
+  it("says where to pick a plan when the trial can't be had, and the check can wait", async () => {
+    const used = {
+      ...previewAccount,
+      plan: { ...previewAccount.plan, id: null, name: 'No plan', state: 'none' as const, until: null, renews: false },
+      trial: { used: true, endsOn: 'Nov 15' },
+      minutes: { usable: 0, lots: [] },
+    };
+    const { wrapper, click, button, heading } = await shell({ acknowledged: true }, { ...signedIn, account: used });
+    await click('Continue');
+    await click('Skip for now');
+
+    expect(button('Start the trial')).toBeUndefined();
+    expect(wrapper.text()).toContain('pick one on Home, then run it from Help');
+    await click('Continue');
+    expect(heading()).toBe('Your hands stay on the call');
+  });
+
+  it("says why the trial couldn't start at the sound check", async () => {
+    const noPlan = {
+      ...previewAccount,
+      plan: { ...previewAccount.plan, id: null, name: 'No plan', state: 'none' as const, until: null, renews: false },
+      trial: { used: false, endsOn: null },
+      minutes: { usable: 0, lots: [] },
+    };
+    const { wrapper, click } = await shell(
+      { acknowledged: true },
+      { ...signedIn, account: noPlan },
+      {
+        startTrial: vi.fn(async () => ({
+          ok: false as const,
+          code: 'email_not_verified',
+          message: 'Verify your email address to start a trial.',
+        })),
+      },
+    );
+    await click('Continue');
+    await click('Skip for now');
+
+    await click('Start the trial');
+
+    expect(wrapper.text()).toContain('Verify your email address to start a trial.');
+  });
+
   it('lists the hotkeys main registers, then tests hiding with a real share, then finishes', async () => {
     const { api, wrapper, click, heading } = await shell({ acknowledged: true }, signedIn);
     await click('Continue');

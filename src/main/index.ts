@@ -1,6 +1,7 @@
 // The app's core process. It owns the windows, sign-in, the account, the session and its connection.
 // Renderers only draw: they reach main through the checked channels in src/shared/ipc.ts.
 import { app, clipboard, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
+import { hostname } from 'node:os';
 import { join } from 'node:path';
 import type { AccountView } from '../shared/account';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
@@ -10,8 +11,11 @@ import { notice } from '../shared/first-run';
 import type {
   AppWindowAction,
   CommandResult,
+  DismissTarget,
   HidingTestAction,
   OverlayWindowAction,
+  PaymentAction,
+  PurchaseRequest,
   SignInPageAction,
   SoundCheckAction,
   StartSessionRequest,
@@ -20,6 +24,7 @@ import { IpcChannels } from '../shared/ipc-channels';
 import { visibleAnswerIndex } from '../shared/live/view-state';
 import type { Settings } from '../shared/settings';
 import { AccountService, type LoadedAccount } from './account/account-service';
+import { PaymentWatch } from './account/payment-watch';
 import { ApiError, RestClient } from './api/rest-client';
 import { AuthSession, NotSignedIn, SignInCancelled } from './auth/auth-session';
 import { ElectronSecretStore } from './auth/electron-secret-store';
@@ -33,7 +38,7 @@ import { createLiveTransport } from './connection/live-connection';
 import { DeviceIdentity } from './device/device-identity';
 import { machineFingerprint } from './device/fingerprint';
 import { registerIpc } from './ipc/register';
-import { previewAccount } from './preview/account';
+import { PreviewBilling, previewPaymentMs } from './preview/billing';
 import { HubDriver, type HubDriverDependencies } from './session/hub-driver';
 import { SoundCheck } from './session/sound-check';
 import { registerSessionHotkeys } from './session/hotkeys';
@@ -65,6 +70,14 @@ let loaded: LoadedAccount | null = null;
 /** This computer's documents and settings (1.14), once the database is open. */
 let store: LocalStore | null = null;
 let appState: AppState = { ...initialAppState, preview };
+/** The preview's account and its changes (`npm run dev:preview`); unused against a server. */
+const previewBilling = new PreviewBilling();
+/** The checkout page of the purchase being waited for, for "Open the page again" (F8 · b). */
+let paymentUrl: string | null = null;
+/** When the account was last read: coming back to the window reads it again only after a while. */
+let accountReadAt = 0;
+/** How long the window may be away before coming back to it reads the account again (the browser, a purchase). */
+const rereadAfterMs = 30_000;
 
 const alive = (win: BrowserWindow | null): win is BrowserWindow => win !== null && !win.isDestroyed();
 
@@ -75,7 +88,25 @@ const session = new SessionController((state) => {
   if (state.phase === 'ended') {
     stopHotkeys();
     capture.stop();
+    // Why it ended stays for the window, which offers minutes after a session they ran out in (F8 · a).
+    if (state.endReason && appState.lastSessionEnd !== state.endReason)
+      setAppState({ lastSessionEnd: state.endReason });
   }
+});
+
+// A purchase finished in the browser shows in the account by itself (F8 · b, c): read again until it does.
+const payments = new PaymentWatch({
+  read: async () => {
+    await refreshAccount();
+    return appState.account;
+  },
+  arrived: (notice) => {
+    paymentUrl = null;
+    setAppState({ payment: null, notice, lastSessionEnd: null });
+  },
+  stale: () => {
+    if (appState.payment) setAppState({ payment: { ...appState.payment, stale: true } });
+  },
 });
 
 // The call's sound while a session runs (1.11): each frame to the session, which uploads it (1.12), and how capture
@@ -151,7 +182,7 @@ async function refreshAccount(): Promise<void> {
   if (preview) {
     setAppState({
       auth: { status: 'signed-in', email: 'sam@example.com', name: 'Sam Rivera' },
-      account: withReadiness(previewAccount),
+      account: withReadiness(previewBilling.account),
     });
     return;
   }
@@ -164,11 +195,33 @@ async function refreshAccount(): Promise<void> {
   }
   try {
     loaded = await accounts.load();
-    setAppState({ account: withReadiness(loaded.view) });
+    accountReadAt = Date.now();
+    setAppState({ account: withReadiness(loaded.view), deviceLimit: null });
+    if (problemFromAccount) showProblem(null);
+  } catch (error) {
+    // At the device limit this computer can't be added: the window lists the account's computers instead (F3).
+    if (error instanceof ApiError && error.code === ErrorCodes.Identity.DeviceLimitReached) await showDeviceLimit();
+    else showProblem(problemFrom(error), true);
+  }
+}
+
+/** The account's computers, to remove one so this one can be added (F3 · a). Nothing else works until then. */
+async function showDeviceLimit(): Promise<void> {
+  try {
+    const view = await accounts!.deviceLimit();
+    loaded = null;
+    setAppState({ account: null, deviceLimit: { ...view, thisComputer: hostname() } });
     if (problemFromAccount) showProblem(null);
   } catch (error) {
     showProblem(problemFrom(error), true);
   }
+}
+
+/** Coming back to the window (from the browser, say) reads the account again, or checks on a purchase at once. */
+function onAppFocus(): void {
+  if (session.running || preview) return;
+  if (payments.waiting) void payments.check();
+  else if (Date.now() - accountReadAt > rereadAfterMs) void refreshAccount();
 }
 
 async function signIn(): Promise<CommandResult> {
@@ -210,8 +263,204 @@ async function signOut(): Promise<void> {
   if (preview || !auth) return;
   await auth.signOut();
   loaded = null;
-  setAppState({ account: null });
+  payments.stop();
+  paymentUrl = null;
+  setAppState({ account: null, payment: null, notice: null, lastSessionEnd: null, deviceLimit: null });
   showProblem(null);
+}
+
+const refusedDuringSession: CommandResult = {
+  ok: false,
+  code: ErrorCodes.Session.AlreadyInSession,
+  message: 'This waits until the session ends.',
+};
+
+/**
+ * Opens a page the server gave (a checkout, the billing portal) in the browser: https only, and never during a
+ * session, since a browser shows in a share (stealth rule 7).
+ */
+async function openBillingPage(url: string): Promise<CommandResult> {
+  if (session.running) return refusedDuringSession;
+  let page: URL;
+  try {
+    page = new URL(url);
+  } catch {
+    page = new URL('about:blank');
+  }
+  if (page.protocol !== 'https:') {
+    return {
+      ok: false,
+      code: ErrorCodes.Request.Unavailable,
+      message: "Sotto won't open that page: it isn't a secure one.",
+    };
+  }
+  await shell.openExternal(page.href);
+  return { ok: true };
+}
+
+/** The account service, when someone is signed in and the account has been read; null otherwise. */
+function signedInAccounts(): AccountService | null {
+  return auth?.current.status === 'signed-in' && accounts && loaded ? accounts : null;
+}
+
+const signInFirst: CommandResult = { ok: false, code: ErrorCodes.Identity.Unauthenticated, message: 'Sign in first.' };
+
+/** Runs an account change the window asked for: a refusal shows as the problem, in the server's words. */
+async function accountChange(change: (service: AccountService) => Promise<void>): Promise<CommandResult> {
+  if (session.running) return refusedDuringSession;
+  const service = signedInAccounts();
+  if (!service) return signInFirst;
+  showProblem(null);
+  try {
+    await change(service);
+    return { ok: true };
+  } catch (error) {
+    const problem = problemFrom(error);
+    showProblem(problem);
+    return { ok: false, ...problem };
+  }
+}
+
+/** Starts the free trial from this computer (F9 · a), then reads the account, which now has it. */
+async function startTrial(): Promise<CommandResult> {
+  if (preview) {
+    const started = previewBilling.startTrial();
+    if (started.ok) await refreshAccount();
+    return started;
+  }
+  return accountChange(async (service) => {
+    // A fresh token first: an email verified since sign-in only counts once the token says so (F2 · c).
+    await auth!.accessToken({ force: true });
+    await service.startTrial();
+    await refreshAccount();
+    const trial = appState.account?.plan;
+    setAppState({
+      notice: trial?.until ? `Your trial has started. It runs until ${trial.until}.` : 'Your trial has started.',
+    });
+  });
+}
+
+/** "+100 minutes", "Unlimited": what is being bought, as the window waits for it. */
+function purchaseItem(purchase: PurchaseRequest): string {
+  const catalog = appState.account?.catalog;
+  if ('topUpId' in purchase) {
+    const topUp = catalog?.topUps.find((t) => t.id === purchase.topUpId);
+    return topUp ? `+${topUp.minutes} minutes` : 'Your minutes';
+  }
+  return catalog?.plans.find((p) => p.id === purchase.planId)?.name ?? 'Your plan';
+}
+
+/** Buys a plan or a top-up: the provider's page opens in the browser, and the window waits for the payment (F8 · b). */
+async function buy(purchase: PurchaseRequest): Promise<CommandResult> {
+  if (preview) {
+    if (session.running) return refusedDuringSession;
+    const bought = previewBilling.buy(purchase);
+    setAppState({ payment: { item: bought.item, stale: false }, notice: null });
+    setTimeout(() => {
+      if (!appState.payment) return;
+      const notice = bought.arrive();
+      setAppState({ payment: null, notice, lastSessionEnd: null });
+      void refreshAccount();
+    }, previewPaymentMs);
+    return { ok: true };
+  }
+  return accountChange(async (service) => {
+    const url = await service.checkout(purchase);
+    const opened = await openBillingPage(url);
+    if (!opened.ok) throw new ApiError(0, opened.code, opened.message);
+    paymentUrl = url;
+    payments.start(purchase, loaded!.view);
+    setAppState({ payment: { item: purchaseItem(purchase), stale: false }, notice: null });
+  });
+}
+
+/** The purchase being waited for: open its page again, or stop waiting (the purchase isn't cancelled by it). */
+async function payment(action: PaymentAction): Promise<CommandResult> {
+  if (action === 'open') {
+    if (preview) return { ok: true };
+    return paymentUrl
+      ? openBillingPage(paymentUrl)
+      : { ok: false, code: ErrorCodes.Request.NotFound, message: 'Nothing is being bought.' };
+  }
+  payments.stop();
+  paymentUrl = null;
+  setAppState({ payment: null });
+  return { ok: true };
+}
+
+/** The provider's billing portal (Manage billing): the plan, the card and cancelling happen there. */
+async function billingPortal(): Promise<CommandResult> {
+  if (preview) return session.running ? refusedDuringSession : { ok: true };
+  return accountChange(async (service) => {
+    const opened = await openBillingPage(await service.portal());
+    if (!opened.ok) throw new ApiError(0, opened.code, opened.message);
+    // Back from the portal, the account is read again (a cancelled or changed plan).
+    accountReadAt = 0;
+  });
+}
+
+/** Removes one of the account's other computers (F10 · c); the list and the removals left are read again. */
+async function removeDevice(deviceId: string): Promise<CommandResult> {
+  if (preview) {
+    const removed = previewBilling.removeDevice(deviceId);
+    if (!removed.ok) showProblem({ code: removed.code, message: removed.message });
+    await refreshAccount();
+    return removed;
+  }
+  return accountChange(async (service) => {
+    await service.removeDevice(deviceId);
+    await refreshAccount();
+  });
+}
+
+/** Adds this computer in place of one of the account's, at the device limit (F3 · b); then the account is read. */
+async function replaceDevice(deviceId: string): Promise<CommandResult> {
+  if (preview || !accounts || auth?.current.status !== 'signed-in') return signInFirst;
+  showProblem(null);
+  try {
+    await accounts.replaceDevice(deviceId);
+    setAppState({ deviceLimit: null });
+    await refreshAccount();
+    return { ok: true };
+  } catch (error) {
+    const problem = problemFrom(error);
+    showProblem(problem);
+    // The removals left may have changed (another computer removed one meanwhile): the list is read again.
+    if (appState.deviceLimit) await showDeviceLimit();
+    return { ok: false, ...problem };
+  }
+}
+
+/** The ledger's earlier page ("Show earlier", F10 · b), added under what the window shows. */
+async function ledgerMore(): Promise<CommandResult> {
+  if (preview) {
+    previewBilling.ledgerMore();
+    await refreshAccount();
+    return { ok: true };
+  }
+  const service = signedInAccounts();
+  const account = appState.account;
+  if (!service || !account) return signInFirst;
+  if (account.ledgerNext === null) return { ok: true };
+  try {
+    const page = await service.ledgerPage(account.ledgerNext);
+    // Only onto the same account as it was: a read in between starts the ledger again from its first page.
+    if (appState.account?.ledgerNext === account.ledgerNext) {
+      setAppState({
+        account: { ...appState.account, ledger: [...appState.account.ledger, ...page.entries], ledgerNext: page.next },
+      });
+    }
+    return { ok: true };
+  } catch (error) {
+    const problem = problemFrom(error);
+    showProblem(problem);
+    return { ok: false, ...problem };
+  }
+}
+
+/** What the window has said and puts away: the after-call offer (F8 · a), or the quiet line (F8 · c). */
+function dismiss(target: DismissTarget): void {
+  setAppState(target === 'offer' ? { lastSessionEnd: null } : { notice: null });
 }
 
 /** The documents as a session takes them (`SetContext`, keyed by the C# names), or none at all. */
@@ -390,7 +639,7 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
   let account: LoadedAccount;
   if (preview) {
     driver = new PreviewDriver();
-    account = { view: previewAccount, tier: 'smart' };
+    account = { view: previewBilling.account, tier: 'smart' };
   } else {
     if (!auth || !accounts || auth.current.status !== 'signed-in') {
       return { ok: false, code: ErrorCodes.Identity.Unauthenticated, message: 'Sign in first.' };
@@ -412,6 +661,7 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
   }
 
   showProblem(null);
+  setAppState({ lastSessionEnd: null, notice: null });
   openOverlay();
   session.dispatch({ type: 'account', minutesLeft: account.view.minutes?.usable ?? null, tier: account.tier });
   const result = await session.start(driver);
@@ -600,6 +850,14 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       soundCheck: soundCheckAction,
       hidingTest,
       signInPage,
+      startTrial,
+      buy,
+      billingPortal,
+      payment,
+      removeDevice,
+      replaceDevice,
+      ledgerMore,
+      dismiss,
     });
 
     const win = createAppWindow();
@@ -607,6 +865,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     win.on('closed', () => {
       appWindow = null;
     });
+    win.on('focus', onAppFocus);
     appWindow = win;
 
     // A stored sign-in comes back without the browser; then the account is read.
@@ -616,6 +875,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
 
   app.on('window-all-closed', () => app.quit());
   app.on('will-quit', () => {
+    payments.stop();
     stopHotkeys();
     void soundCheck.stop();
     capture.stop();

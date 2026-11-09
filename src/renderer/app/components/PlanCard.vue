@@ -1,28 +1,34 @@
 <script setup lang="ts">
-// A plan to choose. Names and prices are placeholders until they are decided (Q3); buying opens the browser.
+// A plan to choose (F9 · c), as the server's catalog describes it: its name and what it gives. The price is on the
+// provider's page until it is decided (Q3), and choosing opens the browser.
+import { computed } from 'vue';
+import type { PlanOffer } from '../../../shared/account';
+import { offerLines } from '../../../shared/plan-words';
 import SButton from '../../shared/components/SButton.vue';
 import SIcon from '../../shared/components/SIcon.vue';
 
-defineProps<{
-  name: string;
-  price: string;
-  period: string;
-  features: string[];
-  current?: boolean;
-  action: string;
-  primary?: boolean;
-}>();
-const emit = defineEmits<{ choose: [] }>();
+const props = defineProps<{ offer: PlanOffer; current?: boolean; primary?: boolean; disabled?: boolean }>();
+const emit = defineEmits<{ choose: [planId: string] }>();
+const lines = computed(() => offerLines(props.offer));
 </script>
 
 <template>
-  <section class="plan" :class="{ current }" :aria-label="name">
-    <p class="name">{{ name }}<span v-if="current" class="tag">Your plan</span></p>
-    <p class="price num">{{ price }} <small>{{ period }}</small></p>
+  <section class="plan" :class="{ current }" :aria-label="offer.name">
+    <p class="name">{{ offer.name }}<span v-if="current" class="tag">Your plan</span></p>
+    <p class="period">Monthly · the price shows on the payment page</p>
     <ul class="features">
-      <li v-for="feature in features" :key="feature"><SIcon name="check" />{{ feature }}</li>
+      <li v-for="line in lines" :key="line"><SIcon name="check" />{{ line }}</li>
     </ul>
-    <SButton :variant="primary ? 'primary' : 'secondary'" external class="action" @click="emit('choose')">{{ action }}</SButton>
+    <SButton
+      v-if="!current"
+      :variant="primary ? 'primary' : 'secondary'"
+      external
+      class="action"
+      :disabled="disabled"
+      @click="emit('choose', offer.id)"
+    >
+      Choose {{ offer.name }}
+    </SButton>
   </section>
 </template>
 
@@ -51,11 +57,7 @@ const emit = defineEmits<{ choose: [] }>();
   color: var(--text-1);
   font: 500 11px/16px var(--font-sans);
 }
-.price {
-  color: var(--text-0);
-  font: 600 24px/32px var(--font-sans);
-}
-.price small {
+.period {
   color: var(--text-2);
   font: 400 13px/18px var(--font-sans);
 }

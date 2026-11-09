@@ -5,9 +5,12 @@ import type { SoundCheckView } from '../shared/first-run';
 import type {
   AppWindowAction,
   CommandResult,
+  DismissTarget,
   OverlayCommand,
   OverlayWindowAction,
   HidingTestAction,
+  PaymentAction,
+  PurchaseRequest,
   SignInPageAction,
   SoundCheckAction,
   StartSessionRequest,
@@ -57,5 +60,21 @@ export interface AppApi extends SettingsApi {
   onSoundCheck(listener: (view: SoundCheckView) => void): () => void;
   hidingTest(action: HidingTestAction): Promise<CommandResult>;
   signInPage(action: SignInPageAction): void;
+  /** Starts the free trial from this computer (F9 · a). */
+  startTrial(): Promise<CommandResult>;
+  /** Buys a plan or a top-up: the provider's page opens in the browser, and the window waits for it (F8 · b). */
+  buy(purchase: PurchaseRequest): Promise<CommandResult>;
+  /** The provider's billing portal, in the browser (Manage billing). */
+  billingPortal(): Promise<CommandResult>;
+  /** The purchase being waited for: open its page again, or stop waiting. */
+  payment(action: PaymentAction): Promise<CommandResult>;
+  /** Removes one of the account's other computers (F10 · c). */
+  removeDevice(deviceId: string): Promise<CommandResult>;
+  /** Adds this computer in place of one of the account's, at the device limit (F3 · b). */
+  replaceDevice(deviceId: string): Promise<CommandResult>;
+  /** The ledger's earlier page ("Show earlier"). */
+  ledgerMore(): Promise<CommandResult>;
+  /** Puts away what the window has said: the after-call offer, or the quiet line. */
+  dismiss(target: DismissTarget): void;
   window(action: AppWindowAction): void;
 }

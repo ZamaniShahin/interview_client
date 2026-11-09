@@ -1,8 +1,10 @@
 <script setup lang="ts">
 // F1 · 4: the sound check. Play speech on this computer and see its words: proof that the interviewer will reach Sotto.
 // It is a short live session, charged like any minute (Q12), so it starts only when asked, and leaving the step ends
-// it (main/session/sound-check.ts). Continue never waits on it: no sound is a hint, not a wall.
+// it (main/session/sound-check.ts). Continue never waits on it: no sound is a hint, not a wall. Without a plan there
+// are no minutes to run it on, so a new user is offered the trial here (F9 · a), where it is first needed.
 import { computed, onBeforeUnmount, ref } from 'vue';
+import { trialLines, trialOffered } from '../../../shared/plan-words';
 import SBanner from '../../shared/components/SBanner.vue';
 import SButton from '../../shared/components/SButton.vue';
 import { useNow } from '../../shared/use-now';
@@ -14,6 +16,22 @@ const emit = defineEmits<{ back: []; next: [] }>();
 const store = useAppStore();
 const now = useNow(1000);
 const failure = ref<string | null>(null);
+const startingTrial = ref(false);
+
+/** No plan, so no minutes: the trial when it can be had, or a word that a plan is picked on Home. */
+const noPlan = computed(() => store.account?.plan.state === 'none');
+const trial = computed(() => (store.account ? trialOffered(store.account) : null));
+
+async function startTrial(): Promise<void> {
+  startingTrial.value = true;
+  failure.value = null;
+  try {
+    const result = await store.startTrial();
+    if (!result.ok) failure.value = result.message;
+  } finally {
+    startingTrial.value = false;
+  }
+}
 
 const view = computed(() => store.soundCheck);
 const running = computed(() => view.value.phase === 'starting' || view.value.phase === 'live');
@@ -75,6 +93,18 @@ onBeforeUnmount(() => void store.stopSoundCheck());
         <span class="live">{{ shown.live }}</span
         ><span class="caret" aria-hidden="true" />
       </p>
+      <div v-else-if="noPlan && trial" class="start">
+        <SButton variant="primary" :disabled="startingTrial" @click="startTrial">Start the trial</SButton>
+        <p class="small">
+          The sound check runs as a short session, so it needs minutes. The trial is free: {{ trialLines(trial)[0] }},
+          no card needed.
+        </p>
+      </div>
+      <div v-else-if="noPlan" class="start">
+        <p class="small">
+          The sound check runs as a short session, so it needs a plan: pick one on Home, then run it from Help.
+        </p>
+      </div>
       <div v-else class="start">
         <SButton variant="primary" @click="start">Start the sound check</SButton>
         <p class="small">It runs as a short session, so it uses session minutes like one.</p>

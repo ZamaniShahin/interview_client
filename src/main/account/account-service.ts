@@ -1,15 +1,19 @@
 // The account as the server knows it, and this computer's place in it. After sign-in it creates the user record
-// (`GET /me`), registers this installation with its key, then reads the plan, the minutes and the devices. It also
-// signs the device proofs the hub asks for.
+// (`GET /me`), registers this installation with its key, then reads the plan, the minutes, the devices and what is
+// for sale. It also makes the account's changes the window asks for (the trial, a purchase, the portal, removing a
+// computer) and signs the device proofs the hub asks for.
 import { hostname } from 'node:os';
-import type { AccountView } from '../../shared/account';
+import type { AccountView, DeviceRemovalsView, DeviceView, LedgerEntry } from '../../shared/account';
 import { ErrorCodes, Protocol } from '../../shared/contracts/sotto-contracts';
 import type { Tier } from '../../shared/live/view-state';
 import { ApiError, type RestClient } from '../api/rest-client';
 import type { DeviceIdentity } from '../device/device-identity';
 import { signDeviceProof } from '../device/proof';
 import {
+  shortDate,
   toAccountView,
+  toLedgerEntries,
+  type CatalogDto,
   type CreditsDto,
   type DeviceDto,
   type EntitlementsDto,
@@ -18,7 +22,7 @@ import {
 } from './account-mapping';
 
 export interface AccountServiceDependencies {
-  rest: Pick<RestClient, 'get' | 'post'>;
+  rest: Pick<RestClient, 'get' | 'post' | 'delete'>;
   device: DeviceIdentity;
   appVersion: string;
   /** `windows`, `macos` or `linux`: the names the API accepts. */
@@ -34,6 +38,19 @@ export interface LoadedAccount {
   tier: Tier;
 }
 
+/** The account's computers when this one can't be added (F3): the list to remove one from, and what the cap leaves. */
+export interface DeviceLimitView {
+  devices: DeviceView[];
+  limit: number;
+  removals: DeviceRemovalsView;
+}
+
+/** What a purchase buys: a plan, or a top-up of minutes. */
+export type Purchase = { planId: string } | { topUpId: string };
+
+/** How many ledger entries a page holds, the first one included. */
+export const ledgerPageSize = 20;
+
 /** Registration refusals that a new key answers. */
 const keyRefusals: ReadonlySet<string> = new Set([
   ErrorCodes.Identity.DeviceKeyRevoked,
@@ -43,27 +60,103 @@ const keyRefusals: ReadonlySet<string> = new Set([
 export class AccountService {
   constructor(private readonly deps: AccountServiceDependencies) {}
 
+  private get now(): Date {
+    return this.deps.now?.() ?? new Date();
+  }
+
   async load(): Promise<LoadedAccount> {
     const { rest } = this.deps;
     // Creates the user record on the first call after sign-in (README, "Talking to a local backend").
     const me = await rest.get<MeDto>('/api/v1/me');
     const deviceId = await this.ensureDevice();
-    const [entitlements, credits, ledger, devices] = await Promise.all([
-      rest.get<EntitlementsDto>('/api/v1/me/entitlements'),
-      rest.get<CreditsDto>('/api/v1/me/credits'),
-      rest.get<LedgerDto>('/api/v1/me/credits/ledger?limit=20'),
+    // The minutes are read after the plan, and the ledger after the minutes: reading the credits grants a period that
+    // just started (backend docs/03 §5), so a plan read as bought always comes with its minutes, never a read before.
+    const entitlementsRead = rest.get<EntitlementsDto>('/api/v1/me/entitlements');
+    const creditsRead = entitlementsRead.then(() => rest.get<CreditsDto>('/api/v1/me/credits'));
+    const [entitlements, credits, ledger, devices, catalog] = await Promise.all([
+      entitlementsRead,
+      creditsRead,
+      creditsRead.then(() => rest.get<LedgerDto>(`/api/v1/me/credits/ledger?limit=${ledgerPageSize}`)),
       rest.get<DeviceDto[]>('/api/v1/devices'),
+      // What is for sale is the same for everyone: without it the screens offer nothing to buy, and the rest still shows.
+      rest.get<CatalogDto>('/api/v1/billing/catalog').catch(() => null),
     ]);
     return {
-      view: toAccountView({ me, entitlements, credits, ledger, devices, deviceId }, this.deps.now?.() ?? new Date()),
+      view: toAccountView({ me, entitlements, credits, ledger, devices, catalog, deviceId }, this.now),
       tier: entitlements.features.includes('smart_tier') ? 'smart' : 'fast',
     };
+  }
+
+  /** The ledger's page before entry `before` ("Show earlier", F10 · b). */
+  async ledgerPage(before: number): Promise<{ entries: LedgerEntry[]; next: number | null }> {
+    const page = await this.deps.rest.get<LedgerDto>(
+      `/api/v1/me/credits/ledger?before=${before}&limit=${ledgerPageSize}`,
+    );
+    return { entries: toLedgerEntries(page, this.now), next: page.next };
+  }
+
+  /** Starts the free trial from this computer (F9 · a): device-bound, once per person and per computer. */
+  async startTrial(): Promise<void> {
+    const id = await this.registeredId();
+    await this.deps.rest.post('/api/v1/me/trial', {
+      proof: (token) => this.proof('POST', '/api/v1/me/trial', token, id),
+    });
+  }
+
+  /** The provider's checkout page for a plan or a top-up; the purchase is finished there, in the browser. */
+  async checkout(purchase: Purchase): Promise<string> {
+    const { url } = await this.deps.rest.post<{ url: string }>('/api/v1/billing/checkout', { body: purchase });
+    return url;
+  }
+
+  /** The provider's billing portal (plan, card, cancelling): device-bound, so a stolen token alone can't open it. */
+  async portal(): Promise<string> {
+    const id = await this.registeredId();
+    const { url } = await this.deps.rest.post<{ url: string }>('/api/v1/billing/portal', {
+      proof: (token) => this.proof('POST', '/api/v1/billing/portal', token, id),
+    });
+    return url;
+  }
+
+  /** Removes one of the account's other computers (F10 · c): it is signed out and can't be added back. */
+  async removeDevice(deviceId: string): Promise<void> {
+    const id = await this.registeredId();
+    const path = `/api/v1/devices/${encodeURIComponent(deviceId)}`;
+    await this.deps.rest.delete(path, { proof: (token) => this.proof('DELETE', path, token, id) });
+  }
+
+  /** The account's computers and what the removal cap leaves, read when this one can't be added (F3 · a). */
+  async deviceLimit(): Promise<DeviceLimitView> {
+    const { rest } = this.deps;
+    const [me, entitlements, devices] = await Promise.all([
+      rest.get<MeDto>('/api/v1/me'),
+      rest.get<EntitlementsDto>('/api/v1/me/entitlements'),
+      rest.get<DeviceDto[]>('/api/v1/devices'),
+    ]);
+    const view = toAccountView(
+      {
+        me,
+        entitlements,
+        credits: { balance: 0, lots: [] },
+        ledger: { entries: [], next: null },
+        devices,
+        catalog: null,
+        deviceId: null,
+      },
+      this.now,
+    );
+    return { devices: view.devices, limit: view.deviceLimit, removals: view.deviceRemovals };
+  }
+
+  /** Adds this computer in place of one of the account's (F3 · b): the named one is removed in the same step. */
+  async replaceDevice(deviceId: string): Promise<string> {
+    return this.register(deviceId);
   }
 
   /**
    * This computer's device id, registering it first when needed. The server answers `device_not_registered` for a
    * device it doesn't know as this account's (removed, lost, or another account's); registering again then decides
-   * whether the key can stay.
+   * whether the key can stay. At the device limit it fails with `device_limit_reached` (F3).
    */
   async ensureDevice(): Promise<string> {
     const { rest, device } = this.deps;
@@ -90,7 +183,7 @@ export class AccountService {
     }
   }
 
-  private async register(): Promise<string> {
+  private async register(replacesDeviceId?: string): Promise<string> {
     const { rest, device } = this.deps;
     const key = await device.keyPair();
     const registered = await rest.post<DeviceDto>('/api/v1/devices', {
@@ -100,6 +193,7 @@ export class AccountService {
         platform: this.deps.platform,
         appVersion: this.deps.appVersion,
         fingerprint: await this.deps.fingerprint(),
+        ...(replacesDeviceId ? { replacesDeviceId } : {}),
       },
       proof: (token) =>
         signDeviceProof({
@@ -125,6 +219,11 @@ export class AccountService {
    */
   async connectProof(accessToken: string): Promise<string> {
     return this.proof('GET', Protocol.HubPath, accessToken, await this.registeredId());
+  }
+
+  /** "Dec 1", as the window writes dates. */
+  shortDate(iso: string): string {
+    return shortDate(iso, this.now);
   }
 
   private async registeredId(): Promise<string> {

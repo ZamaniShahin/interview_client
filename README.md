@@ -75,6 +75,14 @@ A packaged build never runs the preview.
 - **This computer's encrypted database** (SQLCipher's format, its key in safeStorage): the documents, the settings and the first run, kept across restarts. Prepare edits the documents.
 - **A session gets the documents** (`SetContext`), so AUTO answers once the résumé and the job description are there.
 
+**The account and plan screens, 2026-11-09** (2.13; [docs/decisions.md](docs/decisions.md) §10):
+- **What is for sale** comes from the server's catalog: plan cards, the top-up, the trial. No price until it is decided (Q3).
+- **Buying happens in the browser**, and the window waits: the minutes or the plan arrive by themselves, said in one line. The billing portal opens the same way.
+- **The plan's words**, the same everywhere: renewing, cancelled, payment due, the trial's days and minutes, no plan.
+- **The trial** on Home, and at the setup's sound check; **the offer after a session that ran out of minutes**.
+- **The computers**, removed after asking, with the removals left; **the device limit**, met by removing one in this computer's place.
+- **The ledger**, paged by "Show earlier"; signing out asks first.
+
 **Not yet:** the microphone (with the coach, 3.7), history and the answer bank (later, in the same database), packaging hardening.
 
 ## Tech decisions
@@ -211,6 +219,15 @@ SOTTO_E2E=1 npx vitest run tests/e2e
 - It signs a new user up, verifying the email through Mailpit, then registers the computer and starts the trial.
 - Then it gets an answer in a live session over the hub, ends it, renews the sign-in and signs out.
 - Each run leaves one user behind. `SOTTO_OIDC_ISSUER`, `SOTTO_API_BASE_URL` and `SOTTO_MAILPIT_URL` point it elsewhere.
+- A second test (2.13) buys: the trial, a top-up and a plan, a cancellation, the portal, and the device limit. It pays with the backend's `tools/local-purchase.mjs`, found next to this repository (`../backend/interview_backend`) or at `SOTTO_BACKEND`.
+
+**Buying on the local stack.** Its payment provider is a stand-in: the checkout page the app opens (`https://billing.local.invalid/checkout/…`) answers nothing. Copy that address and pay it the way the provider would, with a signed webhook:
+
+```bash
+node <backend>/tools/local-purchase.mjs '<checkout url>'
+```
+
+The window, waiting for the payment, shows the minutes or the plan a moment later. `--status canceled --subscription <id>` (the id the first run printed) plays a later state of a plan.
 
 ## v1 references
 

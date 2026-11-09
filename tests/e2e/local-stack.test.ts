@@ -16,7 +16,6 @@ import { OpenIdClient } from '../../src/main/auth/oidc';
 import { MemorySecretStore } from '../../src/main/auth/secret-store';
 import { createLiveTransport } from '../../src/main/connection/live-connection';
 import { DeviceIdentity } from '../../src/main/device/device-identity';
-import { signDeviceProof } from '../../src/main/device/proof';
 import { HubDriver, type HubDriverDependencies } from '../../src/main/session/hub-driver';
 import { SessionController } from '../../src/main/session/session-controller';
 import { AskMode, ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
@@ -81,12 +80,8 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     expect(await identity.id()).toBe(deviceId);
     expect(loaded.view.devices).toHaveLength(1);
 
-    // The trial; the app's own button for it comes with the trial flow (F8).
-    const { privateKey } = await identity.keyPair();
-    await rest.post('/api/v1/me/trial', {
-      proof: (token) =>
-        signDeviceProof({ privateKey, htm: 'POST', htu: '/api/v1/me/trial', accessToken: token, kid: deviceId! }),
-    });
+    // The trial, as the app's own button starts it (F9 · a): with a proof from this computer.
+    await accounts.startTrial();
     loaded = await accounts.load();
     expect(loaded.view.plan.state).toBe('trialing');
     expect(loaded.view.minutes?.usable).toBeGreaterThan(0);

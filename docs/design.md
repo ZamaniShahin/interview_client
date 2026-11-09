@@ -70,7 +70,11 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 | ◢ grip | `overlay/components/ResizeGrip.vue` |
 | Shared primitives | `renderer/shared/components/`: `SButton`, `SIconButton`, `SSegmented`, `SSwitch`, `SCheckbox`, `SOptionList`, `STextArea`, `SBanner`, `SConfirm`, `SStepper`, `SKbd`, `SIcon` |
 | The window: chrome, sidebar, pages | `renderer/app/AppShell.vue`, `components/WindowChrome.vue`, `SideNav.vue`, `pages/` |
-| Account rows, plan cards | `app/components/DeviceRow.vue`, `MinutesLotRow.vue`, `LedgerRow.vue`, `PlanCard.vue` |
+| Account rows, plan cards | `app/components/DeviceRow.vue`, `MinutesLotRow.vue`, `LedgerRow.vue`, `PlanCard.vue`, `PlanPicker.vue` |
+| The account (F10), its ledger and computers pages | `app/pages/AccountPage.vue`; the plan's words in `src/shared/plan-words.ts`, the removal's in `device-words.ts` |
+| Running out and buying (F8): the offer, waiting in the browser, the line after | `app/components/AfterCallOffer.vue`, `TopUpOffer.vue`, `PaymentWait.vue`; Home's banner |
+| The trial (F9) | `app/components/TrialOffer.vue` on Home; the setup's sound check (`app/setup/SetupSoundCheck.vue`) |
+| Too many devices (F3) | `app/DeviceLimitScreen.vue` |
 | Answer Markdown | `renderer/shared/markdown.ts`, `styles/answer.css` |
 | Icons | `renderer/shared/icons.ts` |
 

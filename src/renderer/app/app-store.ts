@@ -5,8 +5,15 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { initialAppState, type AppState } from '../../shared/app-state';
 import type { SetDocumentRequest } from '../../shared/documents';
-import { idleSoundCheck, notice, type SoundCheckView } from '../../shared/first-run';
-import type { CommandResult, HidingTestAction, SignInPageAction } from '../../shared/ipc';
+import { idleSoundCheck, notice as firstRunNotice, type SoundCheckView } from '../../shared/first-run';
+import type {
+  CommandResult,
+  DismissTarget,
+  HidingTestAction,
+  PaymentAction,
+  PurchaseRequest,
+  SignInPageAction,
+} from '../../shared/ipc';
 
 /** The setup's screens, in order: step 5 has two, the hotkeys then Test hiding. */
 export const setupScreens = ['notice', 'signIn', 'documents', 'soundCheck', 'hotkeys', 'hiding'] as const;
@@ -30,6 +37,10 @@ export const useAppStore = defineStore('app', () => {
   const documents = computed(() => state.value.documents);
   const signedIn = computed(() => state.value.auth.status === 'signed-in');
   const firstRun = computed(() => state.value.firstRun);
+  const payment = computed(() => state.value.payment);
+  const notice = computed(() => state.value.notice);
+  const lastSessionEnd = computed(() => state.value.lastSessionEnd);
+  const deviceLimit = computed(() => state.value.deviceLimit);
   const soundCheck = ref<SoundCheckView>(idleSoundCheck);
   const setup = ref<{ mode: SetupMode; screen: SetupScreen } | null>(null);
 
@@ -61,7 +72,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function acknowledgeNotice(): Promise<CommandResult> {
-    return window.appApi.acknowledgeNotice(notice.version);
+    return window.appApi.acknowledgeNotice(firstRunNotice.version);
   }
 
   function finishSetup(): Promise<CommandResult> {
@@ -111,6 +122,40 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.startSession(takeOver ? { consent: true, takeOver: true } : { consent: true });
   }
 
+  /** Starts the free trial from this computer (F9 · a); a refusal comes back as the problem. */
+  function startTrial(): Promise<CommandResult> {
+    return window.appApi.startTrial();
+  }
+
+  /** Buys a plan or a top-up in the browser; main waits for the payment and says when it arrived (F8). */
+  function buy(purchase: PurchaseRequest): Promise<CommandResult> {
+    return window.appApi.buy(purchase);
+  }
+
+  function billingPortal(): Promise<CommandResult> {
+    return window.appApi.billingPortal();
+  }
+
+  function paymentAction(action: PaymentAction): Promise<CommandResult> {
+    return window.appApi.payment(action);
+  }
+
+  function removeDevice(deviceId: string): Promise<CommandResult> {
+    return window.appApi.removeDevice(deviceId);
+  }
+
+  function replaceDevice(deviceId: string): Promise<CommandResult> {
+    return window.appApi.replaceDevice(deviceId);
+  }
+
+  function ledgerMore(): Promise<CommandResult> {
+    return window.appApi.ledgerMore();
+  }
+
+  function dismiss(target: DismissTarget): void {
+    window.appApi.dismiss(target);
+  }
+
   /** Keeps one document on this computer; the state main sends next carries it. */
   function setDocument(change: SetDocumentRequest): Promise<CommandResult> {
     return window.appApi.setDocument(change);
@@ -125,6 +170,10 @@ export const useAppStore = defineStore('app', () => {
     documents,
     signedIn,
     firstRun,
+    payment,
+    notice,
+    lastSessionEnd,
+    deviceLimit,
     soundCheck,
     setup,
     load,
@@ -143,5 +192,13 @@ export const useAppStore = defineStore('app', () => {
     stopSoundCheck,
     hidingTest,
     signInPage,
+    startTrial,
+    buy,
+    billingPortal,
+    paymentAction,
+    removeDevice,
+    replaceDevice,
+    ledgerMore,
+    dismiss,
   };
 });

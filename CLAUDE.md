@@ -22,10 +22,11 @@ The server, in `../backend/interview_backend`, holds the intelligence: the promp
 ```
 src/main/        Electron's core process: windows/ (the stealth rules, the hidden capture window), ipc/ (every
                  handler), auth/ (sign-in, the encrypted secrets), device/ (the key, its proofs, the fingerprint), api/
-                 (REST), account/ (the account and this computer's registration), session/ (the controller, its
+                 (REST), account/ (the account, this computer's registration, waiting for a payment), session/ (the controller, its
                  drivers, the hotkeys, the sound check), connection/ (the hub transport), capture/ (the call's sound:
                  its frames, the meter, the no-sound watch, the capture check), storage/ (the encrypted database,
-                 its migrations, the store over it), preview/ (development data), settings.
+                 its migrations, the store over it), preview/ (development data, and the account's changes played on
+                 it), settings.
 src/preload/     overlay.ts, app.ts: each window's only bridge to main; api.ts types them. capture.ts hands the capture
                  page its port. Sandboxed: no packages.
 src/renderer/    overlay/ (the product), app/ (the window outside sessions), capture/ (the hidden page and its
@@ -34,7 +35,7 @@ src/renderer/    overlay/ (the product), app/ (the window outside sessions), cap
 src/shared/      Runs in main, preloads and renderers, so no Electron and no DOM: contracts/ (generated, never edited),
                  ipc.ts and ipc-channels.ts, live/ (view state, reducer, the overlay's words), audio/ (PCM16 frames
                  and levels), documents, first-run (the notice's words and version), hotkeys, text-limits, settings,
-                 account.
+                 account, plan-words and device-words (the account's words, one function each, for every page).
 tests/           unit/ (Node), renderer/ (happy-dom and @vue/test-utils), stealth/ (the rules readable in the source),
                  e2e/ (against the backend's local stack; skipped unless SOTTO_E2E=1), app/ (the built app's windows
                  under Playwright, against the preview; skipped unless SOTTO_APP=1).
@@ -56,7 +57,7 @@ npm run dev              # the app against the backend's local stack, with hot r
                          # Electron's binary (about 100 MB)
 npm run dev:preview      # the app with no server: a scripted interview and a sample account
 npm run check            # type-check main and renderer, lint, test: run it before saying anything works
-SOTTO_E2E=1 npx vitest run tests/e2e   # sign-in, the device, the account and a live session, against the local stack
+SOTTO_E2E=1 npx vitest run tests/e2e   # sign-in, the device, the account, a live session and buying, against the local stack
 npm run build            # out/
 node scripts/capture-check.mjs         # after a build: 6 s of this computer's sound, captured for real (play something)
 node scripts/app-tests.mjs             # the built app's windows under Playwright, against the preview (Windows; leaves a preview build in out/)
