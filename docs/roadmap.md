@@ -6,7 +6,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 **Where it stands (2026-11-09):**
 - done: C0, 1.10, and 1.12 except the audio and the proof at connect;
-- the rest waits for Shahin's go-ahead (backend Q35);
+- Claude builds 1.11, the rest of 1.12, 1.13, 1.14 and 2.13 in that order (backend Q35, decided 2026-11-09);
 - 1.11, audio capture, comes first, since `UploadAudio` needs its frames;
 - before the next checkpoint, run `npm run contracts:sync`: this copy of the contract is behind the backend's.
 
@@ -68,7 +68,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - [ ] 3.11 The consent checkbox before each session. It is drawn, and main already refuses a start without it; this checkpoint is its final wording (4.8) and its tests end to end.
 - [ ] 3.12 Recording, opt-in.
 - [ ] 3.13 Settings, kept in the local database; hotkeys remappable.
-- [ ] Practice (with the server's 3.3): Claude Design's practice screens redrawn on these tokens; Q21–Q24 answered first.
+- [ ] Practice (with the server's 3.3): Claude Design's practice screens redrawn on these tokens, following Q21–Q24 as answered on 2026-11-09 ([design.md](design.md)).
 
 ## Phase 4: ready for launch
 

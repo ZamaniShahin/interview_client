@@ -23,11 +23,15 @@ Where the design lives, what it holds, and which code draws each part.
 
 - **Practice (F12) and its history (F13)** are in Claude Design's export of 2026-11-06, which is not in this repository.
 - That export is styled with ARN Fintech's design system and must be redrawn on these tokens before it is built. For that reason it stays out of both repositories: Shahin keeps the file (`Sotto — interview practice.html`). `scripts/design-unbundle.mjs` and `scripts/design-split.mjs` make it readable.
-- Its open points are the backend's Q21–Q24.
+- Its open points were settled on 2026-11-09 (backend Q21–Q24), and the redrawn screens follow them:
+  - a follow-up comes at a score of 4 or less, not below 7;
+  - "Retry the 2 lowest" and "Practice this question" stay: `MockStart` takes chosen questions;
+  - there is no Study page outside sessions: Study stays in the overlay's ask bar;
+  - practice sessions, with their scores, join the one history, and a practice debrief counts against the monthly debrief quota.
 
 ## The placeholder look
 
-Not a brand (backend decisions.md, 2026-11-06; the brand is Q14):
+Not a brand (backend decisions.md, 2026-11-06). The brand is Q14, and on 2026-11-09 Shahin chose to keep this placeholder until there is one:
 - system fonts: Segoe UI, Cascadia Mono;
 - grays;
 - amber for key words, and for nothing else.
@@ -42,8 +46,8 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 - **The overlay's size:** 420 × 600, first placed top centre under the webcam.
 - **Compact view:** 420 × 236, the bar and the answer only; the overlay switches to it below 300 px tall.
 - **Expanded size:** 560 × 760.
-- **A window outside sessions:** 960 × 640, with a sidebar (Q15).
-- **The tray only during a session** (Q16).
+- **A window outside sessions:** 960 × 640, with a sidebar (Q15, decided by Shahin on 2026-11-09).
+- ~~The tray only during a session~~: Shahin chose otherwise on 2026-11-09 (Q16). During a session there is neither a taskbar button nor a tray icon, as in v1, so the app is reached only by its hotkeys.
 - **The status strip** has two rows: the bar (state, listening, More) and the strip (AUTO/MANUAL, pause, minutes, tier).
 - **Hotkeys:** Ctrl+Enter (settled), plus Ctrl+Shift with Space, A, P, ←/→, M and H.
 - **A long answer** follows the newest line only while you are at the bottom; otherwise "New text below" is offered.

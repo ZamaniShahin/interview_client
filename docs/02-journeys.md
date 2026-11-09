@@ -19,7 +19,7 @@ It opens by itself on first use, and can be run again from Help. Five steps:
    - The live transcript appears on screen, proving that the call's audio plays through the computer's default output device.
    - Automatic answering and recording stay off while the wizard is open, and come back after.
    - Leaving the sound check clears what it heard, so its words never join the first real question.
-   - It runs as a live session, so whether it costs minutes is open (Q12, [08](08-open-questions.md)).
+   - It runs as a live session and is charged like any session minute (Q12, decided 2026-11-09).
 5. **The hotkeys**, and **🛡 Test hiding**: the user checks that the overlay doesn't show in a screen share or a capture.
 
 ## J3. Sign up and sign in

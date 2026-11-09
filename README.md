@@ -110,7 +110,7 @@ app window (Vue): Home, Prepare, Practice, History, Account,   selector window: 
 
 - **The main process owns every network connection.** Renderers have `connect-src 'none'` (the build sets the Content Security Policy). Events arrive from the hub in main and go to the overlay over IPC. Audio frames go from the capture window to main through a `MessagePort` (transferable buffers), then up the hub stream.
 - **Only the interviewer's (loopback) audio is uploaded.** The mic feeds only the on-device coach, the echo gate, the local recording, and practice answers (as text).
-- **The app window** is the UI canvas's proposal for the handoff's open point (backend decisions.md, Q15): outside a session the app gets a roomier window; during one it steps aside for the overlay.
+- **The app window** (backend decisions.md, Q15, decided 2026-11-09 as the UI canvas proposed): outside a session the app gets a roomier window, 960 × 640 with a sidebar; during one it steps aside for the overlay.
 
 ## Stealth rules: requirements, each with a test
 
@@ -155,7 +155,7 @@ Ported from v1 (`ui/main.js`, KNOWN_ISSUES #12–#13). Break one and the overlay
   4. **The sound check:** live transcripts on screen, proving that the call's audio plays through the default output device.
      - AUTO and recording stay off while the wizard is open, and are put back after.
      - Leaving the sound check sends `ClearHeard`, so its words never join the next question (v1 `clear_heard`).
-     - It runs in a live session, so whether it costs minutes is open (Q12).
+     - It runs in a live session and is charged like any session minute (Q12, decided 2026-11-09).
   5. **The key hotkeys** and 🛡 Test hiding.
 
 ## Release process (Phase 4)

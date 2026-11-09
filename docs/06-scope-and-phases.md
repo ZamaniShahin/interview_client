@@ -104,8 +104,8 @@ As of 2026-11-09. The backend's roadmap opens with where each phase stands.
 | Missing | Until it comes, the client… | Comes with |
 |---|---|---|
 | A real payment provider in use | buys only against the development stand-in. Paddle's adapter is built and waits for its sandbox keys | 2.7 (Q28) |
-| Screenshots, the prep doc, custom instructions, the answer bank in answers | — | 3.1, 3.2 (Q32, Q37) |
-| Practice; debriefs and prepared-answer drafts | — | 3.3, 3.4 (Q32) |
+| Screenshots, the prep doc, custom instructions, the answer bank in answers | — | 3.1, 3.2 (Q32 and Q37 settled 2026-11-09) |
+| Practice; debriefs and prepared-answer drafts | — | 3.3, 3.4 (Q32 settled 2026-11-09) |
 | A word before a server stops (`SessionMigrate`) | resumes after the drop, as after any other | not planned ([08](08-open-questions.md), Q31) |
 | The device proof when the hub connection opens | — | with the rest of 1.12, on both sides together |
 | Choosing the quality tier (fast or smart, where the plan allows) | uses the plan's tier, without a choice | designed, not on the roadmap yet ([08](08-open-questions.md)) |
