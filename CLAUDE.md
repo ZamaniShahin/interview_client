@@ -125,6 +125,11 @@ While a session runs, its hotkeys are global (Ctrl+Enter answers, Ctrl+Shift+H h
 ## Working with Shahin
 
 How Shahin works with agents, the same in both repositories. This was kept in one computer's agent memory and moved here on 2026-11-09, so it holds on any computer.
+- **Everything about the project lives in the repositories**, never only in a scratch folder or an agent's memory, since he works from more than one computer (his request, 2026-11-09):
+  - questions go into docs/08-open-questions.md;
+  - choices go into docs/decisions.md;
+  - scripts worth running again go into `scripts/`;
+  - then commit and push.
 - **Ask decisions in the question dialog**, not in prose, and tag the options:
   - **(Recommended)** on the one you would pick, listed first;
   - **(Cleanest)** on the most principled, least tangled one;
