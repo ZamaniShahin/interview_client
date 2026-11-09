@@ -75,6 +75,7 @@ What Sotto sells, how use is counted, and what the client shows. **Every number 
 
 - **A limit per account, from the plan** (2 or 3), and at most **3 removals in 30 days**. Removing a device revokes it at once, for good.
 - **The app lists the devices** (name, platform, app version, first and last seen), so the user can remove one when the limit is reached.
+- **At most 3 connections to the server at a time per user**, every computer together (the server's limit, Q36). Past it, starting a session says "Sotto is connected on too many of your computers right now. Close it on one, or wait a minute, then try again." A connection of a server that stopped frees its place within a minute and a half, which the app's reconnecting outlasts.
 
 ## Buying
 

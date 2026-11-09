@@ -176,3 +176,9 @@ The server's licence registry (backend 2.16, Shahin's request) puts a plan on an
 | 2026-11-09 | **A licensed plan says who gave it, not when it renews**: "Team plan · given by Sotto" (or "… given by Sotto until Jan 31"), the tag "Licence", and on Account "Given by Sotto, with no end: nothing to pay." It never renews, so the renewal words never show |
 | 2026-11-09 | **A licensed account is offered nothing to buy**: no plan cards, no top-up, no trial, and "Change plan" only for a subscriber. The server would refuse a trial anyway (`trial_not_available`) while any plan is in effect. Once the licence ends or is revoked, the account has no plan and the offers come back |
 | 2026-11-09 | **The checks**: unit tests for the words and the mapping, a renderer test of Account with a licence (the sidebar's words included), and an end-to-end test against the local stack in which the backend's staff tools (`tools/staff.mjs`, with a session of the test's own through `SOTTO_STAFF_SESSION`) give a new email the Team plan before it signs up, then revoke it |
+
+## 12. Taken in session on 2026-11-09, the server's connection limit (Q36; open to revision)
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | **The limit has words of its own**: at connect, `rate_limited` can only be the user's three connections, so a refused start says "Sotto is connected on too many of your computers right now. Close it on one, or wait a minute, then try again." During a resume the app keeps trying, as for any refused connection, and a place comes free within 90 s. Checked by the hub driver's unit test of every connect refusal |

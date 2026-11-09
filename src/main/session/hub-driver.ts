@@ -333,6 +333,10 @@ const refusals: Record<string, string> = {
   // A proof is good for a minute either way of the server's clock, so a wrong clock is the likely cause.
   [ErrorCodes.Identity.DeviceProofInvalid]:
     "Sotto couldn't confirm this computer. Check that its clock is set right, then try again.",
+  // At connect, the only limit is the user's: three connections at a time, every computer together (Q36). A place comes
+  // free as one closes, or within 90 s of a server that stopped.
+  [ErrorCodes.Request.RateLimited]:
+    'Sotto is connected on too many of your computers right now. Close it on one, or wait a minute, then try again.',
 };
 
 /**

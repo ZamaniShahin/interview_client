@@ -576,6 +576,10 @@ describe("the hub driver's proof at connect (1.12)", () => {
       ErrorCodes.Identity.DeviceProofInvalid,
       "Sotto couldn't confirm this computer. Check that its clock is set right, then try again.",
     ],
+    [
+      ErrorCodes.Request.RateLimited,
+      'Sotto is connected on too many of your computers right now. Close it on one, or wait a minute, then try again.',
+    ],
   ])('says in its own words why the server refused this computer at connect (%s)', async (code, message) => {
     const h = harness({
       connection: (t) =>
