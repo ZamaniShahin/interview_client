@@ -1,6 +1,6 @@
 // The app's core process. It owns the windows, sign-in, the account, the session and its connection.
 // Renderers only draw: they reach main through the checked channels in src/shared/ipc.ts.
-import { app, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
+import { app, clipboard, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
 import { ErrorCodes } from '../shared/contracts/sotto-contracts';
 import type { AppWindowAction, CommandResult, OverlayWindowAction, StartSessionRequest } from '../shared/ipc';
@@ -71,10 +71,7 @@ function applySettings(changed: Settings): void {
   for (const win of [appWindow, overlayWindow]) {
     if (alive(win)) win.webContents.send(IpcChannels.settingsChanged, changed);
   }
-  if (alive(overlayWindow)) {
-    overlayWindow.setOpacity(changed.opacity / 100);
-    overlayWindow.setSkipTaskbar(changed.trayOnly);
-  }
+  if (alive(overlayWindow)) overlayWindow.setOpacity(changed.opacity / 100);
 }
 
 function setAppState(change: Partial<AppState>): void {
@@ -210,7 +207,7 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
 function openOverlay(): void {
   const current = settings.get();
   if (!alive(overlayWindow)) {
-    const win = createOverlayWindow({ compact: current.startCompact, trayOnly: current.trayOnly });
+    const win = createOverlayWindow({ compact: current.startCompact });
     win.setOpacity(current.opacity / 100);
     // Shown without taking focus: the call app keeps the keyboard (stealth rule 6).
     win.once('ready-to-show', () => win.showInactive());
@@ -367,6 +364,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       startSession,
       onOverlayWindow,
       onAppWindow,
+      copyText: (text) => clipboard.writeText(text),
     });
 
     const win = createAppWindow();

@@ -10,7 +10,7 @@ export const overlaySize = {
   min: { width: 360, height: 200 },
 } as const;
 
-export function createOverlayWindow(options: { compact: boolean; trayOnly: boolean }): BrowserWindow {
+export function createOverlayWindow(options: { compact: boolean }): BrowserWindow {
   const area = screen.getPrimaryDisplay().workArea;
   const size = options.compact ? overlaySize.compact : overlaySize.full;
   const win = new BrowserWindow({
@@ -20,13 +20,17 @@ export function createOverlayWindow(options: { compact: boolean; trayOnly: boole
     y: area.y + 24,
     show: false,
     frame: false,
+    // Windows 11 rounds the corners itself (8 px; checked on build 26200, resizable or not). The canvas's 12 px would
+    // need a transparent window, without the system's shadow, for 4 px more. Windows 10 stays square.
+    roundedCorners: true,
     // Stealth rule 5: no OS resize border; the ◢ grip resizes through main.
     resizable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
-    // A full-screen share shows the taskbar, so during a session Sotto lives in the tray (a setting, on by default).
-    skipTaskbar: options.trayOnly,
+    // A full-screen share shows the taskbar, so a session has no taskbar button, and no tray icon either, as in v1
+    // (Q16): the hotkeys reach the overlay.
+    skipTaskbar: true,
     backgroundColor: '#111113',
     title: 'Sotto',
     webPreferences: {

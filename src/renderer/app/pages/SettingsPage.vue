@@ -65,12 +65,6 @@ const hotkeys = [
         <p class="small">Opacity is for your comfort only: the overlay is left out of shares either way.</p>
 
         <p class="eyebrow section">During a session</p>
-        <SSwitch
-          :model-value="settings.trayOnly"
-          label="Show Sotto in the tray only"
-          description="A full-screen share shows the taskbar."
-          @update:model-value="(trayOnly) => update({ trayOnly })"
-        />
         <SSwitch :model-value="settings.startCompact" label="Start in compact view" @update:model-value="(startCompact) => update({ startCompact })" />
       </div>
 

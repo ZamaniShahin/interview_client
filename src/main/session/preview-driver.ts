@@ -23,10 +23,13 @@ const kindOfMode: Record<AskMode, AnswerKind> = {
   [AskMode.Result]: AnswerKind.Result,
 };
 
+// The diagram names a title, as a model may: Mermaid draws it as an SVG <title>, a tooltip the overlay must drop (the
+// app tests check it, tests/app).
 const urlShortener =
   "So it's ***read-heavy***, maybe a hundred reads per write. I'd put a ***cache*** in front of a ***key-value store***, " +
   'and make the short codes from a ***counter in base 62***, so they never collide.\n\n' +
-  '```mermaid\nflowchart LR\n  U[User] --> LB[Load balancer] --> API[API servers]\n  API --> C[(Cache)]\n' +
+  '```mermaid\nflowchart LR\n  accTitle: How a short link is served\n' +
+  '  U[User] --> LB[Load balancer] --> API[API servers]\n  API --> C[(Cache)]\n' +
   '  API --> DB[(Key-value store)]\n  API --> ID[ID generator]\n```\n\n' +
   "Then I'd talk about ***expiry*** and ***analytics*** if we have time.";
 

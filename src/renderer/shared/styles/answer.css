@@ -55,7 +55,7 @@
   display: flex;
   align-items: center;
   height: 28px;
-  padding: 0 10px;
+  padding: 0 4px 0 10px;
   border-bottom: 1px solid var(--line);
   color: var(--text-2);
   font: 500 11px/16px var(--font-sans);
@@ -73,4 +73,52 @@
   background: none;
   color: var(--text-1);
   font: 400 13px/20px var(--font-mono);
+}
+
+/* Code in the canvas's four syntax colors (tokens.css), from highlight.js's classes. Anything else keeps the text
+   color: no amber in code. */
+.answer .hljs-keyword,
+.answer .hljs-selector-tag,
+.answer .hljs-meta .hljs-keyword {
+  color: var(--syn-key);
+}
+
+.answer .hljs-type,
+.answer .hljs-built_in,
+.answer .hljs-literal,
+.answer .hljs-title.class_ {
+  color: var(--syn-type);
+}
+
+.answer .hljs-string,
+.answer .hljs-regexp,
+.answer .hljs-char {
+  color: var(--syn-str);
+}
+
+.answer .hljs-comment,
+.answer .hljs-doctag {
+  color: var(--syn-com);
+}
+
+/* A diagram (```mermaid): Mermaid's drawing, in the overlay's colors, inside the canvas's box. */
+.answer .dia {
+  margin: 2px 0 12px;
+  padding: 12px 8px;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+}
+
+.answer .dia svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.answer .dia.drawing {
+  color: var(--text-3);
+  font: 400 13px/18px var(--font-sans);
 }

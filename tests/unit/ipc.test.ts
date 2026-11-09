@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AskMode } from '../../src/shared/contracts/sotto-contracts';
-import { overlayCommandSchema, overlayWindowActionSchema, startSessionSchema } from '../../src/shared/ipc';
+import { copyTextSchema, overlayCommandSchema, overlayWindowActionSchema, startSessionSchema } from '../../src/shared/ipc';
 import { settingsPatchSchema } from '../../src/shared/settings';
 
 describe('what a window may send to main', () => {
@@ -45,5 +45,19 @@ describe('what a window may send to main', () => {
   it('never sizes the overlay below its smallest', () => {
     expect(overlayWindowActionSchema.safeParse({ type: 'resize', width: 360, height: 200 }).success).toBe(true);
     expect(overlayWindowActionSchema.safeParse({ type: 'resize', width: 100, height: 50 }).success).toBe(false);
+  });
+});
+
+describe("what an answer's Copy may hand main (1.13)", () => {
+  it('takes a code block of any size an answer has', () => {
+    expect(copyTextSchema.safeParse('print("swiss")\n').success).toBe(true);
+    expect(copyTextSchema.safeParse('x'.repeat(100_000)).success).toBe(true);
+  });
+
+  it('refuses nothing to copy, too much, or anything but text', () => {
+    expect(copyTextSchema.safeParse('').success).toBe(false);
+    expect(copyTextSchema.safeParse('x'.repeat(100_001)).success).toBe(false);
+    expect(copyTextSchema.safeParse({ text: 'code' }).success).toBe(false);
+    expect(copyTextSchema.safeParse(42).success).toBe(false);
   });
 });

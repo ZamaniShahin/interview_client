@@ -11,8 +11,9 @@ export function createAppWindow(): BrowserWindow {
     minWidth: 760,
     minHeight: 520,
     show: false,
-    // The app draws its own title bar, like the overlay.
+    // The app draws its own title bar, like the overlay, and Windows 11 rounds its corners (overlay-window.ts).
     frame: false,
+    roundedCorners: true,
     backgroundColor: '#111113',
     title: 'Sotto',
     webPreferences: {

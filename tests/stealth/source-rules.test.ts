@@ -48,4 +48,25 @@ describe('stealth rules in the source', () => {
     expect(overlay).toContain('frame: false');
     expect(readFileSync(join(root, 'src', 'main', 'index.ts'), 'utf8')).toContain('showInactive()');
   });
+
+  it('gives a session no taskbar button, which a full-screen share would show (Q16)', () => {
+    const overlay = readFileSync(join(root, 'src', 'main', 'windows', 'overlay-window.ts'), 'utf8');
+    expect(overlay).toContain('skipTaskbar: true');
+    expect(readFileSync(join(root, 'src', 'shared', 'settings.ts'), 'utf8')).not.toMatch(/trayOnly|skipTaskbar/);
+  });
+});
+
+describe('safety rules in the source', () => {
+  it("renders HTML from a string only in the answer's components, each saying why (CLAUDE.md rule 7)", () => {
+    const withHtml = renderer.filter((f) => /\sv-html=/.test(readFileSync(f, 'utf8')));
+    const answerComponents = ['AnswerBody.vue', 'AnswerCode.vue', 'AnswerDiagram.vue'].map((name) =>
+      join('src', 'renderer', 'overlay', 'components', name),
+    );
+    expect(show(withHtml).sort()).toEqual(answerComponents.sort());
+    for (const file of withHtml) {
+      const uses = readFileSync(file, 'utf8').split('\n').filter((line) => /\sv-html=/.test(line)).length;
+      const reasons = (readFileSync(file, 'utf8').match(/eslint-disable-next-line vue\/no-v-html -- \S/g) ?? []).length;
+      expect(reasons, relative(root, file)).toBe(uses);
+    }
+  });
 });

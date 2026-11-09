@@ -8,8 +8,7 @@ export const settingsSchema = z.object({
   textSize: z.enum(['S', 'M', 'L']),
   /** For comfort only: the overlay is left out of captures at any opacity. */
   opacity: z.union([z.literal(100), z.literal(90), z.literal(80)]),
-  /** A full-screen share shows the taskbar, so during a session Sotto is in the tray only. */
-  trayOnly: z.boolean(),
+  // No "tray only": during a session Sotto has neither a taskbar button nor a tray icon (Q16), so nothing to choose.
   startCompact: z.boolean(),
   keepTranscripts: z.boolean(),
   keepRecordings: z.boolean(),
@@ -25,7 +24,6 @@ export const defaultSettings: Settings = {
   theme: 'dark',
   textSize: 'M',
   opacity: 100,
-  trayOnly: true,
   startCompact: false,
   keepTranscripts: false,
   keepRecordings: false,

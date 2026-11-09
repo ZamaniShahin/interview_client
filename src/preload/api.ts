@@ -23,6 +23,8 @@ export interface OverlayApi extends SettingsApi {
   onState(listener: (state: LiveViewState) => void): () => void;
   command(command: OverlayCommand): Promise<CommandResult>;
   window(action: OverlayWindowAction): void;
+  /** Puts a code block's source on the clipboard (an answer's Copy). */
+  copy(text: string): void;
 }
 
 /** `window.appApi`, in the app window only. */

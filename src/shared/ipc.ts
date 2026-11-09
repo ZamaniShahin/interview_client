@@ -49,6 +49,12 @@ export const overlayWindowActionSchema = z.discriminatedUnion('type', [
 ]);
 export type OverlayWindowAction = z.infer<typeof overlayWindowActionSchema>;
 
+/**
+ * What an answer's Copy puts on the clipboard: a code block's source as the model wrote it. An answer is far shorter
+ * than the limit; the limit only keeps a renderer from handing main anything at all.
+ */
+export const copyTextSchema = z.string().min(1).max(100_000);
+
 export const appWindowActionSchema = z.enum(['minimize', 'maximize', 'close']);
 export type AppWindowAction = z.infer<typeof appWindowActionSchema>;
 

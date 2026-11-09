@@ -9,6 +9,8 @@ export const IpcChannels = {
   overlayCommand: 'overlay:command',
   /** overlay → main (send): sizing and hiding the overlay window. */
   overlayWindow: 'overlay:window',
+  /** overlay → main (send): a code block's text for the clipboard (an answer's Copy, 1.13). */
+  overlayCopy: 'overlay:copy',
   /** app window → main (send): minimize, maximize, close. */
   appWindow: 'app:window',
   /** app window → main (invoke): the app's state (sign-in, account, problem). */

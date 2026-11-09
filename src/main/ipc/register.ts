@@ -5,6 +5,7 @@ import type { AppState } from '../../shared/app-state';
 import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import {
   appWindowActionSchema,
+  copyTextSchema,
   IpcChannels,
   overlayCommandSchema,
   overlayWindowActionSchema,
@@ -31,6 +32,8 @@ export interface IpcDependencies {
   startSession: (request: StartSessionRequest) => Promise<CommandResult>;
   onOverlayWindow: (action: OverlayWindowAction) => void;
   onAppWindow: (action: AppWindowAction) => void;
+  /** Puts text on the clipboard: main's, since the overlay never takes focus and a renderer's clipboard wants it. */
+  copyText: (text: string) => void;
 }
 
 const invalid: CommandResult = { ok: false, code: ErrorCodes.Request.InvalidInput, message: 'That request was not valid.' };
@@ -60,6 +63,12 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromOverlay(event)) return;
     const parsed = overlayWindowActionSchema.safeParse(payload);
     if (parsed.success) deps.onOverlayWindow(parsed.data);
+  });
+
+  ipcMain.on(IpcChannels.overlayCopy, (event, payload: unknown) => {
+    if (!fromOverlay(event)) return;
+    const parsed = copyTextSchema.safeParse(payload);
+    if (parsed.success) deps.copyText(parsed.data);
   });
 
   ipcMain.on(IpcChannels.appWindow, (event, payload: unknown) => {

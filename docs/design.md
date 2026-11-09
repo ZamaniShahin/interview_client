@@ -62,7 +62,9 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 | Strip (AUTO/MANUAL, pause, minutes, tier) | `overlay/components/StatusStrip.vue` |
 | The banner under the strip, and its words | `overlay/components/OverlayBanner.vue`; `src/shared/live/copy.ts` |
 | Heard | `overlay/components/HeardPanel.vue` |
-| The answer card and its endings | `overlay/components/AnswerCard.vue`, `AnswerBody.vue`, `KindBadge.vue`, `HistoryPager.vue` |
+| The answer card and its endings, and "New text below" | `overlay/components/AnswerCard.vue`, `AnswerBody.vue`, `KindBadge.vue`, `HistoryPager.vue` |
+| An answer's code block, its syntax colors and Copy | `overlay/components/AnswerCode.vue`; `src/renderer/shared/markdown.ts`; `styles/answer.css` |
+| An answer's diagram | `overlay/components/AnswerDiagram.vue`; `src/renderer/shared/diagram.ts` (Mermaid in the overlay's colors) |
 | The ask bar | `overlay/components/AskBar.vue` |
 | More menu | `overlay/components/MoreMenu.vue` |
 | ◢ grip | `overlay/components/ResizeGrip.vue` |

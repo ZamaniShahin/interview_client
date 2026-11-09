@@ -15,6 +15,7 @@ const api: OverlayApi = {
   },
   command: (command) => ipcRenderer.invoke(IpcChannels.overlayCommand, command),
   window: (action) => ipcRenderer.send(IpcChannels.overlayWindow, action),
+  copy: (text) => ipcRenderer.send(IpcChannels.overlayCopy, text),
   getSettings: () => ipcRenderer.invoke(IpcChannels.settingsGet),
   setSettings: (patch) => ipcRenderer.invoke(IpcChannels.settingsSet, patch),
   onSettings: (listener) => {

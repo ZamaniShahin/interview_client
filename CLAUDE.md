@@ -33,13 +33,14 @@ src/shared/      Runs in main, preloads and renderers, so no Electron and no DOM
                  ipc.ts and ipc-channels.ts, live/ (view state, reducer, the overlay's words), audio/ (PCM16 frames
                  and levels), text-limits, settings, account.
 tests/           unit/ (Node), renderer/ (happy-dom and @vue/test-utils), stealth/ (the rules readable in the source),
-                 e2e/ (against the backend's local stack; skipped unless SOTTO_E2E=1).
+                 e2e/ (against the backend's local stack; skipped unless SOTTO_E2E=1), app/ (the built app's windows
+                 under Playwright, against the preview; skipped unless SOTTO_APP=1).
 scripts/         sync-contracts.mjs: copies the hub's contract from the backend. Checks run by hand, each with its usage
                  in its first lines: app-drive.mjs (the built app driven through its own windows, against the local
                  stack; it signs this computer out), capture-check.mjs (6 s of this computer's sound through the real
-                 capture window), oidc-cjs-check.mjs, contrast.mjs (the palette's WCAG ratios),
-                 pick-versions.mjs (the two-week rule), design-unbundle.mjs and design-split.mjs (reading a Claude
-                 Design export).
+                 capture window), app-tests.mjs (builds the preview and runs tests/app), oidc-cjs-check.mjs,
+                 contrast.mjs (the palette's WCAG ratios), pick-versions.mjs (the two-week rule), design-unbundle.mjs
+                 and design-split.mjs (reading a Claude Design export).
 docs/            The product docs (01–08), the design handoff, design.md (and design/canvas/, a copy of the canvas's
                  files), decisions.md, roadmap.md.
 ```
@@ -55,6 +56,7 @@ npm run check            # type-check main and renderer, lint, test: run it befo
 SOTTO_E2E=1 npx vitest run tests/e2e   # sign-in, the device, the account and a live session, against the local stack
 npm run build            # out/
 node scripts/capture-check.mjs         # after a build: 6 s of this computer's sound, captured for real (play something)
+node scripts/app-tests.mjs             # the built app's windows under Playwright, against the preview (Windows; leaves a preview build in out/)
 npm run dist:win         # an unsigned NSIS installer in dist/, for internal use
 npm run contracts:sync   # copy the backend's contracts/sotto-contracts.ts; contracts:check fails if they differ
 ```
@@ -97,7 +99,9 @@ While a session runs, its hotkeys are global (Ctrl+Enter answers, Ctrl+Shift+H h
    - Error codes are published.
    - A protocol change starts in the backend.
 6. **Never in this repo or the built app:** prompts, AI keys, model ids, the rules that decide when a question ends, or plan limits used to enforce anything. The text limits here only count and warn; the server is the judge.
-7. **Answers are untrusted Markdown.** Render them only through `src/renderer/shared/markdown.ts`: no HTML, no links, no images, and DOMPurify on the result. `v-html` appears only in `AnswerBody.vue`.
+7. **Answers are untrusted Markdown.** Render them only through `src/renderer/shared/markdown.ts`: no HTML, no links, no images, and DOMPurify on the result. Diagrams go through `src/renderer/shared/diagram.ts`: Mermaid in strict mode with SVG labels, its SVG sanitized again (no `<title>`, links or HTML).
+   - `v-html` appears only in the answer's components (`AnswerBody.vue`, `AnswerCode.vue`, `AnswerDiagram.vue`), each with its reason on the `eslint-disable` line; `tests/stealth` checks both.
+   - DOMPurify under happy-dom unwraps a fragment's first element and doesn't sanitize inside SVG. So sanitizing leads with an invisible character, and what Mermaid draws is checked in the app tests (Chromium), not the renderer tests.
 8. **The client is a terminal.** It shows what the server decides; it decides nothing that matters for money or security.
 9. **No sound during a live session.** Practice may read questions aloud: the one exception, open to revision.
 10. **No interview content in logs**: no transcripts, answers, documents or screenshots. States and codes only.
@@ -114,7 +118,8 @@ While a session runs, its hotkeys are global (Ctrl+Enter answers, Ctrl+Shift+H h
   - logic gets unit tests (reducer, schemas, words);
   - components get renderer tests;
   - the stealth rules get the source checks.
-  - Tests are named as sentences. Playwright end-to-end tests and the display-affinity test come with the overlay checkpoint (1.13).
+  - Tests are named as sentences.
+  - What only a real Chromium shows goes in the app tests (`tests/app`, Playwright against the preview): Mermaid, the clipboard, the display affinity, the stealth rules at run time.
 - **Packages:**
   - exact versions (`.npmrc`), from registry.npmjs.org only;
   - at least two weeks old when added;

@@ -19,6 +19,7 @@ npm install
 npm run dev           # against the backend's local stack; the first run downloads Electron's binary (about 100 MB)
 npm run dev:preview   # no server: a scripted interview and a sample account, for work on the UI
 npm run check         # type-check, lint, test
+node scripts/app-tests.mjs   # the built app's windows under Playwright, against the preview (Windows)
 ```
 
 Node 24 runs everything. Node 24.15 or later also avoids an engine warning from a build tool (`nopt`, via electron-builder).
@@ -63,7 +64,13 @@ A packaged build never runs the preview.
 
 **The device proof at connect, 2026-11-09** (the rest of 1.12): every hub connection opens with this computer's proof in its handshake, so a sign-in copied to another machine can't even connect.
 
-**Not yet:** Mermaid and syntax colors in answers (1.13), the first run (1.14), the microphone (with the coach, 3.7), the local database, packaging hardening.
+**The overlay, complete, 2026-11-09** (1.13; [docs/decisions.md](docs/decisions.md) §8):
+- **Answers in parts:** prose, each code block in the canvas's syntax colors with its Copy, and each diagram drawn by Mermaid in the overlay's colors once its fence closes.
+- **A long answer** follows its newest line while you are at the bottom; scrolled up, "New text below" offers the way down.
+- **The app tests** drive the built app's own windows with Playwright against the preview: diagrams under the Content Security Policy, the clipboard, the stealth rules at run time, and every window's display affinity, after hide and show too.
+- **Windows 11 rounds the windows' corners**; there is no "tray only" setting any more (Q16).
+
+**Not yet:** the first run (1.14), the microphone (with the coach, 3.7), the local database, packaging hardening.
 
 ## Tech decisions
 
@@ -84,7 +91,7 @@ A packaged build never runs the preview.
 | Audio capture | hidden **capture window**: Windows system audio via `setDisplayMediaRequestHandler({audio: 'loopback'})`, mic via `getUserMedia`; Web Audio mixes down and resamples to 24 kHz, and an **AudioWorklet** makes PCM16 100 ms frames | no Python sidecar; Chromium handles devices | v1's Python `soundcard` | built for the loopback (1.11); the mic with the coach (3.7) |
 | macOS audio | **open (Q6)**: Electron's own loopback support if enough, otherwise a small native helper | — | — | Phase 5 |
 | Coach transcription | **on the device**: sherpa-onnx or Vosk, picked by a spike (Q5); the mic never leaves the machine | privacy, zero server cost | cloud STT for the mic | 3.7 |
-| Markdown | **markdown-it** (`html: false`) + **DOMPurify**; **highlight.js**; **Mermaid** (lazy, `securityLevel: "strict"`) | a safe, standard renderer for model output | v1's hand-written renderer | markdown-it and DOMPurify added; highlight.js and Mermaid at 1.13 |
+| Markdown | **markdown-it** (`html: false`) + **DOMPurify**; **highlight.js**; **Mermaid** (lazy, `securityLevel: "strict"`) | a safe, standard renderer for model output | v1's hand-written renderer | built (1.13): highlight.js 11.12 (20 languages, the canvas's syntax colors), Mermaid 12.2 loaded with the first diagram |
 | Documents | **pdfjs-dist** (PDF text) + **mammoth** (`.docx`, tables included: v1 KNOWN_ISSUES #11); only the extracted text is sent | no PDF parser on the server | parsing on the server | 3.10 |
 | Local data | **SQLite**, encrypted (**better-sqlite3-multiple-ciphers**, SQLCipher-compatible), in main; key in safeStorage. Schema in backend [07](../backend/interview_backend/docs/07-data-model.md) §5 | history and answer bank stay on the device, encrypted | plain JSON / SQLite (v1) | with the first stored data (1.14) |
 | Validation | **zod** schemas for every IPC payload and local settings | untrusted renderer input | — | added |
@@ -93,7 +100,7 @@ A packaged build never runs the preview.
 | Signing | Windows **Authenticode** through a cloud HSM signing service; macOS **Developer ID + notarization** | trust, SmartScreen, Gatekeeper; required for updates | unsigned (v1) | 4.2 |
 | Hardening | **@electron/fuses**, ASAR integrity, `app://` protocol, CSP, sandbox (backend [08](../backend/interview_backend/docs/08-security.md) §4) | the client can't be turned against its user | obfuscation as a control | CSP and sandbox built; the rest at 4.1 |
 | Errors | **Sentry** Electron SDK, PII scrubbing, no content | crash visibility | — | Phase 4 |
-| Tests | **Vitest** (unit), **Playwright** for Electron (end to end), v1's stealth checks ported | v1's renderer/selector tests encode the stealth rules | — | Vitest added; Playwright at 1.13 |
+| Tests | **Vitest** (unit), **Playwright** for Electron (end to end), v1's stealth checks ported | v1's renderer/selector tests encode the stealth rules | — | Vitest added; Playwright (`playwright-core` 1.64) drives the built app against the preview (`node scripts/app-tests.mjs`, 1.13) |
 | Lint / format | ESLint (typescript-eslint, eslint-plugin-vue) + Prettier; custom lint rules: no `title` attribute, no `<select>`, no `cursor` CSS | the stealth rules are checked as the code is written | — | added; the cursor check is a test |
 
 ## Processes and windows
@@ -126,7 +133,7 @@ Ported from v1 (`ui/main.js`, KNOWN_ISSUES #12–#13). Break one and the overlay
 
 1. **Out of captures.** Every window goes through `keepOutOfCapture(w)`: `setContentProtection(true)` now **and on every `show` event** (Windows resets it on each show).
    - Built in `src/main/windows/stealth.ts`; unit-tested, and the source check finds every window.
-   - At 1.13: read `GetWindowDisplayAffinity` = `0x11` after hide/show.
+   - The app tests read `GetWindowDisplayAffinity` = `0x11` for every window on screen, and again after hide and show (1.13). Windows forgets a hidden window's affinity: that is why it is set on every show.
 2. **No `title` attributes anywhere** (tooltips are separate, capturable windows). Use `aria-label`.
    - Lint forbids `title` in templates, components included.
    - A MutationObserver strips any that appear (`src/renderer/shared/no-titles.ts`).

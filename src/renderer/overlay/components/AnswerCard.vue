@@ -1,6 +1,10 @@
 <script setup lang="ts">
 // One answer in each of its endings (handoff §7.2, states 5 to 9): writing, done, stopped early, didn't finish,
 // hidden. What it showed stays, except a hidden answer, whose text is already gone from the state.
+//
+// A long answer follows its newest line only while the reader is at the bottom (design.md). Scrolled up, they keep
+// their place, and "New text below" offers the way back down.
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { AnswerView } from '../../../shared/live/view-state';
 import SButton from '../../shared/components/SButton.vue';
 import SIcon from '../../shared/components/SIcon.vue';
@@ -9,7 +13,7 @@ import AnswerBody from './AnswerBody.vue';
 import HistoryPager from './HistoryPager.vue';
 import KindBadge from './KindBadge.vue';
 
-defineProps<{
+const props = defineProps<{
   answer: AnswerView;
   position: number;
   total: number;
@@ -22,6 +26,57 @@ defineProps<{
   compact: boolean;
 }>();
 const emit = defineEmits<{ previous: []; next: []; live: []; retry: [] }>();
+
+const body = ref<HTMLElement | null>(null);
+/** At the bottom: what arrives scrolls into view. */
+const following = ref(true);
+/** Scrolled up while the answer grew below. */
+const newBelow = ref(false);
+
+/** Within a line of the bottom counts as at the bottom. */
+const atBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+
+function onScroll(): void {
+  if (!body.value) return;
+  following.value = atBottom(body.value);
+  if (following.value) newBelow.value = false;
+}
+
+/** The answer grew: by its text, or by a diagram that finished drawing. */
+function grew(): void {
+  const el = body.value;
+  if (!el) return;
+  if (following.value) el.scrollTop = el.scrollHeight;
+  else if (!atBottom(el)) newBelow.value = true;
+}
+
+function showNewText(): void {
+  if (body.value) body.value.scrollTop = body.value.scrollHeight;
+  following.value = true;
+  newBelow.value = false;
+}
+
+watch(() => props.answer.text, grew, { flush: 'post' });
+
+// Another answer on screen (looking back, or a new question): it starts at its top, followed.
+watch(
+  () => props.answer.id,
+  () => {
+    following.value = true;
+    newBelow.value = false;
+    if (body.value) body.value.scrollTop = 0;
+  },
+  { flush: 'post' },
+);
+
+let resizes: ResizeObserver | undefined;
+onMounted(() => {
+  const content = body.value?.firstElementChild;
+  if (!content || typeof ResizeObserver === 'undefined') return;
+  resizes = new ResizeObserver(grew);
+  resizes.observe(content);
+});
+onBeforeUnmount(() => resizes?.disconnect());
 </script>
 
 <template>
@@ -52,13 +107,16 @@ const emit = defineEmits<{ previous: []; next: []; live: []; retry: [] }>();
       <SIcon name="hidden" />
       <span>This answer can't be shown. Try asking another way.</span>
     </div>
-    <div v-else class="body" :class="{ dimmed: answer.ending === 'stopped' }">
-      <AnswerBody :text="answer.text" :writing="answer.ending === 'writing'" />
-      <div v-if="answer.ending === 'failed'" class="end" role="status">
-        <SIcon name="attention" />
-        <span>{{ answer.failureMessage || 'This answer stopped early.' }}</span>
-        <SButton size="sm" class="retry" @click="emit('retry')">Try again</SButton>
+    <div v-else class="scroller">
+      <div ref="body" class="body" :class="{ dimmed: answer.ending === 'stopped' }" @scroll.passive="onScroll">
+        <AnswerBody :text="answer.text" :writing="answer.ending === 'writing'" />
+        <div v-if="answer.ending === 'failed'" class="end" role="status">
+          <SIcon name="attention" />
+          <span>{{ answer.failureMessage || 'This answer stopped early.' }}</span>
+          <SButton size="sm" class="retry" @click="emit('retry')">Try again</SButton>
+        </div>
       </div>
+      <SButton v-if="newBelow" size="sm" icon="arrowDown" class="below" @click="showNewText">New text below</SButton>
     </div>
   </article>
 </template>
@@ -126,6 +184,20 @@ p.when {
   50% {
     opacity: 1;
   }
+}
+.scroller {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.below {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-2);
 }
 .body {
   flex: 1;

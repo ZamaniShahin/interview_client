@@ -24,6 +24,7 @@
     "src/shared/**/*.ts",
     "tests/unit/**/*.ts",
     "tests/stealth/**/*.ts",
-    "tests/e2e/**/*.ts"
+    "tests/e2e/**/*.ts",
+    "tests/app/**/*.ts"
   ]
 }

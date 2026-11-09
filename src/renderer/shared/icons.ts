@@ -10,6 +10,9 @@ export const icons = {
   pause: 'M6 3.5v9M10 3.5v9',
   play: 'M5 3.5l7 4.5-7 4.5z',
   enter: 'M13 3.5v4a2 2 0 0 1-2 2H3.5M6 7l-2.5 2.5L6 12',
+  // The canvas's: a square in front of another (code blocks' Copy).
+  copy:
+    'M7 5.5h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 12V7A1.5 1.5 0 0 1 7 5.5zM10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2',
   spoken: 'M2 8h.5M4.5 5.5v5M7 3v10M9.5 5v6M12 7v2M14 8h.5',
   typed:
     'M3 4h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 13 12H3a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 3 4zM4.5 7h.01M7 7h.01M9.5 7h.01M12 7h.01M5.5 9.5h5',
