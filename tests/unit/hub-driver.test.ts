@@ -1,5 +1,6 @@
 import type { Subject } from '@microsoft/signalr';
 import { describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../../src/main/api/rest-client';
 import type { LiveTransport } from '../../src/main/connection/live-connection';
 import { HubDriver, resendFrames, type HubDriverDependencies } from '../../src/main/session/hub-driver';
 import {
@@ -63,6 +64,8 @@ class FakeTransport implements LiveTransport {
 
   constructor(
     readonly token: string,
+    /** The device proof the connection opened with, in its handshake. */
+    readonly deviceProof: string,
     /** The driver's event handlers: the test raises hub events through them. */
     readonly events: LiveClient,
     private readonly failToStart: Error | null,
@@ -104,18 +107,25 @@ function harness(setup: Setup = {}) {
   let state: LiveViewState = initialLiveState;
   let clock = 0;
   let tokens = 0;
+  let connectProofs = 0;
 
   const driver = new HubDriver({
-    connect: (token, events) => {
+    connect: (token, deviceProof, events) => {
       const index = transports.length;
       const failing = setup.failFrom !== undefined && index >= setup.failFrom;
-      const transport = new FakeTransport(token, events, failing ? new Error('WebSocket failed to connect.') : null);
+      const transport = new FakeTransport(
+        token,
+        deviceProof,
+        events,
+        failing ? new Error('WebSocket failed to connect.') : null,
+      );
       transport.connection.replies.set('StartSession', () => sessionStarted);
       setup.connection?.(transport, index);
       transports.push(transport);
       return transport;
     },
     accessToken: async () => `token-${++tokens}`,
+    connectProof: async (token) => `proof-connect-${token}-${++connectProofs}`,
     proof: async (method, token) => `proof-${method}-${token}`,
     auto: true,
     sleep: async (ms) => {
@@ -531,5 +541,93 @@ describe("the hub driver's audio upload (1.12)", () => {
     h.driver.audio(pcm(1), 1);
 
     expect(h.transports[0]!.connection.streams[0]!.items).toEqual([]);
+  });
+});
+
+describe("the hub driver's proof at connect (1.12)", () => {
+  it("opens each connection with a proof of its own, bound to that connection's token", async () => {
+    const h = harness({
+      connection: (t, index) => {
+        if (index === 1)
+          t.connection.replies.set('ResumeSession', () => ({
+            Ok: true,
+            Value: { SessionId: 'session-1', Replayed: true, LastSeq: 0 },
+          }));
+      },
+    });
+    await h.start();
+
+    h.transports[0]!.close(new Error('WebSocket closed with status code: 1006.'));
+    await vi.waitFor(() => expect(h.types().at(-1)).toBe('connectionRestored'));
+
+    // The server takes a proof once, and only with the token it was made for.
+    expect(h.transports.map((t) => [t.token, t.deviceProof])).toEqual([
+      ['token-1', 'proof-connect-token-1-1'],
+      ['token-2', 'proof-connect-token-2-2'],
+    ]);
+  });
+
+  it.each([
+    [
+      ErrorCodes.Identity.DeviceNotRegistered,
+      'This computer was removed from your account. Restart Sotto to add it again.',
+    ],
+    [
+      ErrorCodes.Identity.DeviceProofInvalid,
+      "Sotto couldn't confirm this computer. Check that its clock is set right, then try again.",
+    ],
+  ])('says in its own words why the server refused this computer at connect (%s)', async (code, message) => {
+    const h = harness({
+      connection: (t) =>
+        t.connection.replies.set('StartSession', () => {
+          t.close(
+            new Error(`Server returned an error on close: Connection closed with an error. HubException: ${code}`),
+          );
+          throw new Error('Invocation canceled due to the underlying connection being closed.');
+        }),
+    });
+
+    expect(await h.start()).toEqual({ ok: false, code, message });
+  });
+
+  it("fails the start in the account's words, without connecting, when this computer can't sign a proof", async () => {
+    const h = harness({
+      deps: {
+        connectProof: async () => {
+          throw new ApiError(401, ErrorCodes.Identity.DeviceNotRegistered, 'This computer is not registered yet.');
+        },
+      },
+    });
+
+    const result = await h.start();
+
+    expect(result).toEqual({
+      ok: false,
+      code: ErrorCodes.Identity.DeviceNotRegistered,
+      message: 'This computer is not registered yet.',
+    });
+    expect(h.transports).toEqual([]);
+  });
+
+  it('keeps trying to resume while a proof cannot be made, then ends the session as expired', async () => {
+    let failing = false;
+    const h = harness({
+      deps: {
+        connectProof: async (token) => {
+          if (failing)
+            throw new ApiError(401, ErrorCodes.Identity.DeviceNotRegistered, 'This computer is not registered yet.');
+          return `proof-connect-${token}`;
+        },
+        giveUpAfterMs: 30_000,
+      },
+    });
+    await h.start();
+
+    failing = true;
+    h.transports[0]!.close(new Error('WebSocket closed with status code: 1006.'));
+
+    await vi.waitFor(() => expect(h.state().phase).toBe('ended'));
+    expect(h.state().endReason).toBe('expired');
+    expect(h.transports).toHaveLength(1);
   });
 });

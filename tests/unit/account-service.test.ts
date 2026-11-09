@@ -211,4 +211,32 @@ describe('the account service', () => {
       code: ErrorCodes.Identity.DeviceNotRegistered,
     });
   });
+
+  it("signs a connection's proof for its handshake, GET and the hub's path, bound to the connection token", async () => {
+    await service.load();
+
+    const proof = decode(await service.connectProof('connection-token'));
+
+    expect(proof.header['kid']).toBe('d1');
+    expect(proof.payload).toMatchObject({
+      htm: 'GET',
+      htu: '/hubs/live',
+      ath: createHash('sha256').update('connection-token').digest('base64url'),
+    });
+  });
+
+  it('signs a fresh proof for every connection, since the server takes each once', async () => {
+    await service.load();
+
+    const first = decode(await service.connectProof('connection-token'));
+    const second = decode(await service.connectProof('connection-token'));
+
+    expect(first.payload['jti']).not.toBe(second.payload['jti']);
+  });
+
+  it('signs no proof to connect before this computer is registered', async () => {
+    await expect(service.connectProof('connection-token')).rejects.toMatchObject({
+      code: ErrorCodes.Identity.DeviceNotRegistered,
+    });
+  });
 });

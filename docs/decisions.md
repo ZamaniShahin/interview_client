@@ -88,3 +88,13 @@ Shahin asked for everything about the project to be in the repositories, so work
 | 2026-11-09 | **The upload** streams each frame with its own `Seq` (from 0, per session) and its capture time. The newest 100 frames (10 s) go again after a resume, and the server drops those it has seen (backend docs/02 §4). Nothing goes while paused. The stream ends with its connection and is never completed first: SignalR would send the completion after the stop, which refuses it, as an unhandled rejection (in Electron's main, a warning) |
 | 2026-11-09 | **A capture check for development builds**: `npm run build && node scripts/capture-check.mjs` captures 6 s through the real capture window and prints the frames, their rate and size, and the loudest level. On the computer that built 1.11: 57 frames in 6 s, all 4,800 bytes |
 | 2026-11-09 | **The end-to-end test proves the upload** with the local stack's scripted speech-to-text, which reads a frame starting `SOTTO-SCRIPT ` as a line heard: the words come back as Heard, and Trigger answers them |
+
+## 7. Taken in session on 2026-11-09, the device proof at connect (the rest of 1.12; open to revision)
+
+The server's side of it is in the backend's decisions.md (2026-11-09, "The device proof at connect, as built").
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | **Each connection opens with a proof of its own**, in the handshake's `X-Device-Proof` header: signed as a REST proof is, `GET` and the hub's path (`Protocol.HubPath`), bound to the token the connection carries. A new one for every connection, the first and each resume's, since the server takes a proof once |
+| 2026-11-09 | **The words for a refusal at connect.** `device_not_registered`: "This computer was removed from your account. Restart Sotto to add it again." (at startup the app registers it again, J4). `device_proof_invalid`: "Sotto couldn't confirm this computer. Check that its clock is set right, then try again." (a proof is good for a minute either way of the server's clock). A proof this computer can't make, before it is registered, fails the start with the account's own words and opens no connection |
+| 2026-11-09 | **The end-to-end test checks the refusal too**: a forged proof is refused by the local stack with `device_proof_invalid`, before the real session starts |

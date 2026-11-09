@@ -19,7 +19,7 @@ import { DeviceIdentity } from '../../src/main/device/device-identity';
 import { signDeviceProof } from '../../src/main/device/proof';
 import { HubDriver } from '../../src/main/session/hub-driver';
 import { SessionController } from '../../src/main/session/session-controller';
-import { AskMode } from '../../src/shared/contracts/sotto-contracts';
+import { AskMode, ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
 import { signUpInBrowser } from './keycloak-browser';
 
 const issuer = process.env['SOTTO_OIDC_ISSUER'] ?? 'http://localhost:8080/realms/sotto';
@@ -89,13 +89,29 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     expect(loaded.view.minutes?.usable).toBeGreaterThan(0);
 
     // 1.12: a live session over the hub, driven as the overlay drives it.
-    const session = new SessionController(() => {});
-    const driver = new HubDriver({
-      connect: (accessToken, events) => createLiveTransport({ apiBaseUrl, clientVersion, accessToken, events }),
-      accessToken: () => auth.accessToken(),
-      proof: (method, token) => accounts.hubProof(method, token),
-      auto: false,
+    // The connection opens with this computer's proof (backend docs/04 §6); the server refuses one that isn't.
+    const driverWith = (forgeProof: boolean) =>
+      new HubDriver({
+        connect: (accessToken, deviceProof, events) =>
+          createLiveTransport({
+            apiBaseUrl,
+            clientVersion,
+            accessToken,
+            deviceProof: forgeProof ? 'not-a-proof' : deviceProof,
+            events,
+          }),
+        accessToken: () => auth.accessToken(),
+        connectProof: (token) => accounts.connectProof(token),
+        proof: (method, token) => accounts.hubProof(method, token),
+        auto: false,
+      });
+    expect(await new SessionController(() => {}).start(driverWith(true))).toMatchObject({
+      ok: false,
+      code: ErrorCodes.Identity.DeviceProofInvalid,
     });
+
+    const session = new SessionController(() => {});
+    const driver = driverWith(false);
 
     expect(await session.start(driver)).toEqual({ ok: true });
     expect(await session.command({ type: 'ask', mode: AskMode.Question, text: 'What is a mutex?' })).toEqual({

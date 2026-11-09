@@ -57,11 +57,13 @@ A packaged build never runs the preview.
 
 **The contract synced, 2026-11-09:** the session's minutes (`Usage`) and its endings (`SessionEnding`), the account's `EntitlementsUpdated`, and the takeover on Home.
 
-**Audio capture and its upload, 2026-11-09** (1.11, and 1.12 but for the proof at connect; [details](#audio-capture-details-111)):
+**Audio capture and its upload, 2026-11-09** (1.11, and 1.12's upload; [details](#audio-capture-details-111)):
 - **This computer's sound**, captured as it plays, framed for the server, and streamed up `UploadAudio`; the newest 10 s go again after a resume.
 - **The meter and the warnings** (Q18): the strip's meter follows the sound; a warning when nothing has been heard for 20 s; a lost device reopened, with words while it is.
 
-**Not yet:** the device proof at connect (the rest of 1.12), Mermaid and syntax colors in answers (1.13), the first run (1.14), the microphone (with the coach, 3.7), the local database, packaging hardening.
+**The device proof at connect, 2026-11-09** (the rest of 1.12): every hub connection opens with this computer's proof in its handshake, so a sign-in copied to another machine can't even connect.
+
+**Not yet:** Mermaid and syntax colors in answers (1.13), the first run (1.14), the microphone (with the coach, 3.7), the local database, packaging hardening.
 
 ## Tech decisions
 
@@ -74,11 +76,11 @@ A packaged build never runs the preview.
 | Build | **electron-vite** (Vite for main, preload and renderer) | fast dev server and HMR; one config | webpack, Electron Forge's bundlers | added |
 | UI framework | **Vue 3** (Composition API) + **Pinia** for state | the team's framework | React | added |
 | Component library | **none inside overlay windows**; small custom components | every control must follow the stealth rules (no `title`, no native `<select>` popup, no cursor changes); a library fights them | Vuetify in the overlay (fine for a future web admin) | built |
-| Server connection | **@microsoft/signalr** + MessagePack protocol, **in the main process** | tokens never reach a renderer; an overlay reload doesn't drop the session | the connection in the renderer | wired (1.12), the audio upload included; the proof at connect is left |
+| Server connection | **@microsoft/signalr** + MessagePack protocol, **in the main process** | tokens never reach a renderer; an overlay reload doesn't drop the session | the connection in the renderer | built (1.12): the proof at connect, the commands, the audio upload, the resume |
 | Contracts | TypeScript types **generated** from the server's C# hub interfaces (`src/shared/contracts/`, never hand-edited), copied from the backend's `contracts/sotto-contracts.ts` by `npm run contracts:sync`. Field keys are the C# names, as on the wire | a misspelled message or field fails at compile time | v1's hand-matched strings | built |
 | Login | **OIDC auth code + PKCE in the system browser** with a loopback redirect, via **openid-client** (panva) in main | RFC 8252; no password form inside the app | an embedded login window | added (6.8.8), bundled into main (it ships as ES modules only) |
 | Token storage | refresh token + device private key encrypted with Electron **safeStorage**; access token in memory only. Refresh tokens rotate, and **sending an old one ends the sign-in** (checked on Keycloak 26.6.4, backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §10): refresh one request at a time, store each new refresh token before using it, and treat `invalid_grant` as "sign in again" | OS-user-bound encryption (DPAPI or Keychain) | keytar (archived), plain files | built |
-| Device key | ECDSA P-256 made with Node `crypto`; device proof = a compact JWS per request (backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §6) | binds tokens to this installation | — | built |
+| Device key | ECDSA P-256 made with Node `crypto`; device proof = a compact JWS per request: device-bound REST calls, each hub connection, `StartSession` and `ResumeSession` (backend [04](../backend/interview_backend/docs/04-identity-keycloak.md) §6) | binds tokens to this installation | — | built |
 | Audio capture | hidden **capture window**: Windows system audio via `setDisplayMediaRequestHandler({audio: 'loopback'})`, mic via `getUserMedia`; Web Audio mixes down and resamples to 24 kHz, and an **AudioWorklet** makes PCM16 100 ms frames | no Python sidecar; Chromium handles devices | v1's Python `soundcard` | built for the loopback (1.11); the mic with the coach (3.7) |
 | macOS audio | **open (Q6)**: Electron's own loopback support if enough, otherwise a small native helper | — | — | Phase 5 |
 | Coach transcription | **on the device**: sherpa-onnx or Vosk, picked by a spike (Q5); the mic never leaves the machine | privacy, zero server cost | cloud STT for the mic | 3.7 |

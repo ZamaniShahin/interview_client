@@ -16,13 +16,16 @@ import {
 import type { CommandResult } from '../../shared/ipc';
 import type { LiveAction, LiveEvent } from '../../shared/live/reducer';
 import { initialLiveState, type LiveViewState } from '../../shared/live/view-state';
+import { ApiError } from '../api/rest-client';
 import type { LiveTransport } from '../connection/live-connection';
 import type { SessionCommand, SessionDriver } from './session-controller';
 
 export interface HubDriverDependencies {
-  /** Opens a connection carrying this access token and calling `events`; not started yet. */
-  connect: (accessToken: string, events: LiveClient) => LiveTransport;
+  /** Opens a connection carrying this access token and device proof, and calling `events`; not started yet. */
+  connect: (accessToken: string, deviceProof: string, events: LiveClient) => LiveTransport;
   accessToken: () => Promise<string>;
+  /** The device proof a connection opens with, bound to its token: one per connection (backend docs/04 §6). */
+  connectProof: (accessToken: string) => Promise<string>;
   /** A device proof for the hub method, bound to the connection's token. */
   proof: (method: 'StartSession' | 'ResumeSession', accessToken: string) => Promise<string>;
   /** Start in AUTO (the default); MANUAL when the user chose it. */
@@ -198,7 +201,8 @@ export class HubDriver implements SessionDriver {
   /** Opens a connection with a fresh access token, and remembers it as the current one. */
   private async open(): Promise<Opened> {
     const token = await this.deps.accessToken();
-    const transport = this.deps.connect(token, this.events);
+    // A fresh proof each time: the server takes each one once, and only with the token it was made for.
+    const transport = this.deps.connect(token, await this.deps.connectProof(token), this.events);
     let closeError: Error | null = null;
     transport.onClose((error) => {
       // The first reason counts: stopping a closed connection reports no error.
@@ -306,13 +310,21 @@ const refusals: Record<string, string> = {
   [ErrorCodes.Identity.ClientOutdated]: 'This version of Sotto is out of date. Update it to start a session.',
   [ErrorCodes.Identity.AccountSuspended]: 'This account is suspended.',
   [ErrorCodes.Identity.Unauthenticated]: 'Sign in again to start a session.',
+  // The account removed this computer meanwhile; at its next start the app registers it again (journey J4).
+  [ErrorCodes.Identity.DeviceNotRegistered]:
+    'This computer was removed from your account. Restart Sotto to add it again.',
+  // A proof is good for a minute either way of the server's clock, so a wrong clock is the likely cause.
+  [ErrorCodes.Identity.DeviceProofInvalid]:
+    "Sotto couldn't confirm this computer. Check that its clock is set right, then try again.",
 };
 
 /**
  * A failure before the session started. The server refuses a connection with a HubException carrying a code
- * (`client_outdated`, `account_suspended`); SignalR passes it on as "… HubException: <code>".
+ * (`client_outdated`, `account_suspended`, `device_proof_invalid`…); SignalR passes it on as "… HubException: <code>".
+ * A proof this computer can't make (not registered yet) fails with the account's own code and words.
  */
 function failure(error: unknown): CommandResult {
+  if (error instanceof ApiError) return { ok: false, code: error.code, message: error.message };
   const text = error instanceof Error ? error.message : String(error);
   const code = /HubException: ([a-z_]+)/.exec(text)?.[1];
   if (code && knownCodes.has(code)) {

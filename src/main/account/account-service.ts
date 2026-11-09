@@ -3,7 +3,7 @@
 // signs the device proofs the hub asks for.
 import { hostname } from 'node:os';
 import type { AccountView } from '../../shared/account';
-import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
+import { ErrorCodes, Protocol } from '../../shared/contracts/sotto-contracts';
 import type { Tier } from '../../shared/live/view-state';
 import { ApiError, type RestClient } from '../api/rest-client';
 import type { DeviceIdentity } from '../device/device-identity';
@@ -116,9 +116,21 @@ export class AccountService {
 
   /** A proof for a hub command (`StartSession`, `ResumeSession`), bound to the token the connection was opened with. */
   async hubProof(method: string, accessToken: string): Promise<string> {
+    return this.proof('HUB', method, accessToken, await this.registeredId());
+  }
+
+  /**
+   * The proof a hub connection opens with, in its handshake: signed for that request as a REST proof is, GET and the
+   * hub's path, whatever the transport makes of it (backend docs/04 §6). One per connection, bound to its token.
+   */
+  async connectProof(accessToken: string): Promise<string> {
+    return this.proof('GET', Protocol.HubPath, accessToken, await this.registeredId());
+  }
+
+  private async registeredId(): Promise<string> {
     const id = await this.deps.device.id();
     if (!id) throw new ApiError(401, ErrorCodes.Identity.DeviceNotRegistered, 'This computer is not registered yet.');
-    return this.proof('HUB', method, accessToken, id);
+    return id;
   }
 
   private async proof(htm: string, htu: string, accessToken: string, kid: string): Promise<string> {

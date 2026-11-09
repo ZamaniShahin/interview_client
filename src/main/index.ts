@@ -177,9 +177,10 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
     const { readiness } = loaded.view;
     account = loaded;
     driver = new HubDriver({
-      connect: (accessToken, events) =>
-        createLiveTransport({ apiBaseUrl: config.apiBaseUrl, clientVersion: app.getVersion(), accessToken, events }),
+      connect: (accessToken, deviceProof, events) =>
+        createLiveTransport({ apiBaseUrl: config.apiBaseUrl, clientVersion: app.getVersion(), accessToken, deviceProof, events }),
       accessToken: () => signedIn.accessToken(),
+      connectProof: (accessToken) => service.connectProof(accessToken),
       proof: (method, accessToken) => service.hubProof(method, accessToken),
       // AUTO answers from the résumé and the job description; without both a session starts in MANUAL (Home says so).
       auto: readiness.resume !== null && readiness.jobDescription !== null,

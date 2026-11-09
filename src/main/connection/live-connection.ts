@@ -24,6 +24,8 @@ export interface LiveTransportOptions {
   /** This build's version, checked by the server against the minimum it accepts. */
   clientVersion: string;
   accessToken: string;
+  /** This computer's proof for the handshake, bound to `accessToken`: the server opens no connection without one. */
+  deviceProof: string;
   events: LiveClient;
 }
 
@@ -38,7 +40,10 @@ export function createLiveTransport(options: LiveTransportOptions): LiveTranspor
       transport: HttpTransportType.WebSockets,
       skipNegotiation: true,
       accessTokenFactory: () => options.accessToken,
-      headers: { [Protocol.ClientVersionHeader]: options.clientVersion },
+      headers: {
+        [Protocol.ClientVersionHeader]: options.clientVersion,
+        [Protocol.DeviceProofHeader]: options.deviceProof,
+      },
     })
     // Contractless MessagePack, keys spelled as the C# names: the contract's types already spell them so.
     .withHubProtocol(new MessagePackHubProtocol())
