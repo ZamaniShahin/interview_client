@@ -5,7 +5,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - A checkpoint is ticked with its date and its commit.
 
 **Where it stands (2026-11-09):**
-- done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for;
+- done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, and the words for the server's connection limit;
 - next: Phase 3, whose client checkpoints follow the server's (3.1–3.4);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
@@ -59,6 +59,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
   - the device list with removal, and the device limit met by removing one in this computer's place (F3);
   - buying in the browser from the server's catalog, the window waiting until the purchase shows (F8 · b, c), and the trial (F9);
   - reading the account again on return from the browser, and every few seconds while a payment is waited for (decisions §10).
+- [x] **2.16 A plan given by Sotto** (2026-11-09, `9dd00c0`, with the server's licence registry in backend `3a51c5d` and its staff tools in `e42e956`; checked with the unit and renderer tests and an end-to-end test against the local stack): a licensed plan says "given by Sotto", with its end if it has one, and the app offers nothing to buy, no trial and no top-up while it lasts.
 
 ## Phase 3: everything v1 did
 
@@ -79,3 +80,4 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
   - the Content Security Policy reviewed;
   - Sentry without content.
 - [ ] 4.2 Signed builds (cloud HSM) and staged automatic updates (electron-updater); `minClientVersion` honored.
+- [x] **The server's connection limit, in words** (backend Q36, part of its 4.3; 2026-11-09, `1acf6b3`): a fourth connection at a time is refused with `rate_limited`, and a refused start says to close Sotto on another computer or wait a minute.
