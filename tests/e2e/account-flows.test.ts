@@ -2,13 +2,14 @@
 // account as the app reads it, with the catalog; the trial started from this computer; a top-up and a plan bought, the
 // payment finished as the local provider's webhook (the backend's tools/local-purchase.mjs plays the provider); the
 // billing portal; and the device limit, met by a third computer and resolved by replacing one. Then 2.16's licence:
-// staff give an email a plan with the backend's tools/staff.mjs, and its owner's app shows it as given.
+// staff give an email a plan with the backend's tools/staff.mjs, and its owner's app shows it as given. Then Q19: a copy
+// of the user's data, and deleting the account.
 //
 //   SOTTO_E2E=1 npx vitest run tests/e2e
 //
 // The backend's repository is found next to this one (../backend/interview_backend), or at SOTTO_BACKEND. Each run
-// leaves two users (client-e2e-billing-<time>@example.com, client-e2e-licence-<time>@example.com) in the local Keycloak
-// and database, and a revoked licence in the registry.
+// leaves three users (client-e2e-billing-, -licence- and -delete-<time>@example.com, the last one's first account
+// deleted) in the local Keycloak and database, and a revoked licence in the registry.
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
@@ -247,6 +248,66 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('a licence given by staff, aga
           // The session file goes with the temp folder anyway.
         }
       }
+    },
+  );
+});
+
+describe.skipIf(process.env['SOTTO_E2E'] !== '1')('your data against the local stack (Q19)', () => {
+  it(
+    'saves a copy of the data, refuses another email, then deletes the account, after which the same sign-in starts afresh',
+    { timeout: 120_000 },
+    async () => {
+      const email = `client-e2e-delete-${Date.now()}@example.com`;
+      const auth = new AuthSession({
+        oidc: new OpenIdClient({
+          issuer,
+          clientId: 'desktop',
+          scopes: 'openid email profile offline_access',
+          allowHttp: true,
+        }),
+        secrets: new MemorySecretStore(),
+        loopback: () => startLoopback(60_000),
+      });
+      const password = `E2e-${randomBytes(12).toString('base64url')}9!`;
+      await auth.signIn((url) => signUpInBrowser(url, { email, password, mailpit }));
+      const rest = new RestClient({
+        baseUrl: apiBaseUrl,
+        clientVersion,
+        accessToken: (options) => auth.accessToken(options),
+      });
+      const desk = new AccountService({
+        rest,
+        device: new DeviceIdentity(new MemorySecretStore()),
+        appVersion: clientVersion,
+        platform: 'windows',
+        fingerprint: async () => randomBytes(32).toString('hex'),
+        deviceName: () => 'Data e2e',
+      });
+      await desk.load();
+      await desk.startTrial();
+      const before = (await desk.load()).view;
+
+      // The copy: a section per kind of record, this user's and no one else's.
+      const data = (await desk.exportData()) as { sections: Record<string, Record<string, unknown>> };
+      expect(Object.keys(data.sections)).toEqual(['account', 'billing', 'sessions', 'user']);
+      expect(data.sections['user']!['email']).toBe(email);
+      expect((data.sections['account']!['plan'] as { id: string }).id).toBe('trial');
+      expect(JSON.stringify(data)).not.toMatch(/publicKey|fingerprint|thumbprint/i);
+
+      // Anything but the account's own email deletes nothing.
+      await expect(desk.deleteAccount('someone-else@example.com')).rejects.toMatchObject({
+        code: ErrorCodes.Request.InvalidInput,
+      });
+
+      await desk.deleteAccount(email);
+
+      // Keycloak still knows the person (Q39): the same sign-in starts a fresh, empty account, and this computer is
+      // added to it again, with a key of its own.
+      const after = (await desk.load()).view;
+      expect(after.plan.state).toBe('none');
+      expect(after.devices.map((d) => d.name)).toEqual(['Data e2e']);
+      expect(after.ledger).toEqual([]);
+      expect(before.plan.state).toBe('trialing');
     },
   );
 });

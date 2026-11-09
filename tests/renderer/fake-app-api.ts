@@ -36,6 +36,8 @@ export function fakeAppApi(state: AppState, overrides: Partial<AppApi> = {}) {
     removeDevice: vi.fn<AppApi['removeDevice']>(async () => ({ ok: true })),
     replaceDevice: vi.fn<AppApi['replaceDevice']>(async () => ({ ok: true })),
     ledgerMore: vi.fn<AppApi['ledgerMore']>(async () => ({ ok: true })),
+    exportData: vi.fn<AppApi['exportData']>(async () => ({ ok: true })),
+    deleteAccount: vi.fn<AppApi['deleteAccount']>(async () => ({ ok: true })),
     dismiss: vi.fn<AppApi['dismiss']>(),
     window: vi.fn(),
     getSettings: vi.fn(),

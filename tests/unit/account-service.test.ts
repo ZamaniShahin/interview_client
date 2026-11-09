@@ -380,6 +380,42 @@ describe('the account service', () => {
     await expect(service.portal()).rejects.toMatchObject({ code: ErrorCodes.Billing.NoBillingCustomer });
   });
 
+  it("takes a copy of the user's data with a proof from this computer, for that request (Q19)", async () => {
+    await service.load();
+    rest.answer('GET /api/v1/me/export', () => ({ exportedAt: '2026-11-09T12:00:00Z', sections: { user: { email: 'ann@example.com' } } }));
+
+    const data = await service.exportData();
+
+    expect(data).toEqual({ exportedAt: '2026-11-09T12:00:00Z', sections: { user: { email: 'ann@example.com' } } });
+    const exported = rest.calls.find((call) => call.path === '/api/v1/me/export')!;
+    expect(exported.method).toBe('GET');
+    expect(exported.proof!.header['kid']).toBe('d1');
+    expect(exported.proof!.payload).toMatchObject({ htm: 'GET', htu: '/api/v1/me/export' });
+  });
+
+  it('deletes the account with its email typed again and a proof from this computer (Q19)', async () => {
+    await service.load();
+    rest.answer('DELETE /api/v1/me', () => undefined);
+
+    await service.deleteAccount('ann@example.com');
+
+    const deleted = rest.calls.find((call) => call.method === 'DELETE' && call.path === '/api/v1/me')!;
+    expect(deleted.body).toEqual({ confirm: 'ann@example.com' });
+    expect(deleted.proof!.payload).toMatchObject({ htm: 'DELETE', htu: '/api/v1/me' });
+  });
+
+  it.each([
+    [409, ErrorCodes.Billing.AlreadySubscribed],
+    [409, ErrorCodes.Session.AlreadyInSession],
+    [400, ErrorCodes.Request.InvalidInput],
+    [403, ErrorCodes.Identity.AccountSuspended],
+  ])("passes a deletion's refusal on: %s %s", async (status, code) => {
+    await service.load();
+    rest.answer('DELETE /api/v1/me', refuse(status, code));
+
+    await expect(service.deleteAccount('ann@example.com')).rejects.toMatchObject({ code });
+  });
+
   it('removes another computer with a proof from this one, signed for that path', async () => {
     await service.load();
 

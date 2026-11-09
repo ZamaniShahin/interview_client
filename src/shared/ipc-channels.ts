@@ -55,6 +55,10 @@ export const IpcChannels = {
   appReplaceDevice: 'app:replace-device',
   /** app window → main (invoke): the ledger's earlier page ("Show earlier", F10 · b). */
   appLedgerMore: 'app:ledger-more',
+  /** app window → main (invoke): save a copy of everything the server keeps about the user (Q19). */
+  appExportData: 'app:export-data',
+  /** app window → main (invoke): delete the account, its email typed again (Q19); then sign out. */
+  appDeleteAccount: 'app:delete-account',
   /** app window → main (send): the window said it: the after-call offer (F8 · a) or the quiet line (F8 · c). */
   appDismiss: 'app:dismiss',
   /** any window → main (invoke): the settings. */

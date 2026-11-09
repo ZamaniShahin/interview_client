@@ -118,6 +118,30 @@ export class AccountService {
     return url;
   }
 
+  /**
+   * Everything the server keeps about the user (Q19), as the JSON it sends: their profile and computers, the account,
+   * its plan, trials and licences, the minutes and ledger, the sessions. Device-bound, so a stolen token alone can't
+   * take it.
+   */
+  async exportData(): Promise<unknown> {
+    const id = await this.registeredId();
+    return this.deps.rest.get<unknown>('/api/v1/me/export', {
+      proof: (token) => this.proof('GET', '/api/v1/me/export', token, id),
+    });
+  }
+
+  /**
+   * Deletes the account (Q19): `confirm` is its email, typed again, which the server checks. Refused while a plan will
+   * still be charged (`already_subscribed`) or a live session runs (`already_in_session`). Device-bound.
+   */
+  async deleteAccount(confirm: string): Promise<void> {
+    const id = await this.registeredId();
+    await this.deps.rest.delete('/api/v1/me', {
+      body: { confirm },
+      proof: (token) => this.proof('DELETE', '/api/v1/me', token, id),
+    });
+  }
+
   /** Removes one of the account's other computers (F10 · c): it is signed out and can't be added back. */
   async removeDevice(deviceId: string): Promise<void> {
     const id = await this.registeredId();

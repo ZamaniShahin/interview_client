@@ -135,3 +135,10 @@ The client is built assuming it will be taken apart. What that means for the pro
 | Delete | one interview, or everything | deleting the account: sessions end, the subscription is cancelled, the sign-in is deleted, and everything is purged within 30 days; invoices and the ledger stay, pseudonymized, as the law requires |
 
 Local data is the user's: the app deletes it on request, and deleting the account doesn't reach into the device.
+
+**Built 2026-11-09 (Q19)**, on the Account page under "Your data":
+- **Save a copy**: the server's copy of what it keeps (the profile and computers, the account, its plan, trials and licences, the minutes and ledger, the sessions' usage), saved where the user chooses, as one JSON file. What was said was never kept, so there is none of it.
+- **Delete account**: the user types the account's email again, and the server checks it. It is refused while a paid plan will still be charged (cancel it in Manage billing first) or a live session runs, with the server's words. Deleted, the app signs out.
+  - The server replaces what names the user at once rather than within 30 days, and keeps the ledger, naming no one.
+  - The sign-in itself isn't deleted yet (backend Q39), so signing in again starts a fresh, empty account.
+- Both need a registered computer, and neither works during a session: a save dialog would show in a share.

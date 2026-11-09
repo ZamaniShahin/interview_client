@@ -4,6 +4,7 @@ import { setDocumentSchema } from '../../src/shared/documents';
 import {
   acknowledgeNoticeSchema,
   copyTextSchema,
+  deleteConfirmSchema,
   deviceIdSchema,
   dismissSchema,
   hidingTestActionSchema,
@@ -150,6 +151,15 @@ describe('what the account screens may ask of main (2.13)', () => {
     [null],
   ])('refuses anything else as a purchase: %j', (purchase) => {
     expect(purchaseSchema.safeParse(purchase).success).toBe(false);
+  });
+
+  it('takes what deleting the account confirms with: something typed, no longer than an email can be (Q19)', () => {
+    expect(deleteConfirmSchema.safeParse('ann@example.com').data).toBe('ann@example.com');
+    expect(deleteConfirmSchema.safeParse('  ann@example.com ').data).toBe('ann@example.com');
+    expect(deleteConfirmSchema.safeParse('a'.repeat(320)).success).toBe(true);
+    for (const typed of ['', '   ', 'a'.repeat(321), 42, null, undefined, { confirm: 'ann@example.com' }]) {
+      expect(deleteConfirmSchema.safeParse(typed).success, String(typed)).toBe(false);
+    }
   });
 
   it('takes a device id only as the server writes one, since it goes into a path', () => {

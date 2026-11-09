@@ -8,6 +8,7 @@ import {
   acknowledgeNoticeSchema,
   appWindowActionSchema,
   copyTextSchema,
+  deleteConfirmSchema,
   deviceIdSchema,
   dismissSchema,
   hidingTestActionSchema,
@@ -63,6 +64,8 @@ export interface IpcDependencies {
   removeDevice: (deviceId: string) => Promise<CommandResult>;
   replaceDevice: (deviceId: string) => Promise<CommandResult>;
   ledgerMore: () => Promise<CommandResult>;
+  exportData: () => Promise<CommandResult>;
+  deleteAccount: (confirm: string) => Promise<CommandResult>;
   dismiss: (target: DismissTarget) => void;
 }
 
@@ -180,6 +183,14 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromApp(event)) return invalid;
     const parsed = deviceIdSchema.safeParse(payload);
     return parsed.success ? deps.removeDevice(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appExportData, (event) => (fromApp(event) ? deps.exportData() : invalid));
+
+  ipcMain.handle(IpcChannels.appDeleteAccount, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = deleteConfirmSchema.safeParse(payload);
+    return parsed.success ? deps.deleteAccount(parsed.data) : invalid;
   });
 
   ipcMain.handle(IpcChannels.appReplaceDevice, async (event, payload: unknown): Promise<CommandResult> => {

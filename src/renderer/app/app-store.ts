@@ -136,6 +136,16 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.billingPortal();
   }
 
+  /** Saves a copy of everything the server keeps about the user (Q19). */
+  function exportData(): Promise<CommandResult> {
+    return window.appApi.exportData();
+  }
+
+  /** Deletes the account, its email typed again (Q19); main signs out once it is done. */
+  function deleteAccount(confirm: string): Promise<CommandResult> {
+    return window.appApi.deleteAccount(confirm);
+  }
+
   function paymentAction(action: PaymentAction): Promise<CommandResult> {
     return window.appApi.payment(action);
   }
@@ -195,6 +205,8 @@ export const useAppStore = defineStore('app', () => {
     startTrial,
     buy,
     billingPortal,
+    exportData,
+    deleteAccount,
     paymentAction,
     removeDevice,
     replaceDevice,

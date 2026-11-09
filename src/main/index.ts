@@ -1,6 +1,7 @@
 // The app's core process. It owns the windows, sign-in, the account, the session and its connection.
 // Renderers only draw: they reach main through the checked channels in src/shared/ipc.ts.
-import { app, clipboard, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
+import { writeFile } from 'node:fs/promises';
+import { app, clipboard, dialog, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
 import { hostname } from 'node:os';
 import { join } from 'node:path';
 import type { AccountView } from '../shared/account';
@@ -411,6 +412,39 @@ async function removeDevice(deviceId: string): Promise<CommandResult> {
     await service.removeDevice(deviceId);
     await refreshAccount();
   });
+}
+
+/**
+ * Saves a copy of everything the server keeps about the user (Q19), where they choose: read first, so a refusal comes
+ * before the dialog. Never during a session: a save dialog shows in a share (stealth rule 7).
+ */
+async function exportData(): Promise<CommandResult> {
+  if (preview) return session.running ? refusedDuringSession : { ok: true };
+  return accountChange(async (service) => {
+    const data = await service.exportData();
+    const day = new Date().toISOString().slice(0, 10);
+    const options = {
+      title: 'Save a copy of your Sotto data',
+      defaultPath: `sotto-data-${day}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    };
+    const target = alive(appWindow)
+      ? await dialog.showSaveDialog(appWindow, options)
+      : await dialog.showSaveDialog(options);
+    if (target.canceled || !target.filePath) return;
+    await writeFile(target.filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+  });
+}
+
+/**
+ * Deletes the account (Q19), its email typed again; the server refuses while a plan will still be charged or a live
+ * session runs, in words the window shows. Deleted, the app signs out: the same sign-in would start a fresh account.
+ */
+async function deleteAccount(confirm: string): Promise<CommandResult> {
+  if (preview) return session.running ? refusedDuringSession : { ok: true };
+  const deleted = await accountChange((service) => service.deleteAccount(confirm));
+  if (deleted.ok) await signOut();
+  return deleted;
 }
 
 /** Adds this computer in place of one of the account's, at the device limit (F3 · b); then the account is read. */
@@ -857,6 +891,8 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       removeDevice,
       replaceDevice,
       ledgerMore,
+      exportData,
+      deleteAccount,
       dismiss,
     });
 

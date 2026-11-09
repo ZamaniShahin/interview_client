@@ -94,6 +94,9 @@ export type PurchaseRequest = z.infer<typeof purchaseSchema>;
 /** A device id as the server writes it (a UUID): it goes into a request path, so nothing else may. */
 export const deviceIdSchema = z.uuid();
 
+/** What deleting the account takes (Q19): something typed, no longer than an email can be; the server checks it is the email. */
+export const deleteConfirmSchema = z.string().trim().min(1).max(320);
+
 /** The purchase being waited for: open its page again, or stop waiting (F8 · b). */
 export const paymentActionSchema = z.enum(['open', 'cancel']);
 export type PaymentAction = z.infer<typeof paymentActionSchema>;

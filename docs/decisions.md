@@ -188,3 +188,11 @@ The server's licence registry (backend 2.16, Shahin's request) puts a plan on an
 | Date | Decision |
 |---|---|
 | 2026-11-09 | **The client's first CI is a secret scan**: `.github/workflows/secrets.yml`, the same as the backend's (gitleaks 8.30.1, the release binary checked against its SHA-256, the whole history, findings redacted), on every push and pull request. Its history had no findings, so it needs no allowlist. The build, tests and signed releases (4.2) come with their own workflows |
+
+## 14. Taken in session on 2026-11-09, the user's data (backend Q19; open to revision)
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | **"Your data" is a card on the Account page**: "Save a copy" and "Delete account". The copy is read first, so a refusal comes before the save dialog, then saved where the user chooses as indented JSON. Main draws the save dialog, never during a session (stealth rule 7) |
+| 2026-11-09 | **Deleting asks for the email typed again**, in a form drawn in place (no native dialog, which a share could see). The window holds only a masked email, so the server checks what was typed; the button waits until something is typed. A refusal keeps the form and what was typed, and the problem banner says why in the server's words. "Keep it" or Escape puts the form away and forgets what was typed. Deleted, main signs out |
+| 2026-11-09 | **The checks**: unit tests for the requests and their proofs, the refusals passed on, and what the IPC takes; renderer tests for the card and the form; an end-to-end test against the local stack that saves the copy, is refused another email, deletes the account, and finds a fresh, empty one on the next read |

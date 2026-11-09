@@ -74,6 +74,10 @@ export interface AppApi extends SettingsApi {
   replaceDevice(deviceId: string): Promise<CommandResult>;
   /** The ledger's earlier page ("Show earlier"). */
   ledgerMore(): Promise<CommandResult>;
+  /** Saves a copy of everything the server keeps about the user, where the user chooses (Q19). */
+  exportData(): Promise<CommandResult>;
+  /** Deletes the account, `confirm` being its email typed again (Q19); then signs out. */
+  deleteAccount(confirm: string): Promise<CommandResult>;
   /** Puts away what the window has said: the after-call offer, or the quiet line. */
   dismiss(target: DismissTarget): void;
   window(action: AppWindowAction): void;

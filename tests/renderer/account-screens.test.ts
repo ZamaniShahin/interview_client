@@ -208,6 +208,70 @@ describe('the account page (F10)', () => {
     await flushPromises();
     expect(api.signOut).toHaveBeenCalledOnce();
   });
+
+  it('saves a copy of the data from the account page (Q19)', async () => {
+    const { click, main, api } = await shell({}, {}, 'Account');
+
+    expect(main()).toContain('Your data');
+    expect(main()).toContain('What was said in an interview was never kept.');
+    await click('Save a copy');
+
+    expect(api.exportData).toHaveBeenCalledOnce();
+  });
+
+  it('deletes the account only once something is typed, sending what was typed, trimmed (Q19)', async () => {
+    const { click, main, api, button, wrapper } = await shell({}, {}, 'Account');
+
+    await click('Delete account');
+    expect(main()).toContain('Delete your Sotto account?');
+    expect(main()).toContain('Cancel a paid plan in Manage billing first.');
+    expect(button('Delete my account')!.attributes('disabled')).toBeDefined();
+
+    await wrapper.find('#delete-email').setValue('  sam@example.com ');
+    expect(button('Delete my account')!.attributes('disabled')).toBeUndefined();
+    await click('Delete my account');
+
+    expect(api.deleteAccount).toHaveBeenCalledExactlyOnceWith('sam@example.com');
+    expect(main()).not.toContain('Delete your Sotto account?');
+  });
+
+  it('keeps the form, and what was typed, when the server refuses the deletion (Q19)', async () => {
+    const deleteAccount = vi.fn<AppApi['deleteAccount']>(async () => ({
+      ok: false,
+      code: 'already_subscribed',
+      message: 'Your plan is still paid for: cancel it in the billing portal first, then delete the account.',
+    }));
+    const { click, main, wrapper } = await shell({}, { deleteAccount }, 'Account');
+
+    await click('Delete account');
+    await wrapper.find('#delete-email').setValue('sam@example.com');
+    await click('Delete my account');
+
+    expect(main()).toContain('Delete your Sotto account?');
+    expect((wrapper.find('#delete-email').element as HTMLInputElement).value).toBe('sam@example.com');
+  });
+
+  it('puts the form away on Keep it or Escape, forgetting what was typed (Q19)', async () => {
+    const { click, main, api, wrapper } = await shell({}, {}, 'Account');
+
+    await click('Delete account');
+    await wrapper.find('#delete-email').setValue('sam@example.com');
+    await click('Keep it');
+    expect(main()).not.toContain('Delete your Sotto account?');
+
+    await click('Delete account');
+    expect((wrapper.find('#delete-email').element as HTMLInputElement).value).toBe('');
+    await wrapper.find('[aria-label="Delete your account"]').trigger('keydown', { key: 'Escape' });
+    expect(main()).not.toContain('Delete your Sotto account?');
+    expect(api.deleteAccount).not.toHaveBeenCalled();
+  });
+
+  it('offers neither in the preview, which has no server to ask (Q19)', async () => {
+    const { button } = await shell({ preview: true }, {}, 'Account');
+
+    expect(button('Save a copy')!.attributes('disabled')).toBeDefined();
+    expect(button('Delete account')!.attributes('disabled')).toBeDefined();
+  });
 });
 
 describe('Home, with what the account needs now (F8, F9)', () => {

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // The account (F10): the plan and its state, the minutes usable now and each lot behind them, the computers, the
 // ledger. Billing, buying and signing in happen in the browser. Signing out keeps this computer registered (J3), and
-// asks first (F10 · e). The ledger and the computers each have a page of their own, under Account.
+// asks first (F10 · e). The ledger and the computers each have a page of their own, under Account. Your data (Q19): a
+// copy to save, and deleting the account, with its email typed again; the server checks it and says what holds it up.
 import { computed, ref } from 'vue';
 import { removalConfirmation, removalRule } from '../../../shared/device-words';
 import { planWords, plural, subscribed, topUpsOffered } from '../../../shared/plan-words';
@@ -25,6 +26,8 @@ const view = ref<View>('account');
 const busy = ref(false);
 const confirmingSignOut = ref(false);
 const showPlans = ref(false);
+const deleting = ref(false);
+const deleteTyped = ref('');
 
 const words = computed(() => (account.value ? planWords(account.value) : null));
 const isSubscribed = computed(() => (account.value ? subscribed(account.value) : false));
@@ -88,6 +91,24 @@ function changePlan(): void {
 async function signOut(): Promise<void> {
   confirmingSignOut.value = false;
   await run(() => store.signOut());
+}
+
+function exportData(): void {
+  void run(() => store.exportData());
+}
+
+function cancelDelete(): void {
+  deleting.value = false;
+  deleteTyped.value = '';
+}
+
+/** Deleted, main signs out and the window goes back to signing in; refused, the problem says why and the form stays. */
+async function deleteAccount(): Promise<void> {
+  let deleted = false;
+  await run(async () => {
+    deleted = (await store.deleteAccount(deleteTyped.value.trim())).ok;
+  });
+  if (deleted) cancelDelete();
 }
 </script>
 
@@ -174,6 +195,46 @@ async function signOut(): Promise<void> {
           </p>
           <div class="actions">
             <SButton size="sm" variant="ghost" @click="view = 'ledger'">The ledger</SButton>
+          </div>
+        </div>
+
+        <div class="card block">
+          <p class="eyebrow">Your data</p>
+          <p class="small">
+            A copy of everything Sotto keeps about you: your profile and computers, your plan, minutes and sessions.
+            What was said in an interview was never kept.
+          </p>
+          <div v-if="!deleting" class="actions">
+            <SButton size="sm" variant="ghost" :disabled="store.state.preview || busy" @click="exportData">
+              Save a copy
+            </SButton>
+            <SButton size="sm" variant="ghost" :disabled="store.state.preview || busy" @click="deleting = true">
+              Delete account
+            </SButton>
+          </div>
+          <div v-else class="delete" role="group" aria-label="Delete your account" @keydown.esc.stop="cancelDelete">
+            <p class="question">Delete your Sotto account?</p>
+            <p class="small">
+              Your plan ends and your computers are removed, at once and for good. Cancel a paid plan in Manage billing
+              first. Your documents and history on this computer stay until you remove them.
+            </p>
+            <label class="label" for="delete-email">Type your account's email to confirm</label>
+            <input
+              id="delete-email"
+              v-model="deleteTyped"
+              class="box"
+              type="email"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="320"
+              @keydown.enter="deleteTyped.trim() && deleteAccount()"
+            />
+            <div class="actions">
+              <SButton size="sm" variant="danger" :disabled="busy || !deleteTyped.trim()" @click="deleteAccount">
+                Delete my account
+              </SButton>
+              <SButton size="sm" variant="ghost" :disabled="busy" @click="cancelDelete">Keep it</SButton>
+            </div>
           </div>
         </div>
 
@@ -322,5 +383,36 @@ async function signOut(): Promise<void> {
 }
 .foot {
   margin-top: 12px;
+}
+.delete {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.question {
+  color: var(--text-0);
+  font: 600 14px/20px var(--font-sans);
+}
+.label {
+  color: var(--text-1);
+  font: 600 12px/16px var(--font-sans);
+}
+.box {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  outline: none;
+  background: var(--surface-1);
+  color: var(--text-0);
+  font: 400 14px/20px var(--font-sans);
+}
+.box:focus {
+  border-color: var(--text-2);
 }
 </style>
