@@ -5,7 +5,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - A checkpoint is ticked with its date and its commit.
 
 **Where it stands (2026-11-09):**
-- done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, and the words for the server's connection limit;
+- done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
 - next: Phase 3, whose client checkpoints follow the server's (3.1–3.4);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
@@ -81,3 +81,4 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
   - Sentry without content.
 - [ ] 4.2 Signed builds (cloud HSM) and staged automatic updates (electron-updater); `minClientVersion` honored.
 - [x] **The server's connection limit, in words** (backend Q36, part of its 4.3; 2026-11-09, `1acf6b3`): a fourth connection at a time is refused with `rate_limited`, and a refused start says to close Sotto on another computer or wait a minute.
+- [x] **4.11 Your data: a copy, and deleting the account** (backend Q19 and its 4.11; 2026-11-09, `d4da10b`, with the server's export and deletion in backend `c3a4a86`; checked with the unit and renderer tests and an end-to-end test against the local stack): the Account page saves a copy of what the server keeps, and deletes the account with its email typed again, then signs out.
