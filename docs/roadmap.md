@@ -4,9 +4,9 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - What each one gives the user is in [06-scope-and-phases.md](06-scope-and-phases.md).
 - A checkpoint is ticked with its date and its commit.
 
-**Where it stands (2026-11-09):**
+**Where it stands (2026-11-11):**
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
-- next: Phase 3, whose client checkpoints follow the server's (3.1–3.4);
+- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round; next: 3.9, practice, 3.13 and 3.12, then 4.1 and 4.2 (3.7 waits on Q5, 3.11 on 4.8's wording);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -83,6 +83,8 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
 - [ ] 3.12 Recording, opt-in.
 - [ ] 3.13 Settings, kept in the local database; hotkeys remappable.
 - [ ] Practice (with the server's 3.3): Claude Design's practice screens redrawn on these tokens, following Q21–Q24 as answered on 2026-11-09 ([design.md](design.md)).
+
+Tests, deep round over 3.6, 3.8 and 3.10 (2026-11-11, `a46422b`, branch `feature/deep-round-3.6-3.8-3.10`): every feature mapped and triggered again, widened with data points, every outcome given a test; 533 tests more (1,380 in all), the app tests 23 of 23, end to end 4 of 4, the server now asked what it holds after a start. Two fixes: a page break or a vertical tab in a file no longer runs the words either side together, and the 📌 card stays when the generated answer is hidden. One question for Shahin: how strict the 📌 match is (Q49). Decisions §18.
 
 ## Phase 4: ready for launch
 
