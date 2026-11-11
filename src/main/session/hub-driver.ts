@@ -13,6 +13,7 @@ import {
   type LiveClient,
   type LiveHub,
   type SetContextRequest,
+  type SetPrepDocRequest,
 } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult } from '../../shared/ipc';
 import type { LiveAction, LiveEvent } from '../../shared/live/reducer';
@@ -36,6 +37,8 @@ export interface HubDriverDependencies {
    * only once the résumé and the job description are in (the server's rule). Null sends none.
    */
   context?: Omit<SetContextRequest, 'CommandId'> | null;
+  /** The prep doc, sent after the documents (`SetPrepDoc`, 3.10): its name, its text and whether it was cut. */
+  prepDoc?: Omit<SetPrepDocRequest, 'CommandId'> | null;
   /**
    * End the account's live session on another device and start here. Only after the user said yes to it, never by
    * default (the contract's `TakeOver`).
@@ -178,13 +181,15 @@ export class HubDriver implements SessionDriver {
   }
 
   /**
-   * This computer's documents for the session, once, right after it starts: a resume keeps them on the server. A
-   * refusal or a drop leaves the session running without them, answering only when asked, as the strip then says.
+   * This computer's documents for the session, once, right after it starts, then the prep doc: a resume keeps them on
+   * the server. A refusal or a drop leaves the session running without them, answering only when asked, as the strip
+   * then says.
    */
   private async sendContext(hub: LiveHub): Promise<void> {
     const context = this.deps.context;
-    if (!context) return;
-    await hub.setContext({ CommandId: randomUUID(), ...context }).catch(() => undefined);
+    if (context) await hub.setContext({ CommandId: randomUUID(), ...context }).catch(() => undefined);
+    const prepDoc = this.deps.prepDoc;
+    if (prepDoc) await hub.setPrepDoc({ CommandId: randomUUID(), ...prepDoc }).catch(() => undefined);
   }
 
   /**

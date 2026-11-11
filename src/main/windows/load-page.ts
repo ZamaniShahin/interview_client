@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { app, type BrowserWindow } from 'electron';
 
-export type Page = 'overlay' | 'app' | 'capture' | 'selector';
+export type Page = 'overlay' | 'app' | 'capture' | 'selector' | 'documents';
 
 /**
  * Development loads the page from electron-vite's server, so edits reload; a built app loads its own files. The

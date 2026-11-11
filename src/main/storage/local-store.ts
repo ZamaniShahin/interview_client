@@ -1,7 +1,14 @@
 // What the app keeps on this computer, over the encrypted database (local-database.ts, schema.ts). Where each thing
-// lives follows backend docs/07 §5: the résumé and the job description are `documents`; the candidate's name, the
-// notes and the settings are `settings` rows, each a key and a JSON value.
-import { emptyDocuments, type DocumentField, type DocumentsView } from '../../shared/documents';
+// lives follows backend docs/07 §5: the résumé, the job description and the prep doc are `documents` (the prep doc
+// with its file's name); the candidate's name, the notes and the settings are `settings` rows, each a key and a JSON
+// value, as is whether the prep doc was cut.
+import {
+  emptyDocuments,
+  type DocumentField,
+  type DocumentsView,
+  type PrepDocView,
+  type SetPrepDocRequest,
+} from '../../shared/documents';
 import type { FirstRunView } from '../../shared/first-run';
 import { settingsSchema, type Settings } from '../../shared/settings';
 import type { LocalDatabase } from './local-database';
@@ -41,7 +48,42 @@ export class LocalStore {
         view.savedAt[field] = saved.savedAt;
       }
     }
+    view.prepDoc = this.prepDoc();
     return view;
+  }
+
+  /** The prep doc (3.10), or null when there is none. */
+  prepDoc(): PrepDocView | null {
+    const row = this.db.prepare("SELECT name, text, updated_at FROM documents WHERE kind = 'prep'").get() as
+      { name: string | null; text: string; updated_at: string } | undefined;
+    if (!row) return null;
+    return {
+      name: row.name ?? '',
+      text: row.text,
+      cut: this.setting('documents.prepCut') === true,
+      savedAt: Date.parse(row.updated_at),
+    };
+  }
+
+  /** Keeps the prep doc whole, with its name and whether it was cut; an empty text removes it. Checked by the IPC handler. */
+  setPrepDoc(change: SetPrepDocRequest): DocumentsView {
+    this.db.transaction(() => {
+      if (change.text === '') {
+        this.db.prepare("DELETE FROM documents WHERE kind = 'prep'").run();
+        this.deleteSetting('documents.prepCut');
+        return;
+      }
+      this.db
+        .prepare(
+          `INSERT INTO documents (kind, name, text, chars, updated_at) VALUES ('prep', ?, ?, ?, ?)
+           ON CONFLICT (kind) DO UPDATE SET name = excluded.name, text = excluded.text, chars = excluded.chars,
+             updated_at = excluded.updated_at`,
+        )
+        .run(change.name || null, change.text, change.text.length, new Date(this.now()).toISOString());
+      if (change.cut) this.setSetting('documents.prepCut', true);
+      else this.deleteSetting('documents.prepCut');
+    })();
+    return this.documents();
   }
 
   /** Keeps one field's whole text; an empty text removes it. The limits were checked by the IPC handler. */

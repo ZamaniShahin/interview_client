@@ -150,6 +150,57 @@ describe("Home's readiness, from this computer (1.14)", () => {
   });
 });
 
+describe('the prep doc, as kept on this computer (3.10)', () => {
+  it('keeps it whole in documents, under its kind, with its name and length, and whether it was cut in settings', () => {
+    const { db, local } = store();
+
+    const view = local.setPrepDoc({ text: 'Caching\nLoad balancing', name: 'system-design.pdf', cut: true });
+
+    expect(view.prepDoc).toEqual({
+      name: 'system-design.pdf',
+      text: 'Caching\nLoad balancing',
+      cut: true,
+      savedAt: nov9,
+    });
+    expect(db.prepare("SELECT kind, name, chars FROM documents WHERE kind = 'prep'").get()).toEqual({
+      kind: 'prep',
+      name: 'system-design.pdf',
+      chars: 22,
+    });
+    expect(db.prepare("SELECT value FROM settings WHERE key = 'documents.prepCut'").get()).toEqual({ value: 'true' });
+  });
+
+  it('keeps one with no name as nameless, and one not cut without the flag', () => {
+    const { db, local } = store();
+    local.setPrepDoc({ text: 'Long notes.', name: 'first.pdf', cut: true });
+
+    local.setPrepDoc({ text: 'Typed.', name: '', cut: false });
+
+    expect(local.prepDoc()).toEqual({ name: '', text: 'Typed.', cut: false, savedAt: nov9 });
+    expect(db.prepare("SELECT name FROM documents WHERE kind = 'prep'").get()).toEqual({ name: null });
+    expect(db.prepare("SELECT count(*) AS n FROM settings WHERE key = 'documents.prepCut'").get()).toEqual({ n: 0 });
+  });
+
+  it('removes it, and its flag, when emptied; the other documents stay', () => {
+    const { local } = store();
+    local.setDocument('resume', 'R');
+    local.setPrepDoc({ text: 'Notes.', name: 'prep.docx', cut: true });
+
+    const view = local.setPrepDoc({ text: '', name: '', cut: false });
+
+    expect(view.prepDoc).toBeNull();
+    expect(view.resume).toBe('R');
+    expect(local.setPrepDoc({ text: 'Back.', name: '', cut: false }).prepDoc?.cut).toBe(false);
+  });
+
+  it('is none until one is kept, and leaves the four documents as they were', () => {
+    const { local } = store();
+    expect(local.documents().prepDoc).toBeNull();
+    local.setPrepDoc({ text: 'Notes.', name: 'prep.docx', cut: false });
+    expect(local.documents()).toMatchObject({ resume: '', jobDescription: '', name: '', notes: '' });
+  });
+});
+
 describe('the first run, as kept on this computer (1.14)', () => {
   it('starts with nothing acknowledged, finished or tested', () => {
     expect(store().local.firstRun(1)).toEqual({ acknowledged: false, finished: false, hidingTested: false });

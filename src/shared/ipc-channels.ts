@@ -39,6 +39,15 @@ export const IpcChannels = {
   appStartSession: 'app:start-session',
   /** app window → main (invoke): one document's whole text, kept on this computer (Prepare, the first run). */
   appSetDocument: 'app:set-document',
+  /** app window → main (invoke): the prep doc, whole, with its file's name (3.10). */
+  appSetPrepDoc: 'app:set-prep-doc',
+  /** app window → main (invoke): read a document from a file the user picks; answers its text (3.10). */
+  appReadDocument: 'app:read-document',
+  /**
+   * main → documents window (3.10): the port files go through to be read. Like `capturePort`, it carries no payload of
+   * its own; main checks every reply that comes back over it (main/documents/document-reader.ts).
+   */
+  documentsPort: 'documents:port',
   /** app window → main (invoke): the first-run notice was read, in this version (F1 · 1). */
   appAcknowledgeNotice: 'app:acknowledge-notice',
   /** app window → main (invoke): the setup wizard was finished; it no longer opens by itself. */

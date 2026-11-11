@@ -724,6 +724,34 @@ describe("the hub driver's documents for a session (1.14)", () => {
     expect(h.transports[0]!.connection.methods()).toEqual(['StartSession']);
   });
 
+  it('sends the prep doc after the documents, with its name and whether it was cut (3.10)', async () => {
+    const prepDoc = { Name: 'system-design.pdf', Text: 'Caching\nLoad balancing', Cut: true };
+    const h = harness({ deps: { context, prepDoc } });
+
+    await h.start();
+
+    expect(h.transports[0]!.connection.methods()).toEqual(['StartSession', 'SetContext', 'SetPrepDoc']);
+    expect(h.transports[0]!.connection.invocations[2]!.request).toMatchObject(prepDoc);
+  });
+
+  it('sends a prep doc without the other documents, and none when there is none (3.10)', async () => {
+    const alone = harness({ deps: { context: null, prepDoc: { Name: null, Text: 'Notes.', Cut: false } } });
+    await alone.start();
+    expect(alone.transports[0]!.connection.methods()).toEqual(['StartSession', 'SetPrepDoc']);
+
+    const none = harness({ deps: { context, prepDoc: null } });
+    await none.start();
+    expect(none.transports[0]!.connection.methods()).toEqual(['StartSession', 'SetContext']);
+  });
+
+  it('starts the session even when the server refuses the prep doc (3.10)', async () => {
+    const h = harness({
+      deps: { context, prepDoc: { Name: 'p.pdf', Text: 'x', Cut: false } },
+      connection: (t) => t.connection.replies.set('SetPrepDoc', () => ({ Ok: false, Code: 'too_long', Message: 'Too long.' })),
+    });
+    expect(await h.start()).toEqual({ ok: true });
+  });
+
   it('starts the session even when the server refuses the documents: it then answers only when asked', async () => {
     const h = harness({
       deps: { context },

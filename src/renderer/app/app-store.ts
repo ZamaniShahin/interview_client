@@ -4,7 +4,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { initialAppState, type AppState } from '../../shared/app-state';
-import type { SetDocumentRequest } from '../../shared/documents';
+import type { ReadDocumentResult, ReadTarget, SetDocumentRequest, SetPrepDocRequest } from '../../shared/documents';
 import { idleSoundCheck, notice as firstRunNotice, type SoundCheckView } from '../../shared/first-run';
 import type {
   CommandResult,
@@ -171,6 +171,16 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.setDocument(change);
   }
 
+  /** Keeps the prep doc on this computer (3.10); the state main sends next carries it. */
+  function setPrepDoc(change: SetPrepDocRequest): Promise<CommandResult> {
+    return window.appApi.setPrepDoc(change);
+  }
+
+  /** Reads a document from a file the user picks (3.10): its text, to look over before it is kept. */
+  function readDocument(target: ReadTarget): Promise<ReadDocumentResult> {
+    return window.appApi.readDocument(target);
+  }
+
   return {
     state,
     loaded,
@@ -193,6 +203,8 @@ export const useAppStore = defineStore('app', () => {
     refresh,
     startSession,
     setDocument,
+    setPrepDoc,
+    readDocument,
     openSetup,
     showSetupScreen,
     closeSetup,

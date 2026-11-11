@@ -1,6 +1,6 @@
 // The app's core process. It owns the windows, sign-in, the account, the session and its connection.
 // Renderers only draw: they reach main through the checked channels in src/shared/ipc.ts.
-import { writeFile } from 'node:fs/promises';
+import { readFile, stat, writeFile } from 'node:fs/promises';
 import {
   app,
   clipboard,
@@ -18,7 +18,15 @@ import { join } from 'node:path';
 import type { AccountView } from '../shared/account';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
 import { ErrorCodes } from '../shared/contracts/sotto-contracts';
-import { answersOnItsOwn, type DocumentField, type DocumentsView, type SetDocumentRequest } from '../shared/documents';
+import {
+  answersOnItsOwn,
+  type DocumentField,
+  type DocumentsView,
+  type ReadDocumentResult,
+  type ReadTarget,
+  type SetDocumentRequest,
+  type SetPrepDocRequest,
+} from '../shared/documents';
 import { notice } from '../shared/first-run';
 import type {
   AppWindowAction,
@@ -49,6 +57,8 @@ import { loadConfig } from './config';
 import { createLiveTransport } from './connection/live-connection';
 import { DeviceIdentity } from './device/device-identity';
 import { machineFingerprint } from './device/fingerprint';
+import { DocumentReader } from './documents/document-reader';
+import { readDocumentFile, refused } from './documents/read-document';
 import { registerIpc } from './ipc/register';
 import { RegionSelector } from './screenshots/region-selector';
 import { ScreenCapture, type CaptureOutcome } from './screenshots/screen-capture';
@@ -67,6 +77,7 @@ import { migrations } from './storage/schema';
 import { previewDocuments } from './preview/documents';
 import { createAppWindow } from './windows/app-window';
 import { openCaptureWindow } from './windows/capture-window';
+import { openDocumentsWindow } from './windows/documents-window';
 import { createOverlayWindow, overlaySize } from './windows/overlay-window';
 import { denyPermissions } from './windows/stealth';
 
@@ -98,6 +109,9 @@ const rereadAfterMs = 30_000;
 const alive = (win: BrowserWindow | null): win is BrowserWindow => win !== null && !win.isDestroyed();
 
 const settings = new SettingsStore((changed) => applySettings(changed));
+
+// Files read into documents (3.10), in a hidden window of their own: main never parses a file.
+const documentReader = new DocumentReader(openDocumentsWindow);
 
 // Screenshots (3.6): the region selector, taking the picture, and the session's copies, kept in memory only.
 const selector = new RegionSelector();
@@ -615,6 +629,47 @@ function setDocument(change: SetDocumentRequest): CommandResult {
   return { ok: true };
 }
 
+/** Keeps the prep doc on this computer, whole, with its name and whether it was cut (3.10). */
+function setPrepDoc(change: SetPrepDocRequest): CommandResult {
+  if (!store) {
+    return {
+      ok: false,
+      code: ErrorCodes.Request.Unavailable,
+      message: "This computer's documents can't be kept right now.",
+    };
+  }
+  setAppState({ documents: store.setPrepDoc(change) });
+  return { ok: true };
+}
+
+/**
+ * A document read from a file the user picks (3.10), for the window to show before it is kept. The file dialog is a
+ * native window a share could see, so never during a session (stealth rule 7); the file is read in the documents
+ * window, never parsed here.
+ */
+async function readDocument(target: ReadTarget): Promise<ReadDocumentResult> {
+  if (session.running || soundCheck.running) {
+    return {
+      ok: false,
+      code: ErrorCodes.Session.AlreadyInSession,
+      message: 'Files can be read once the session is over.',
+    };
+  }
+  if (!alive(appWindow)) return refused('failed');
+  const picked = await dialog.showOpenDialog(appWindow, {
+    title: 'Choose a document',
+    properties: ['openFile'],
+    filters: [{ name: 'Documents', extensions: ['pdf', 'docx', 'txt', 'md'] }],
+  });
+  const path = picked.filePaths[0];
+  if (picked.canceled || !path) return { ok: false, code: 'read_cancelled', message: '' };
+  return readDocumentFile(path, target, {
+    size: async (file) => (await stat(file)).size,
+    readFile: async (file) => new Uint8Array(await readFile(file)),
+    reader: documentReader,
+  });
+}
+
 /**
  * This computer's database (1.14): encrypted in userData where the OS can encrypt, in memory otherwise and in the
  * preview, which brings sample documents. A file whose key is gone can never be read again: it is set aside, kept,
@@ -659,7 +714,7 @@ async function openStore(): Promise<LocalStore> {
 
 /** A driver over the hub, signed in: a session's, or the sound check's. */
 function hubDriver(
-  options: Pick<HubDriverDependencies, 'auto' | 'context' | 'takeOver' | 'onEntitlementsUpdated'>,
+  options: Pick<HubDriverDependencies, 'auto' | 'context' | 'prepDoc' | 'takeOver' | 'onEntitlementsUpdated'>,
 ): HubDriver {
   const signedIn = auth!;
   const service = accounts!;
@@ -719,6 +774,10 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
       // AUTO answers from the résumé and the job description; without both a session starts in MANUAL (Home says so).
       auto: documents ? answersOnItsOwn(documents) : false,
       context: documents ? contextOf(documents) : null,
+      // The prep doc goes after them (3.10), with its name and whether it was cut.
+      prepDoc: documents?.prepDoc
+        ? { Name: documents.prepDoc.name || null, Text: documents.prepDoc.text, Cut: documents.prepDoc.cut }
+        : null,
       // Only after the user chose "Start here" on Home, once the server said the session is open elsewhere.
       takeOver: request.takeOver === true,
       // A purchase, a renewal or a refund while the session runs: the account's minutes and plan, read again.
@@ -991,6 +1050,8 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       dismiss,
       screenshotImage: (id) => shelf.dataUrl(id),
       selector: () => selector.current,
+      setPrepDoc,
+      readDocument,
     });
 
     const win = createAppWindow();
@@ -1011,6 +1072,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
   app.on('before-quit', () => selector.cancel());
   app.on('will-quit', () => {
     payments.stop();
+    documentReader.close();
     stopHotkeys();
     void soundCheck.stop();
     capture.stop();

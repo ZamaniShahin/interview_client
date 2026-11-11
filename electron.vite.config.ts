@@ -53,6 +53,8 @@ export default defineConfig({
           capture: resolve('src/preload/capture.ts'),
           // The screenshot region selector (3.6): three calls, nothing else.
           selector: resolve('src/preload/selector.ts'),
+          // The hidden documents window (3.10): the port, nothing else.
+          documents: resolve('src/preload/documents.ts'),
         },
       },
     },
@@ -69,6 +71,8 @@ export default defineConfig({
           capture: resolve('src/renderer/capture/index.html'),
           // The screenshot region selector (3.6).
           selector: resolve('src/renderer/selector/index.html'),
+          // The hidden documents window (3.10), where files are read into text.
+          documents: resolve('src/renderer/documents/index.html'),
         },
       },
     },

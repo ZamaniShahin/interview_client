@@ -1,6 +1,6 @@
 // What each window may ask of main: the whole surface, typed. Types only, so renderers can import it freely.
 import type { AppState } from '../shared/app-state';
-import type { SetDocumentRequest } from '../shared/documents';
+import type { ReadDocumentResult, ReadTarget, SetDocumentRequest, SetPrepDocRequest } from '../shared/documents';
 import type { SoundCheckView } from '../shared/first-run';
 import type {
   AppWindowAction,
@@ -67,6 +67,10 @@ export interface AppApi extends SettingsApi {
   startSession(request: StartSessionRequest): Promise<CommandResult>;
   /** Keeps one document on this computer; the state that follows carries it. */
   setDocument(change: SetDocumentRequest): Promise<CommandResult>;
+  /** Keeps the prep doc on this computer, whole, with its file's name (3.10). */
+  setPrepDoc(change: SetPrepDocRequest): Promise<CommandResult>;
+  /** Reads a document from a file the user picks: its text, for the window to show before it is kept (3.10). */
+  readDocument(target: ReadTarget): Promise<ReadDocumentResult>;
   /** The first-run notice was read, in this version. */
   acknowledgeNotice(version: number): Promise<CommandResult>;
   /** The setup wizard was finished: it no longer opens by itself. */

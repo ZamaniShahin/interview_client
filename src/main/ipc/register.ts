@@ -3,7 +3,15 @@
 import { ipcMain, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import type { AppState } from '../../shared/app-state';
 import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
-import { setDocumentSchema, type SetDocumentRequest } from '../../shared/documents';
+import {
+  readTargetSchema,
+  setDocumentSchema,
+  setPrepDocSchema,
+  type ReadDocumentResult,
+  type ReadTarget,
+  type SetDocumentRequest,
+  type SetPrepDocRequest,
+} from '../../shared/documents';
 import {
   acknowledgeNoticeSchema,
   appWindowActionSchema,
@@ -74,6 +82,10 @@ export interface IpcDependencies {
   screenshotImage: (id: string) => string | null;
   /** The region selector showing, if one is: its page alone may talk on the selector's channels (3.6). */
   selector: () => OpenSelector | null;
+  /** Keeps the prep doc, whole (3.10). */
+  setPrepDoc: (change: SetPrepDocRequest) => CommandResult;
+  /** Reads a document from a file the user picks, for the window to show before it is kept (3.10). */
+  readDocument: (target: ReadTarget) => Promise<ReadDocumentResult>;
 }
 
 const invalid: CommandResult = {
@@ -245,6 +257,26 @@ export function registerIpc(deps: IpcDependencies): void {
     return parsed.error.issues.some((issue) => issue.message === 'too_long')
       ? { ok: false, code: ErrorCodes.Field.TooLong, message: 'That is longer than Sotto can take.' }
       : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appSetPrepDoc, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = setPrepDocSchema.safeParse(payload);
+    if (parsed.success) return deps.setPrepDoc(parsed.data);
+    return parsed.error.issues.some((issue) => issue.code === 'too_big' && issue.path[0] === 'text')
+      ? { ok: false, code: ErrorCodes.Field.TooLong, message: 'That is longer than Sotto can take.' }
+      : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appReadDocument, async (event, payload: unknown): Promise<ReadDocumentResult> => {
+    const refusal: ReadDocumentResult = {
+      ok: false,
+      code: ErrorCodes.Request.InvalidInput,
+      message: 'That request was not valid.',
+    };
+    if (!fromApp(event)) return refusal;
+    const parsed = readTargetSchema.safeParse(payload);
+    return parsed.success ? deps.readDocument(parsed.data) : refusal;
   });
 
   ipcMain.handle(IpcChannels.settingsGet, (event) =>

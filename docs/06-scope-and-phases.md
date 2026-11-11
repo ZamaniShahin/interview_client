@@ -14,7 +14,7 @@ Goal: an internal user runs a real mock interview end to end on Windows.
 | 1.13 | **The overlay**: Heard, the answer, answer history ‹ ›, the ask bar, the status; **the stealth rules, each with its test** | the product itself |
 | 1.14 | **First run**: the setup wizard, with the OpenAI notice, sign-in and device, name / résumé / job description, the sound check, the hotkeys and 🛡 Test hiding | a new user set up in minutes, and told what is sent where |
 
-- **Documents in Phase 1** are typed or pasted. Reading PDF and Word files comes in 3.10.
+- **Documents in Phase 1** are typed or pasted. Reading PDF and Word files came in 3.10 (built 2026-11-11, decisions §16), with the prep doc.
 - **Exit:**
   - an internal user runs a real mock call end to end on Windows;
   - the first words of an answer appear within 3 s, 95% of the time, against the real AI provider.
