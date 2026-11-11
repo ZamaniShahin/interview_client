@@ -6,7 +6,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 **Where it stands (2026-11-11):**
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
-- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9, 3.13 and 4.1 and their deep round; next: 4.2 and 3.12 (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
+- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9, 3.13 and 4.1 and their deep round, then 4.2's updates; next: 3.12 (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -101,6 +101,8 @@ Tests, deep round over 3.9, 3.13 and 4.1 (2026-11-11, `cb3befb`, branch `feature
   - Electron's fuses flipped by electron-builder, the ASAR's integrity embedded in the executable, and only main's packages in the installer;
   - the Content Security Policy reviewed: nothing to change (decisions §21);
   - [ ] Sentry without content: waits for Shahin's say on what may be sent to it.
-- [ ] 4.2 Signed builds (cloud HSM) and staged automatic updates (electron-updater); `minClientVersion` honored.
+- [ ] **4.2 Signed builds (cloud HSM) and staged automatic updates (electron-updater); `minClientVersion` honored.**
+  - [x] automatic updates from a feed, staged by the feed, installed on quit or on "Restart to update" outside a session, and an outdated version (`client_outdated`) shown how far the new one has come (2026-11-11, `4f55298`, branch `feature/updates`, on the deep round's; decisions §22). The feed's address waits on the domain (Q4);
+  - [ ] signing: waits on the cloud HSM.
 - [x] **The server's connection limit, in words** (backend Q36, part of its 4.3; 2026-11-09, `1acf6b3`): a fourth connection at a time is refused with `rate_limited`, and a refused start says to close Sotto on another computer or wait a minute.
 - [x] **4.11 Your data: a copy, and deleting the account** (backend Q19 and its 4.11; 2026-11-09, `d4da10b`, with the server's export and deletion in backend `c3a4a86`; checked with the unit and renderer tests and an end-to-end test against the local stack): the Account page saves a copy of what the server keeps, and deletes the account with its email typed again, then signs out.
