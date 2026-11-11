@@ -69,6 +69,7 @@ import { PreviewBilling, previewPaymentMs } from './preview/billing';
 import { HubDriver, type HubDriverDependencies } from './session/hub-driver';
 import { SoundCheck } from './session/sound-check';
 import { registerSessionHotkeys } from './session/hotkeys';
+import { effectiveHotkeys } from '../shared/hotkeys';
 import { PreviewDriver } from './session/preview-driver';
 import { SessionController, type SessionDriver } from './session/session-controller';
 import { SettingsStore } from './settings-store';
@@ -1018,32 +1019,36 @@ async function captureScreen(): Promise<CaptureOutcome> {
 
 function startHotkeys(): void {
   stopHotkeys();
-  const { unregister } = registerSessionHotkeys({
-    trigger: () => void session.command({ type: 'trigger', text: null }),
-    focus: () => overlayWindow?.focus(),
-    toggleAuto: () => void session.command({ type: 'setMode', auto: !session.current.auto, paused: null }),
-    togglePause: () => void session.command({ type: 'setMode', auto: null, paused: !session.current.paused }),
-    previous: () => stepAnswer(-1),
-    next: () => stepAnswer(1),
-    compact: () => {
-      if (!alive(overlayWindow)) return;
-      const isCompact = overlayWindow.getSize()[1]! <= overlaySize.compact.height;
-      onOverlayWindow({ type: 'compact', on: !isCompact });
+  const { unregister } = registerSessionHotkeys(
+    {
+      trigger: () => void session.command({ type: 'trigger', text: null }),
+      focus: () => overlayWindow?.focus(),
+      toggleAuto: () => void session.command({ type: 'setMode', auto: !session.current.auto, paused: null }),
+      togglePause: () => void session.command({ type: 'setMode', auto: null, paused: !session.current.paused }),
+      previous: () => stepAnswer(-1),
+      next: () => stepAnswer(1),
+      compact: () => {
+        if (!alive(overlayWindow)) return;
+        const isCompact = overlayWindow.getSize()[1]! <= overlaySize.compact.height;
+        onOverlayWindow({ type: 'compact', on: !isCompact });
+      },
+      hide: () => {
+        // The panic key: a screenshot being chosen is given up too.
+        selector.cancel();
+        if (!alive(overlayWindow)) return;
+        if (overlayWindow.isVisible()) overlayWindow.hide();
+        else overlayWindow.showInactive();
+      },
+      capture: () => {
+        // Pressed again while the selector shows: the whole display, the fast way (v1).
+        if (selector.current) selector.current.finish({ kind: 'full' });
+        // Otherwise the overlay takes it, since it holds what was typed: the screenshot's note in AUTO.
+        else if (alive(overlayWindow)) overlayWindow.webContents.send(IpcChannels.overlayHotkey, 'capture');
+      },
     },
-    hide: () => {
-      // The panic key: a screenshot being chosen is given up too.
-      selector.cancel();
-      if (!alive(overlayWindow)) return;
-      if (overlayWindow.isVisible()) overlayWindow.hide();
-      else overlayWindow.showInactive();
-    },
-    capture: () => {
-      // Pressed again while the selector shows: the whole display, the fast way (v1).
-      if (selector.current) selector.current.finish({ kind: 'full' });
-      // Otherwise the overlay takes it, since it holds what was typed: the screenshot's note in AUTO.
-      else if (alive(overlayWindow)) overlayWindow.webContents.send(IpcChannels.overlayHotkey, 'capture');
-    },
-  });
+    // The keys in effect: the defaults with the user's changes over them (Settings, 3.13).
+    effectiveHotkeys(settings.get().hotkeys),
+  );
   unregisterHotkeys = unregister;
 }
 

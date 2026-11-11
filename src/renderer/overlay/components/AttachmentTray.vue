@@ -4,7 +4,10 @@
 import SIconButton from '../../shared/components/SIconButton.vue';
 import { screenshotImage } from '../use-screenshots';
 
-defineProps<{ ids: string[]; max: number; manual: boolean }>();
+/** `triggerKey`: Answer now's hotkey as the user has it (3.13), for the words. */
+withDefaults(defineProps<{ ids: string[]; max: number; manual: boolean; triggerKey?: string }>(), {
+  triggerKey: 'Ctrl+Enter',
+});
 const emit = defineEmits<{ remove: [id: string] }>();
 </script>
 
@@ -27,7 +30,7 @@ const emit = defineEmits<{ remove: [id: string] }>();
       <b class="num">{{ ids.length }} of {{ max }}</b>
       {{
         manual
-          ? 'for your next question. Ctrl+Enter answers with them; anything typed goes along as a note.'
+          ? `for your next question. ${triggerKey} answers with them; anything typed goes along as a note.`
           : 'for your next question, which reads them.'
       }}
     </p>

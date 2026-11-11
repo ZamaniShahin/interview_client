@@ -26,8 +26,10 @@ const props = withDefaults(
     manual?: boolean;
     /** Screenshots attached for the next answer: what is typed becomes their note. */
     attached?: number;
+    /** The screenshot's hotkey as the user has it (3.13), for the button's words. */
+    captureKey?: string;
   }>(),
-  { capture: null, disabled: false, waiting: false, manual: false, attached: 0 },
+  { capture: null, disabled: false, waiting: false, manual: false, attached: 0, captureKey: 'Ctrl+Shift+G' },
 );
 
 const mode = ref<AskMode>(AskMode.Question);
@@ -47,8 +49,8 @@ function say(words: string): void {
 
 const captureLabel = computed(() =>
   props.manual
-    ? 'Screenshot of an area, for your next question (Ctrl+Shift+G)'
-    : 'Screenshot of an area, answered at once (Ctrl+Shift+G). What you type goes along as a note.',
+    ? `Screenshot of an area, for your next question (${props.captureKey})`
+    : `Screenshot of an area, answered at once (${props.captureKey}). What you type goes along as a note.`,
 );
 
 /** The screenshot button, and the hotkey through the overlay: what is typed is the note in AUTO. */

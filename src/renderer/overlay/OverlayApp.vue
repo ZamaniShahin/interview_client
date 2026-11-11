@@ -20,11 +20,16 @@ import OverlayBar from './components/OverlayBar.vue';
 import ResizeGrip from './components/ResizeGrip.vue';
 import StatusStrip from './components/StatusStrip.vue';
 import { useLiveStore } from './live-store';
+import { effectiveHotkeys, hotkeyText } from '../../shared/hotkeys';
 import type { MoreAction } from './more-actions';
 import { keepScreenshotImages } from './use-screenshots';
 
 const live = useLiveStore();
 const { settings, update: updateSettings } = useSettings(window.overlayApi);
+// The hotkeys in effect, named in the words that mention them (3.13).
+const keys = computed(() => effectiveHotkeys(settings.value.hotkeys));
+const triggerKey = computed(() => hotkeyText('trigger', keys.value));
+const captureKey = computed(() => hotkeyText('capture', keys.value));
 const now = useNow();
 
 const hasKeyboard = ref(document.hasFocus());
@@ -190,7 +195,7 @@ function confirm(): void {
     />
     <p v-else-if="!ended" class="empty">
       <b>{{ s.phase === 'starting' ? 'Starting your session…' : 'Ready.' }}</b>
-      {{ s.phase === 'starting' ? 'A moment. There is nothing to do.' : 'An answer appears here when a question ends. Ctrl+Enter answers at any time.' }}
+      {{ s.phase === 'starting' ? 'A moment. There is nothing to do.' : `An answer appears here when a question ends. ${triggerKey} answers at any time.` }}
     </p>
 
     <template v-if="!compact">
@@ -223,6 +228,7 @@ function confirm(): void {
           :ids="s.attachments.ids"
           :max="s.attachments.max"
           :manual="manual"
+          :trigger-key="triggerKey"
           @remove="(id) => live.command({ type: 'detachScreenshot', id })"
         />
         <AskBar
@@ -233,6 +239,7 @@ function confirm(): void {
           :waiting="s.phase === 'reconnecting'"
           :manual="manual"
           :attached="s.attachments.ids.length"
+          :capture-key="captureKey"
         />
       </template>
     </template>

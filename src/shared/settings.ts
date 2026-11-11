@@ -1,6 +1,7 @@
-// The user's settings. Main owns them and tells every window when they change; the local database keeps them
-// from checkpoint 3.13, so for now they last until the app quits.
+// The user's settings. Main owns them and tells every window when they change; the local database keeps them (1.14,
+// local-store.ts), each field on its own, so one a newer app wrote that this one can't read keeps its default.
 import { z } from 'zod';
+import { effectiveHotkeys, hotkeyOverridesSchema, hotkeyProblems } from './hotkeys';
 
 export const settingsSchema = z.object({
   theme: z.enum(['dark', 'light']),
@@ -12,6 +13,10 @@ export const settingsSchema = z.object({
   startCompact: z.boolean(),
   keepTranscripts: z.boolean(),
   keepRecordings: z.boolean(),
+  /** The hotkeys the user changed (3.13): only those, over the defaults. A set where two clash, or one can't stand, isn't one. */
+  hotkeys: hotkeyOverridesSchema.refine(
+    (changed) => Object.keys(hotkeyProblems(effectiveHotkeys(changed))).length === 0,
+  ),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -27,4 +32,5 @@ export const defaultSettings: Settings = {
   startCompact: false,
   keepTranscripts: false,
   keepRecordings: false,
+  hotkeys: {},
 };

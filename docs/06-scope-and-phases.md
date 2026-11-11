@@ -69,7 +69,7 @@ Also on the server in Phase 3: practice (3.3), and resuming a session on another
   - Microsoft and LinkedIn sign-in;
   - an optional encrypted sync of the answer bank and settings;
   - more languages than English;
-  - v1's own never-built ideas: tip buttons, company / role / coding-language fields, per-company presets, remapping hotkeys. The audio level meter came with 1.11 (Q18).
+  - v1's own never-built ideas: tip buttons, company / role / coding-language fields, per-company presets. The audio level meter came with 1.11 (Q18), and remapping hotkeys with 3.13.
 
 ## What the server can do today
 

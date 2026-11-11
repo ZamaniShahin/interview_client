@@ -1,21 +1,11 @@
 <script setup lang="ts">
 // Settings: the UI canvas's proposals for the handoff's §14. Main owns them; every window follows a change at once.
-import SKbd from '../../shared/components/SKbd.vue';
 import SSegmented from '../../shared/components/SSegmented.vue';
 import SSwitch from '../../shared/components/SSwitch.vue';
 import { useSettings } from '../../shared/use-settings';
+import HotkeySettings from '../components/HotkeySettings.vue';
 
 const { settings, update } = useSettings(window.appApi);
-
-const hotkeys = [
-  { action: 'Answer now', keys: ['Ctrl', 'Enter'] },
-  { action: 'Type in the overlay', keys: ['Ctrl', 'Shift', 'Space'] },
-  { action: 'AUTO or MANUAL', keys: ['Ctrl', 'Shift', 'A'] },
-  { action: 'Pause or resume', keys: ['Ctrl', 'Shift', 'P'] },
-  { action: 'Earlier or later answer', keys: ['Ctrl', 'Shift', '←', '→'] },
-  { action: 'Compact or full view', keys: ['Ctrl', 'Shift', 'M'] },
-  { action: 'Hide or show the overlay', keys: ['Ctrl', 'Shift', 'H'] },
-];
 </script>
 
 <template>
@@ -75,10 +65,7 @@ const hotkeys = [
         <p class="small">Both off by default, encrypted, never sent anywhere.</p>
 
         <p class="eyebrow section">Hotkeys</p>
-        <div v-for="hotkey in hotkeys" :key="hotkey.action" class="row key-row">
-          <span>{{ hotkey.action }}</span>
-          <SKbd :keys="hotkey.keys" />
-        </div>
+        <HotkeySettings :changed="settings.hotkeys" @save="(hotkeys) => update({ hotkeys })" />
       </div>
     </div>
   </section>
@@ -105,11 +92,6 @@ const hotkeys = [
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-.key-row {
-  min-height: 32px;
-  border-bottom: 1px solid var(--line);
-  font-size: 13px;
 }
 .section {
   margin-top: 8px;
