@@ -4,6 +4,7 @@ import type { AccountView, DeviceRemovalsView, DeviceView } from './account';
 import { emptyPreferences, type PreferencesView } from './answer-bank';
 import { emptyDocuments, type DocumentsView } from './documents';
 import { initialFirstRun, type FirstRunView } from './first-run';
+import type { InterviewSummary } from './history';
 
 export type AuthView =
   | { status: 'signed-out' }
@@ -57,6 +58,10 @@ export interface AppState {
   notice: string | null;
   /** This computer can't be added: the account is at its device limit (F3). */
   deviceLimit: DeviceLimitState | null;
+  /** The interviews kept on this computer, the newest first (3.9). */
+  history: InterviewSummary[];
+  /** The interviews whose debrief the server is writing (3.9). */
+  debriefing: number[];
 }
 
 export const initialAppState: AppState = {
@@ -71,4 +76,6 @@ export const initialAppState: AppState = {
   payment: null,
   notice: null,
   deviceLimit: null,
+  history: [],
+  debriefing: [],
 };

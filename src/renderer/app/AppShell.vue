@@ -11,6 +11,7 @@ import DeviceLimitScreen from './DeviceLimitScreen.vue';
 import WindowChrome from './components/WindowChrome.vue';
 import AccountPage from './pages/AccountPage.vue';
 import HelpPage from './pages/HelpPage.vue';
+import HistoryPage from './pages/HistoryPage.vue';
 import HomePage from './pages/HomePage.vue';
 import LaterPage from './pages/LaterPage.vue';
 import PreparePage from './pages/PreparePage.vue';
@@ -109,11 +110,7 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
           heading="Practice"
           text="Mock interviews: the server asks, you answer aloud or by typing, then a score and feedback. Drawn in Claude Design's export; built in the later phase (3.3)."
         />
-        <LaterPage
-          v-else-if="current === 'history'"
-          heading="History"
-          text="Your interviews, their questions and answers, and debriefs, kept on this computer, encrypted. Built in the later phase (3.9)."
-        />
+        <HistoryPage v-else-if="current === 'history'" />
         <HelpPage v-else />
       </main>
     </div>

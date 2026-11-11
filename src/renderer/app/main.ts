@@ -2,6 +2,8 @@ import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import '../shared/styles/tokens.css';
 import '../shared/styles/base.css';
+// History draws kept answers as the overlay draws them (3.9).
+import '../shared/styles/answer.css';
 import { removeTitles } from '../shared/no-titles';
 import AppShell from './AppShell.vue';
 

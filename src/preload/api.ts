@@ -3,6 +3,7 @@ import type { BankEntryInput } from '../shared/answer-bank';
 import type { AppState } from '../shared/app-state';
 import type { ReadDocumentResult, ReadTarget, SetDocumentRequest, SetPrepDocRequest } from '../shared/documents';
 import type { SoundCheckView } from '../shared/first-run';
+import type { InterviewView } from '../shared/history';
 import type {
   AppWindowAction,
   CommandResult,
@@ -78,6 +79,16 @@ export interface AppApi extends SettingsApi {
   saveBankEntry(input: BankEntryInput): Promise<CommandResult>;
   /** Deletes an answer-bank entry (3.8). */
   removeBankEntry(id: string): Promise<CommandResult>;
+  /** One interview kept in history, whole, or null once it is gone (3.9). */
+  openInterview(id: number): Promise<InterviewView | null>;
+  /** Deletes one interview, and all it holds (3.9). */
+  deleteInterview(id: number): Promise<CommandResult>;
+  /** Deletes every interview in history (3.9). */
+  clearHistory(): Promise<CommandResult>;
+  /** Asks the server for an interview's debrief, and keeps it; answers once it is kept, or why not (3.9). */
+  debrief(id: number): Promise<CommandResult>;
+  /** Puts text on the clipboard, through main (a debrief's thank-you email, 3.9). */
+  copy(text: string): void;
   /** The first-run notice was read, in this version. */
   acknowledgeNotice(version: number): Promise<CommandResult>;
   /** The setup wizard was finished: it no longer opens by itself. */

@@ -2,7 +2,7 @@
 // lives follows backend docs/07 §5: the résumé, the job description and the prep doc are `documents` (the prep doc
 // with its file's name); the candidate's name, the notes and the settings are `settings` rows, each a key and a JSON
 // value, as is whether the prep doc was cut. The answer bank is its own table (3.8), and the custom instructions a
-// settings row.
+// settings row. History (3.9) has four tables of its own, kept by history-store.ts over the same database.
 import {
   emptyDocuments,
   type DocumentField,
@@ -21,6 +21,7 @@ import {
 } from '../../shared/answer-bank';
 import type { FirstRunView } from '../../shared/first-run';
 import { settingsSchema, type Settings } from '../../shared/settings';
+import { HistoryStore } from './history-store';
 import type { LocalDatabase } from './local-database';
 
 type Place = { table: 'documents'; kind: 'resume' | 'jd' } | { table: 'settings'; key: string };
@@ -44,10 +45,15 @@ const isSavedText = (value: unknown): value is SavedText =>
   typeof (value as SavedText).savedAt === 'number';
 
 export class LocalStore {
+  /** The interviews kept on this computer (3.9), in the same database. */
+  readonly history: HistoryStore;
+
   constructor(
     private readonly db: LocalDatabase,
     private readonly now: () => number = Date.now,
-  ) {}
+  ) {
+    this.history = new HistoryStore(db);
+  }
 
   documents(): DocumentsView {
     const view: DocumentsView = { ...emptyDocuments, savedAt: { ...emptyDocuments.savedAt } };

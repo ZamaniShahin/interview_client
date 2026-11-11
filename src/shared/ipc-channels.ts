@@ -49,6 +49,16 @@ export const IpcChannels = {
   appSaveBankEntry: 'app:save-bank-entry',
   /** app window → main (invoke): delete an answer-bank entry, by its id (3.8). */
   appRemoveBankEntry: 'app:remove-bank-entry',
+  /** app window → main (invoke): one interview kept in history, whole, or null (3.9). */
+  appOpenInterview: 'app:open-interview',
+  /** app window → main (invoke): delete one interview from history, by its id (3.9). */
+  appDeleteInterview: 'app:delete-interview',
+  /** app window → main (invoke): delete every interview in history (3.9). */
+  appClearHistory: 'app:clear-history',
+  /** app window → main (invoke): ask the server for an interview's debrief, kept with it; answers once kept (3.9). */
+  appDebrief: 'app:debrief',
+  /** app window → main (send): text for the clipboard, main's to write, as the overlay's Copy is (3.9). */
+  appCopy: 'app:copy',
   /**
    * main → documents window (3.10): the port files go through to be read. Like `capturePort`, it carries no payload of
    * its own; main checks every reply that comes back over it (main/documents/document-reader.ts).

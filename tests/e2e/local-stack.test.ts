@@ -16,6 +16,12 @@ import { OpenIdClient } from '../../src/main/auth/oidc';
 import { MemorySecretStore } from '../../src/main/auth/secret-store';
 import { createLiveTransport } from '../../src/main/connection/live-connection';
 import { DeviceIdentity } from '../../src/main/device/device-identity';
+import { HistoryRecorder } from '../../src/main/history/history-recorder';
+import { HistoryService } from '../../src/main/history/history-service';
+import { runJob } from '../../src/main/jobs/run-job';
+import { openDatabase } from '../../src/main/storage/local-database';
+import { LocalStore } from '../../src/main/storage/local-store';
+import { migrations } from '../../src/main/storage/schema';
 import { ScreenshotShelf } from '../../src/main/screenshots/screenshot-shelf';
 import { HubDriver, type HubDriverDependencies } from '../../src/main/session/hub-driver';
 import { SessionController, type SessionScreenshots } from '../../src/main/session/session-controller';
@@ -214,6 +220,11 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       Answer: 'Double entry, and idempotent writes.',
     };
     withDocuments.useBank([{ id: prepared.Id, phrasings: prepared.Phrasings, answer: prepared.Answer, enabled: true }]);
+    // 3.9: the session kept in history as it goes, the interviewer's words too.
+    const local = new LocalStore(openDatabase(null, null, migrations));
+    const recorder = new HistoryRecorder(local.history, { keepTranscripts: () => true, changed: () => {} });
+    withDocuments.recordTo((event) => recorder.record(event));
+    recorder.begin({ candidate: 'Sam Rivera', role: 'Senior Backend Engineer, Payments', tier: null });
     const preferences = { CustomInstructions: 'Keep answers short.', PreparedAnswers: [prepared] };
     // 3.10: the prep doc goes with it, as main reads it from this computer: cut, with its file's name.
     const prepDoc = {
@@ -265,6 +276,26 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     );
     expect(await withDocuments.command({ type: 'endSession' })).toEqual({ ok: true });
     await vi.waitFor(() => expect(withDocuments.current.phase).toBe('ended'), { timeout: 15_000, interval: 100 });
+
+    // 3.9: the interview kept, its answers and the words heard; its debrief asked of the server (the 3.4 job), kept.
+    const [kept] = local.history.list();
+    expect(kept).toMatchObject({ answers: 2, endedAt: expect.any(Number) });
+    expect(local.history.get(kept!.id)?.transcript.map((line) => line.text)).toContain(
+      'How do you keep a ledger consistent?',
+    );
+    const history = new HistoryService({
+      store: () => local.history,
+      running: () => recorder.interviewId,
+      job: (path, body) => runJob(path, body, { rest }),
+      changed: () => {},
+    });
+    expect(await history.debrief(kept!.id)).toEqual({ ok: true });
+    // The scripted AI writes no JSON: the debrief comes back without its parts, its text the summary.
+    expect(local.history.get(kept!.id)?.debrief).toMatchObject({
+      version: 1,
+      raw: true,
+      summary: 'Sure, here is the answer.',
+    });
 
     // Renewal rotates the refresh token, and the new one is kept; signing out forgets it.
     const before = await secrets.get('refresh-token');

@@ -7,6 +7,7 @@ import { initialAppState, type AppState } from '../../shared/app-state';
 import type { BankEntryInput } from '../../shared/answer-bank';
 import type { ReadDocumentResult, ReadTarget, SetDocumentRequest, SetPrepDocRequest } from '../../shared/documents';
 import { idleSoundCheck, notice as firstRunNotice, type SoundCheckView } from '../../shared/first-run';
+import type { InterviewView } from '../../shared/history';
 import type {
   CommandResult,
   DismissTarget,
@@ -197,6 +198,26 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.removeBankEntry(id);
   }
 
+  // History (3.9): the list and the debriefs being written come with the state; an interview is read whole on demand.
+  const history = computed(() => state.value.history);
+  const debriefing = computed(() => state.value.debriefing);
+
+  function openInterview(id: number): Promise<InterviewView | null> {
+    return window.appApi.openInterview(id);
+  }
+
+  function deleteInterview(id: number): Promise<CommandResult> {
+    return window.appApi.deleteInterview(id);
+  }
+
+  function clearHistory(): Promise<CommandResult> {
+    return window.appApi.clearHistory();
+  }
+
+  function debrief(id: number): Promise<CommandResult> {
+    return window.appApi.debrief(id);
+  }
+
   return {
     state,
     loaded,
@@ -225,6 +246,12 @@ export const useAppStore = defineStore('app', () => {
     setInstructions,
     saveBankEntry,
     removeBankEntry,
+    history,
+    debriefing,
+    openInterview,
+    deleteInterview,
+    clearHistory,
+    debrief,
     openSetup,
     showSetupScreen,
     closeSetup,

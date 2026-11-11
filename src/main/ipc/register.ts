@@ -41,6 +41,7 @@ import {
   type StartSessionRequest,
 } from '../../shared/ipc';
 import { bankEntryInputSchema, bankIdSchema, instructionsSchema, type BankEntryInput } from '../../shared/answer-bank';
+import { interviewIdSchema, type InterviewView } from '../../shared/history';
 import { selectionSchema } from '../../shared/screenshots';
 import { settingsPatchSchema } from '../../shared/settings';
 import type { OpenSelector } from '../screenshots/region-selector';
@@ -93,6 +94,14 @@ export interface IpcDependencies {
   saveBankEntry: (input: BankEntryInput) => CommandResult;
   /** Deletes an answer-bank entry (3.8). */
   removeBankEntry: (id: string) => CommandResult;
+  /** One interview kept in history, whole, or null (3.9). */
+  openInterview: (id: number) => InterviewView | null;
+  /** Deletes one interview (3.9). */
+  deleteInterview: (id: number) => CommandResult;
+  /** Deletes every interview (3.9). */
+  clearHistory: () => CommandResult;
+  /** Asks the server for an interview's debrief, and keeps it (3.9). */
+  debrief: (id: number) => Promise<CommandResult>;
 }
 
 const invalid: CommandResult = {
@@ -305,6 +314,35 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromApp(event)) return invalid;
     const parsed = bankIdSchema.safeParse(payload);
     return parsed.success ? deps.removeBankEntry(parsed.data) : invalid;
+  });
+
+  // History (3.9): the app window only, an interview named by its id.
+  ipcMain.handle(IpcChannels.appOpenInterview, (event, payload: unknown): InterviewView | null => {
+    if (!fromApp(event)) return null;
+    const parsed = interviewIdSchema.safeParse(payload);
+    return parsed.success ? deps.openInterview(parsed.data) : null;
+  });
+
+  ipcMain.handle(IpcChannels.appDeleteInterview, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = interviewIdSchema.safeParse(payload);
+    return parsed.success ? deps.deleteInterview(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appClearHistory, (event): CommandResult =>
+    fromApp(event) ? deps.clearHistory() : invalid,
+  );
+
+  ipcMain.on(IpcChannels.appCopy, (event, payload: unknown) => {
+    if (!fromApp(event)) return;
+    const parsed = copyTextSchema.safeParse(payload);
+    if (parsed.success) deps.copyText(parsed.data);
+  });
+
+  ipcMain.handle(IpcChannels.appDebrief, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = interviewIdSchema.safeParse(payload);
+    return parsed.success ? deps.debrief(parsed.data) : invalid;
   });
 
   ipcMain.handle(IpcChannels.settingsGet, (event) =>

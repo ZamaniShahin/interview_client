@@ -76,6 +76,11 @@ import { databaseKey, isUnreadable, openDatabase, setAside } from './storage/loc
 import { LocalStore, readinessFrom } from './storage/local-store';
 import { migrations } from './storage/schema';
 import { previewBank, previewDocuments } from './preview/documents';
+import { previewDebrief, previewDebriefMs } from './preview/history';
+import { HistoryRecorder } from './history/history-recorder';
+import { HistoryService } from './history/history-service';
+import { runJob } from './jobs/run-job';
+import { roleOf } from '../shared/history';
 import { createAppWindow } from './windows/app-window';
 import { openCaptureWindow } from './windows/capture-window';
 import { openDocumentsWindow } from './windows/documents-window';
@@ -94,6 +99,7 @@ let unregisterHotkeys: (() => void) | null = null;
 
 let auth: AuthSession | null = null;
 let accounts: AccountService | null = null;
+let rest: RestClient | null = null;
 let loaded: LoadedAccount | null = null;
 /** This computer's documents and settings (1.14), once the database is open. */
 let store: LocalStore | null = null;
@@ -139,6 +145,21 @@ const session = new SessionController(
   },
   { capture: captureScreen, shelf },
 );
+
+// History (3.9): each session kept as it goes, once the database is open; the window reads it through the service.
+let recorder: HistoryRecorder | null = null;
+session.recordTo((event) => recorder?.record(event));
+const history = new HistoryService({
+  store: () => store?.history ?? null,
+  running: () => recorder?.interviewId ?? null,
+  job: (path, body) => {
+    if (preview) return new Promise((resolve) => setTimeout(() => resolve(previewDebrief), previewDebriefMs));
+    if (!rest || auth?.current.status !== 'signed-in')
+      return Promise.reject(new ApiError(401, ErrorCodes.Identity.Unauthenticated, 'Sign in first.'));
+    return runJob(path, body, { rest });
+  },
+  changed: (view) => setAppState(view),
+});
 
 // A purchase finished in the browser shows in the account by itself (F8 · b, c): read again until it does.
 const payments = new PaymentWatch({
@@ -830,8 +851,16 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
   session.dispatch({ type: 'account', minutesLeft: account.view.minutes?.usable ?? null, tier: account.tier });
   // The questions answered are matched to the bank's enabled entries on this computer: the 📌 card (3.8).
   session.useBank(store?.preferences().bank ?? []);
+  // Kept in history from its start (3.9), named by the documents it starts with; one that keeps nothing goes.
+  const atStart = store?.documents();
+  recorder?.begin({
+    candidate: atStart?.name.trim() ?? '',
+    role: roleOf(atStart?.jobDescription ?? ''),
+    tier: account.tier,
+  });
   const result = await session.start(driver);
   if (!result.ok) {
+    recorder?.finish(null);
     // The server refused (no plan, no minutes, an outdated client…): back to the window, which says why.
     closeSession();
     showProblem({ code: result.code, message: result.message });
@@ -1020,12 +1049,13 @@ async function createServices(): Promise<void> {
   });
   signedIn.onChange((view) => setAppState({ auth: view }));
   auth = signedIn;
+  rest = new RestClient({
+    baseUrl: config.apiBaseUrl,
+    clientVersion: app.getVersion(),
+    accessToken: (options) => signedIn.accessToken(options),
+  });
   accounts = new AccountService({
-    rest: new RestClient({
-      baseUrl: config.apiBaseUrl,
-      clientVersion: app.getVersion(),
-      accessToken: (options) => signedIn.accessToken(options),
-    }),
+    rest,
     device: new DeviceIdentity(secrets),
     appVersion: app.getVersion(),
     platform: process.platform === 'darwin' ? 'macos' : process.platform === 'linux' ? 'linux' : 'windows',
@@ -1056,7 +1086,13 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     if (!preview) await createServices();
     store = await openStore();
     settings.restore(store.settings(), (kept) => store?.saveSettings(kept));
-    setAppState({ documents: store.documents(), preferences: store.preferences() });
+    // An app that quit mid-session may have left an interview that kept nothing.
+    store.history.dropEmpty();
+    recorder = new HistoryRecorder(store.history, {
+      keepTranscripts: () => settings.get().keepTranscripts,
+      changed: () => setAppState({ history: history.list() }),
+    });
+    setAppState({ documents: store.documents(), preferences: store.preferences(), history: history.list() });
     showFirstRun();
 
     registerIpc({
@@ -1096,6 +1132,10 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       setInstructions,
       saveBankEntry,
       removeBankEntry,
+      openInterview: (id) => history.open(id),
+      deleteInterview: (id) => history.delete(id),
+      clearHistory: () => history.clear(),
+      debrief: (id) => history.debrief(id),
     });
 
     const win = createAppWindow();

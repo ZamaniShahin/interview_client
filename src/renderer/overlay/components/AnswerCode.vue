@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // A code block of an answer (canvas: Overlay, Live): its language, its source in the syntax colors, and Copy. Copy
 // puts the source on the clipboard as the model wrote it, never the colored HTML. Main does the copying, since the
-// overlay never takes focus. "Copied" shows for a moment.
+// overlay never takes focus. "Copied" shows for a moment. History draws kept answers with it too (3.9): there, the app
+// window's bridge carries the text to main.
 import { onBeforeUnmount, ref } from 'vue';
 import SIcon from '../../shared/components/SIcon.vue';
 
@@ -11,7 +12,9 @@ const copied = ref(false);
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 function copy(): void {
-  window.overlayApi.copy(props.code);
+  // Each window has its own bridge: the overlay's, or the app window's in History.
+  const bridge = (window as Partial<Pick<Window, 'overlayApi'>>).overlayApi ?? window.appApi;
+  bridge.copy(props.code);
   copied.value = true;
   clearTimeout(timer);
   timer = setTimeout(() => (copied.value = false), 1500);

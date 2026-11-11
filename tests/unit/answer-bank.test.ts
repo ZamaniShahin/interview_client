@@ -237,7 +237,8 @@ describe("the bank's table, on a database from before it (3.8)", () => {
     new LocalStore(old).setDocument('resume', 'Kept résumé.');
     old.close();
 
-    const db = openDatabase(file, key, migrations);
+    // Opened by the version that brought migration 2 (3.8); later ones are tested with their checkpoints.
+    const db = openDatabase(file, key, migrations.slice(0, 2));
     const local = new LocalStore(db);
     expect(db.pragma('user_version', { simple: true })).toBe(2);
     expect(local.documents().resume).toBe('Kept résumé.');

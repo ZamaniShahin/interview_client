@@ -3,6 +3,7 @@
 import { bestMatch, buildIndex, type MatchEntry, type MatchIndex } from '../../shared/answer-match';
 import { AnswerKind, ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult, OverlayCommand } from '../../shared/ipc';
+import { historyEvents, type HistoryEvent } from '../../shared/live/history-events';
 import { reduceLive, type LiveAction } from '../../shared/live/reducer';
 import { initialLiveState, type LiveViewState } from '../../shared/live/view-state';
 import { captureCode, captureFailureText, type CaptureFailure } from '../../shared/screenshots';
@@ -56,6 +57,8 @@ export class SessionController {
   private publishTimer: ReturnType<typeof setTimeout> | null = null;
   /** The answer bank's enabled entries, indexed once per session (3.8). */
   private bank: MatchIndex = [];
+  /** Where the session's history goes (3.9): its answers, the interviewer's words and its end. */
+  private history: ((event: HistoryEvent) => void) | null = null;
 
   constructor(
     private readonly publish: (state: LiveViewState) => void,
@@ -75,12 +78,19 @@ export class SessionController {
     this.bank = buildIndex(entries);
   }
 
+  /** Sends what the session's history keeps to `record` (3.9), or nothing (null). */
+  recordTo(record: ((event: HistoryEvent) => void) | null): void {
+    this.history = record;
+  }
+
   readonly dispatch = (action: LiveAction): void => {
+    const before = this.state;
     this.state = reduceLive(this.state, action);
     if (action.type === 'event' && action.event.name === 'answerStart') this.matchPrepared(action.event.e);
     if (action.type === 'event' && (action.event.name === 'attachments' || action.event.name === 'answerStart')) {
       this.screenshots?.shelf.prune(this.screenshotsInUse());
     }
+    if (this.history) for (const event of historyEvents(before, this.state, action)) this.history(event);
     this.schedulePublish();
   };
 

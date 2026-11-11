@@ -255,3 +255,46 @@ describe('the preferences, for the app window only (3.8)', () => {
     expect(calls.removeBankEntry).toHaveLength(1);
   });
 });
+
+describe('history, for the app window only (3.9)', () => {
+  it.each([
+    [IpcChannels.appOpenInterview, 'openInterview'],
+    [IpcChannels.appDeleteInterview, 'deleteInterview'],
+    [IpcChannels.appDebrief, 'debrief'],
+  ])('passes %s an interview named by its id', async (channel, dep) => {
+    await invoke(channel, appId, 42);
+    expect(calls[dep]).toEqual([[42]]);
+  });
+
+  it.each([0, -1, 1.5, '1', null, undefined, Number.MAX_SAFE_INTEGER + 2, [1]])(
+    'names no interview by %j',
+    async (id) => {
+      expect(await invoke(IpcChannels.appOpenInterview, appId, id)).toBeNull();
+      expect(await invoke(IpcChannels.appDeleteInterview, appId, id)).toEqual(invalid);
+      expect(await invoke(IpcChannels.appDebrief, appId, id)).toEqual(invalid);
+      expect(calls.openInterview ?? calls.deleteInterview ?? calls.debrief).toBeUndefined();
+    },
+  );
+
+  it('hears nothing of history from the overlay', async () => {
+    expect(await invoke(IpcChannels.appOpenInterview, overlayId, 1)).toBeNull();
+    expect(await invoke(IpcChannels.appDeleteInterview, overlayId, 1)).toEqual(invalid);
+    expect(await invoke(IpcChannels.appClearHistory, overlayId)).toEqual(invalid);
+    expect(await invoke(IpcChannels.appDebrief, overlayId, 1)).toEqual(invalid);
+    expect(Object.keys(calls)).toEqual([]);
+  });
+
+  it('deletes all history for the app window', async () => {
+    expect(await invoke(IpcChannels.appClearHistory, appId)).toEqual({ ok: true });
+    expect(calls.clearHistory).toEqual([[]]);
+  });
+
+  it('copies text for the app window only, and only text it can take', () => {
+    send(IpcChannels.appCopy, appId, 'Thank you, Priya.');
+    send(IpcChannels.appCopy, overlayId, 'From the overlay.');
+    send(IpcChannels.appCopy, appId, '');
+    send(IpcChannels.appCopy, appId, 42);
+    send(IpcChannels.appCopy, appId, 'x'.repeat(100_001));
+    expect(calls.copyText).toEqual([['Thank you, Priya.']]);
+  });
+});
