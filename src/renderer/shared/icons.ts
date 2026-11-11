@@ -25,6 +25,7 @@ export const icons = {
   chevronRight: 'M6 3.5L10.5 8 6 12.5',
   arrowDown: 'M8 3v9M4 8.5l4 4 4-4',
   close: 'M4 4l8 8M12 4l-8 8',
+  plus: 'M8 3.5v9M3.5 8h9',
   minimize: 'M3.5 8h9',
   maximize: 'M4.5 3.5h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z',
   info: 'M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0zM8 7.5V11M8 5h.01',

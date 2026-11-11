@@ -12,6 +12,7 @@ import { ago } from '../../shared/use-now';
 import AnswerBody from './AnswerBody.vue';
 import HistoryPager from './HistoryPager.vue';
 import KindBadge from './KindBadge.vue';
+import ScreenshotStrip from './ScreenshotStrip.vue';
 
 const props = defineProps<{
   answer: AnswerView;
@@ -24,8 +25,10 @@ const props = defineProps<{
   stoppedBefore: number | null;
   now: number;
   compact: boolean;
+  /** A screenshot the answer read can be attached again: a session runs, and the question has room. */
+  canAttach?: boolean;
 }>();
-const emit = defineEmits<{ previous: []; next: []; live: []; retry: [] }>();
+const emit = defineEmits<{ previous: []; next: []; live: []; retry: []; attach: [id: string] }>();
 
 const body = ref<HTMLElement | null>(null);
 /** At the bottom: what arrives scrolls into view. */
@@ -101,6 +104,12 @@ onBeforeUnmount(() => resizes?.disconnect());
       <p v-if="stoppedBefore !== null && !compact" class="when">
         The answer before stopped early. It is kept at {{ stoppedBefore }} of {{ total }}.
       </p>
+      <ScreenshotStrip
+        v-if="!compact && answer.screenshotIds.length > 0"
+        :ids="answer.screenshotIds"
+        :can-attach="canAttach ?? false"
+        @attach="(id) => emit('attach', id)"
+      />
     </header>
 
     <div v-if="answer.ending === 'hidden'" class="hidden" role="status">

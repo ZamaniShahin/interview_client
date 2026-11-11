@@ -37,6 +37,14 @@ export interface AnswerView {
   /** The server's plain message when the answer failed. Never kept for a hidden answer. */
   failureMessage: string | null;
   startedAtMs: number;
+  /** The screenshots this answer reads, by the client's ids, in the order taken (3.6); empty for one with none. */
+  screenshotIds: string[];
+}
+
+/** The screenshots waiting for the next answer (3.6): the client's ids, in the order attached, and how many fit. */
+export interface Attachments {
+  ids: string[];
+  max: number;
 }
 
 export interface LiveViewState {
@@ -50,6 +58,8 @@ export interface LiveViewState {
   capture: CaptureStatus;
   /** The interviewer's finished words, and the phrase still being spoken. */
   heard: { finished: string; live: string };
+  /** The screenshots attached for the next answer, as the server last said (`Attachments`). */
+  attachments: Attachments;
   /** This interview's answers, oldest first. */
   answers: AnswerView[];
   /** The answer being looked at, by index; null follows the newest. */
@@ -78,6 +88,8 @@ export const initialLiveState: LiveViewState = {
   listening: 'ok',
   capture: idleCapture,
   heard: { finished: '', live: '' },
+  // Five a question (client docs/03, "Screenshots") until the server says otherwise.
+  attachments: { ids: [], max: 5 },
   answers: [],
   viewing: null,
   notice: null,

@@ -296,7 +296,8 @@ describe('the setup, step by step (1.14)', () => {
     await click('Skip for now');
     await click('Continue');
 
-    expect(wrapper.findAll('.key')).toHaveLength(7);
+    // One row each, the screenshot's key (3.6) the eighth.
+    expect(wrapper.findAll('.key')).toHaveLength(8);
     expect(wrapper.text()).toContain('Only Ctrl+Shift+Space moves the keyboard to Sotto.');
     await click('Continue');
     expect(heading()).toBe('Test hiding');

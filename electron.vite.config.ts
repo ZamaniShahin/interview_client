@@ -51,6 +51,8 @@ export default defineConfig({
           overlay: resolve('src/preload/overlay.ts'),
           app: resolve('src/preload/app.ts'),
           capture: resolve('src/preload/capture.ts'),
+          // The screenshot region selector (3.6): three calls, nothing else.
+          selector: resolve('src/preload/selector.ts'),
         },
       },
     },
@@ -65,6 +67,8 @@ export default defineConfig({
           app: resolve('src/renderer/app/index.html'),
           // The hidden capture window (1.11); its AudioWorklet is built from main.ts's `?worker&url` import.
           capture: resolve('src/renderer/capture/index.html'),
+          // The screenshot region selector (3.6).
+          selector: resolve('src/renderer/selector/index.html'),
         },
       },
     },

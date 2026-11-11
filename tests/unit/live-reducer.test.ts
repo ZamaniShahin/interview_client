@@ -14,8 +14,13 @@ const stamp = () => ({ Seq: ++seq, AtMs: 1_800_000_000_000 + seq });
 const ev = (event: LiveEvent): LiveAction => ({ type: 'event', event });
 const run = (...actions: LiveAction[]) => actions.reduce(reduceLive, { ...initialLiveState });
 
-const start = (id: string, question = 'How does Kafka keep messages in order?') =>
-  ev({ name: 'answerStart', e: { ...stamp(), AnswerId: id, Question: question, Kind: AnswerKind.Spoken, Instruction: null } });
+const start = (id: string, question = 'How does Kafka keep messages in order?', screenshotIds: string[] = []) =>
+  ev({
+    name: 'answerStart',
+    e: { ...stamp(), AnswerId: id, Question: question, Kind: AnswerKind.Spoken, Instruction: null, ScreenshotIds: screenshotIds },
+  });
+const attachments = (ids: string[], max = 5) =>
+  ev({ name: 'attachments', e: { ...stamp(), Items: ids.map((Id) => ({ Id })), Max: max } });
 const delta = (id: string, text: string) => ev({ name: 'answerDelta', e: { ...stamp(), AnswerId: id, Text: text } });
 const done = (id: string) => ev({ name: 'answerDone', e: { ...stamp(), AnswerId: id } });
 const cancelled = (id: string) => ev({ name: 'answerCancelled', e: { ...stamp(), AnswerId: id } });
@@ -126,16 +131,57 @@ describe('the live view state', () => {
           ContextReady: false,
           Heard: 'So say the cache',
           LastSeq: 900,
+          Attachments: [{ Id: 'shot-a' }],
+          MaxAttachments: 3,
+          PrepDoc: null,
+          CustomInstructionsChars: 0,
+          PreparedInPrompt: [],
+          Practice: null,
         },
       },
     );
     expect(s).toMatchObject({ phase: 'live', auto: false, autoAvailable: false, lastSeq: 900 });
     expect(s.heard.finished).toBe('So say the cache');
+    expect(s.attachments).toEqual({ ids: ['shot-a'], max: 3 });
   });
 
   it('keeps the minutes and the tier when a new session starts', () => {
     const s = run({ type: 'account', minutesLeft: 187, tier: 'smart' }, start('a'), { type: 'starting' });
     expect(s).toMatchObject({ minutesLeft: 187, tier: 'smart', answers: [], phase: 'starting' });
+  });
+});
+
+describe('the screenshots in the view (3.6)', () => {
+  it('starts with none attached, five a question', () => {
+    expect(run().attachments).toEqual({ ids: [], max: 5 });
+  });
+
+  it('follows what the server says is attached, in its order, and how many fit', () => {
+    expect(run(attachments(['shot-b', 'shot-a'], 3)).attachments).toEqual({ ids: ['shot-b', 'shot-a'], max: 3 });
+    expect(run(attachments(['shot-a']), attachments([])).attachments).toEqual({ ids: [], max: 5 });
+  });
+
+  it("keeps the screenshots an answer reads with it, and none for an answer without", () => {
+    const s = run(start('a', 'What is on the screen', ['shot-a', 'shot-b']), start('b'));
+    expect(s.answers.map((a) => a.screenshotIds)).toEqual([['shot-a', 'shot-b'], []]);
+  });
+
+  it('lets go of what was attached on start over, and of everything on a new session', () => {
+    const cleared = run(attachments(['shot-a'], 4), ev({ name: 'cleared', e: stamp() }));
+    expect(cleared.attachments).toEqual({ ids: [], max: 4 });
+    expect(run(attachments(['shot-a']), { type: 'starting' }).attachments).toEqual({ ids: [], max: 5 });
+  });
+
+  it('takes an attachments event replayed after a resume only once', () => {
+    const first = attachments(['shot-a']);
+    expect(run(first, attachments([]), first).attachments.ids).toEqual([]);
+  });
+
+  it('moves past practice events without drawing them yet', () => {
+    const before = run(start('a'));
+    const s = reduceLive(before, ev({ name: 'mockState', e: { ...stamp(), Status: null } }));
+    expect(s).toEqual({ ...before, lastSeq: s.lastSeq });
+    expect(s.lastSeq).toBeGreaterThan(before.lastSeq);
   });
 });
 

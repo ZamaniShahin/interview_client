@@ -289,7 +289,8 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('your data against the local s
 
       // The copy: a section per kind of record, this user's and no one else's.
       const data = (await desk.exportData()) as { sections: Record<string, Record<string, unknown>> };
-      expect(Object.keys(data.sections)).toEqual(['account', 'billing', 'sessions', 'user']);
+      // The jobs' counts too since the server's 3.4 (a debrief and prep drafts each period).
+      expect(Object.keys(data.sections)).toEqual(['account', 'billing', 'jobs', 'sessions', 'user']);
       expect(data.sections['user']!['email']).toBe(email);
       expect((data.sections['account']!['plan'] as { id: string }).id).toBe('trial');
       expect(JSON.stringify(data)).not.toMatch(/publicKey|fingerprint|thumbprint/i);

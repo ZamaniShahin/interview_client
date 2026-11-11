@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // The overlay: the product. It works with no click at all; when clicked into, a ring shows it has the keyboard, and
 // Esc gives the keyboard back to the call. Below 300 px tall it lays itself out compact: the bar and the answer.
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { AskMode } from '../../shared/contracts/sotto-contracts';
+import type { CommandResult, OverlayHotkey } from '../../shared/ipc';
 import { endedText, overlayBanner } from '../../shared/live/copy';
 import SButton from '../shared/components/SButton.vue';
 import SConfirm from '../shared/components/SConfirm.vue';
@@ -11,6 +12,7 @@ import { useNow } from '../shared/use-now';
 import { useSettings } from '../shared/use-settings';
 import AnswerCard from './components/AnswerCard.vue';
 import AskBar from './components/AskBar.vue';
+import AttachmentTray from './components/AttachmentTray.vue';
 import HeardPanel from './components/HeardPanel.vue';
 import MoreMenu from './components/MoreMenu.vue';
 import OverlayBanner from './components/OverlayBanner.vue';
@@ -19,6 +21,7 @@ import ResizeGrip from './components/ResizeGrip.vue';
 import StatusStrip from './components/StatusStrip.vue';
 import { useLiveStore } from './live-store';
 import type { MoreAction } from './more-actions';
+import { keepScreenshotImages } from './use-screenshots';
 
 const live = useLiveStore();
 const { settings, update: updateSettings } = useSettings(window.overlayApi);
@@ -33,8 +36,29 @@ const s = computed(() => live.state);
 const ended = computed(() => s.value.phase === 'ended');
 const banner = computed(() => overlayBanner(s.value));
 const controlsDisabled = computed(() => s.value.phase !== 'live');
+/** MANUAL, or AUTO without the documents: answers come only when asked, and a screenshot waits for one. */
+const manual = computed(() => !s.value.auto || !s.value.autoAvailable);
+/** A screenshot under an answer can be attached again: a session runs, and the question has room. */
+const canAttach = computed(() => s.value.phase === 'live' && s.value.attachments.ids.length < s.value.attachments.max);
+
+const askBar = ref<InstanceType<typeof AskBar> | null>(null);
+const capture = (hint: string | null): Promise<CommandResult> => live.command({ type: 'capture', hint });
+
+/** A hotkey main hands over: the screenshot takes what the ask bar holds as its note. */
+function onHotkey(hotkey: OverlayHotkey): void {
+  if (hotkey !== 'capture' || ended.value) return;
+  if (askBar.value) void askBar.value.captureNow();
+  else void capture(null);
+}
+
+// The images the overlay holds are only those something on screen still names.
+watch(
+  () => [...s.value.attachments.ids, ...s.value.answers.flatMap((a) => a.screenshotIds)],
+  (ids) => keepScreenshotImages(ids),
+);
 
 let stopListening: (() => void) | null = null;
+let stopHotkeys: (() => void) | null = null;
 const onFocus = () => (hasKeyboard.value = true);
 const onBlur = () => (hasKeyboard.value = false);
 const onResize = () => (compact.value = window.innerHeight < 300);
@@ -51,6 +75,7 @@ onMounted(async () => {
   window.addEventListener('blur', onBlur);
   window.addEventListener('resize', onResize);
   document.addEventListener('keydown', onKeydown);
+  stopHotkeys = window.overlayApi.onHotkey(onHotkey);
   stopListening = await live.connect();
 });
 
@@ -59,6 +84,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('blur', onBlur);
   window.removeEventListener('resize', onResize);
   document.removeEventListener('keydown', onKeydown);
+  stopHotkeys?.();
   stopListening?.();
 });
 
@@ -155,10 +181,12 @@ function confirm(): void {
       :stopped-before="live.stoppedBefore"
       :now="now"
       :compact="compact"
+      :can-attach="canAttach"
       @previous="view(live.visibleIndex - 1)"
       @next="view(live.visibleIndex + 1)"
       @live="view(null)"
       @retry="live.command({ type: 'trigger', text: null })"
+      @attach="(id) => live.command({ type: 'reattachScreenshot', id })"
     />
     <p v-else-if="!ended" class="empty">
       <b>{{ s.phase === 'starting' ? 'Starting your session…' : 'Ready.' }}</b>
@@ -189,13 +217,24 @@ function confirm(): void {
         <p class="small">The answers stay readable until you close this.</p>
         <SButton size="sm" @click="hide">Close</SButton>
       </div>
-      <AskBar
-        v-else
-        :send="send"
-        :disabled="s.phase === 'starting'"
-        :waiting="s.phase === 'reconnecting'"
-        :manual="!s.auto || !s.autoAvailable"
-      />
+      <template v-else>
+        <AttachmentTray
+          v-if="s.attachments.ids.length > 0"
+          :ids="s.attachments.ids"
+          :max="s.attachments.max"
+          :manual="manual"
+          @remove="(id) => live.command({ type: 'detachScreenshot', id })"
+        />
+        <AskBar
+          ref="askBar"
+          :send="send"
+          :capture="capture"
+          :disabled="s.phase === 'starting'"
+          :waiting="s.phase === 'reconnecting'"
+          :manual="manual"
+          :attached="s.attachments.ids.length"
+        />
+      </template>
     </template>
 
     <ResizeGrip @resize="resize" />

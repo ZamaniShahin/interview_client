@@ -1,8 +1,19 @@
 // The app's core process. It owns the windows, sign-in, the account, the session and its connection.
 // Renderers only draw: they reach main through the checked channels in src/shared/ipc.ts.
 import { writeFile } from 'node:fs/promises';
-import { app, clipboard, dialog, Menu, session as electronSession, shell, type BrowserWindow } from 'electron';
-import { hostname } from 'node:os';
+import {
+  app,
+  clipboard,
+  desktopCapturer,
+  dialog,
+  Menu,
+  screen,
+  session as electronSession,
+  shell,
+  type BrowserWindow,
+  type Display,
+} from 'electron';
+import { hostname, release } from 'node:os';
 import { join } from 'node:path';
 import type { AccountView } from '../shared/account';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
@@ -39,6 +50,10 @@ import { createLiveTransport } from './connection/live-connection';
 import { DeviceIdentity } from './device/device-identity';
 import { machineFingerprint } from './device/fingerprint';
 import { registerIpc } from './ipc/register';
+import { RegionSelector } from './screenshots/region-selector';
+import { ScreenCapture, type CaptureOutcome } from './screenshots/screen-capture';
+import { ScreenshotShelf } from './screenshots/screenshot-shelf';
+import type { ShotImage } from './screenshots/shot-image';
 import { PreviewBilling, previewPaymentMs } from './preview/billing';
 import { HubDriver, type HubDriverDependencies } from './session/hub-driver';
 import { SoundCheck } from './session/sound-check';
@@ -84,16 +99,31 @@ const alive = (win: BrowserWindow | null): win is BrowserWindow => win !== null 
 
 const settings = new SettingsStore((changed) => applySettings(changed));
 
-const session = new SessionController((state) => {
-  if (alive(overlayWindow)) overlayWindow.webContents.send(IpcChannels.overlayState, state);
-  if (state.phase === 'ended') {
-    stopHotkeys();
-    capture.stop();
-    // Why it ended stays for the window, which offers minutes after a session they ran out in (F8 · a).
-    if (state.endReason && appState.lastSessionEnd !== state.endReason)
-      setAppState({ lastSessionEnd: state.endReason });
-  }
+// Screenshots (3.6): the region selector, taking the picture, and the session's copies, kept in memory only.
+const selector = new RegionSelector();
+const shelf = new ScreenshotShelf();
+const screenCapture = new ScreenCapture<Display>({
+  display: () => screen.getDisplayNearestPoint(screen.getCursorScreenPoint()),
+  grab: grabDisplay,
+  select: (display, picture) => selector.select(display, picture),
+  selectorSupported: () => windowsLeavesOutOfCaptures() || process.platform === 'darwin',
+  hideForGrab,
 });
+
+const session = new SessionController(
+  (state) => {
+    if (alive(overlayWindow)) overlayWindow.webContents.send(IpcChannels.overlayState, state);
+    if (state.phase === 'ended') {
+      stopHotkeys();
+      capture.stop();
+      selector.cancel();
+      // Why it ended stays for the window, which offers minutes after a session they ran out in (F8 · a).
+      if (state.endReason && appState.lastSessionEnd !== state.endReason)
+        setAppState({ lastSessionEnd: state.endReason });
+    }
+  },
+  { capture: captureScreen, shelf },
+);
 
 // A purchase finished in the browser shows in the account by itself (F8 · b, c): read again until it does.
 const payments = new PaymentWatch({
@@ -645,6 +675,8 @@ function hubDriver(
     accessToken: () => signedIn.accessToken(),
     connectProof: (accessToken) => service.connectProof(accessToken),
     proof: (method, accessToken) => service.hubProof(method, accessToken),
+    // A session that moves gets the screenshots attached here again, from the copies kept in memory (3.6).
+    screenshot: (id) => shelf.get(id)?.bytes ?? null,
     ...options,
   });
 }
@@ -733,6 +765,7 @@ function openOverlay(): void {
 function closeSession(): void {
   stopHotkeys();
   capture.stop();
+  selector.cancel();
   session.reset();
   if (alive(overlayWindow)) overlayWindow.destroy();
   overlayWindow = null;
@@ -778,6 +811,60 @@ function stepAnswer(delta: number): void {
   if (index !== null) session.dispatch({ type: 'view', index: index + delta });
 }
 
+/**
+ * Windows 10 2004 (build 19041) and later leave a protected window out of every capture; before, it shows black. The
+ * region selector is offered only where it stays out of the interviewer's view (v1).
+ */
+function windowsLeavesOutOfCaptures(): boolean {
+  return process.platform === 'win32' && Number(release().split('.')[2] ?? 0) >= 19041;
+}
+
+/** desktopCapturer has no time limit of its own. */
+const grabTimeoutMs = 8_000;
+
+/** The display's picture at its full resolution in pixels (3.6, v1's grabDisplay). */
+async function grabDisplay(display: Display): Promise<ShotImage> {
+  const size =
+    process.platform === 'win32'
+      ? screen.dipToScreenRect(null, display.bounds)
+      : {
+          width: Math.round(display.bounds.width * display.scaleFactor),
+          height: Math.round(display.bounds.height * display.scaleFactor),
+        };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const sources = await Promise.race([
+    desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: size.width, height: size.height } }),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('The screen capture timed out.')), grabTimeoutMs);
+    }),
+  ]).finally(() => clearTimeout(timer));
+  // A source's display id is empty under some capturers (remote desktop, some virtual machines): then only a single
+  // screen is taken, never a guess between several.
+  const source =
+    sources.find((s) => s.display_id !== '' && Number(s.display_id) === display.id) ??
+    (sources.length === 1 ? sources[0] : undefined);
+  if (!source) throw new Error("Couldn't tell which screen to capture.");
+  return source.thumbnail;
+}
+
+/** Where content protection would show the overlay black in the picture, it steps away for the grab (v1). */
+async function hideForGrab(): Promise<(() => void) | null> {
+  if (!alive(overlayWindow) || !overlayWindow.isVisible() || windowsLeavesOutOfCaptures()) return null;
+  const win = overlayWindow;
+  win.hide();
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  return () => {
+    if (alive(win)) win.showInactive();
+  };
+}
+
+/** A screenshot for the session; asked for with the overlay hidden, it comes back, never focused, for the answer. */
+async function captureScreen(): Promise<CaptureOutcome> {
+  const taken = await screenCapture.capture();
+  if (taken.ok && alive(overlayWindow) && !overlayWindow.isVisible()) overlayWindow.showInactive();
+  return taken;
+}
+
 function startHotkeys(): void {
   stopHotkeys();
   const { unregister } = registerSessionHotkeys({
@@ -793,9 +880,17 @@ function startHotkeys(): void {
       onOverlayWindow({ type: 'compact', on: !isCompact });
     },
     hide: () => {
+      // The panic key: a screenshot being chosen is given up too.
+      selector.cancel();
       if (!alive(overlayWindow)) return;
       if (overlayWindow.isVisible()) overlayWindow.hide();
       else overlayWindow.showInactive();
+    },
+    capture: () => {
+      // Pressed again while the selector shows: the whole display, the fast way (v1).
+      if (selector.current) selector.current.finish({ kind: 'full' });
+      // Otherwise the overlay takes it, since it holds what was typed: the screenshot's note in AUTO.
+      else if (alive(overlayWindow)) overlayWindow.webContents.send(IpcChannels.overlayHotkey, 'capture');
     },
   });
   unregisterHotkeys = unregister;
@@ -894,6 +989,8 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       exportData,
       deleteAccount,
       dismiss,
+      screenshotImage: (id) => shelf.dataUrl(id),
+      selector: () => selector.current,
     });
 
     const win = createAppWindow();
@@ -910,6 +1007,8 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
   });
 
   app.on('window-all-closed', () => app.quit());
+  // Never a screenshot selector left over the screen behind a quitting app.
+  app.on('before-quit', () => selector.cancel());
   app.on('will-quit', () => {
     payments.stop();
     stopHotkeys();

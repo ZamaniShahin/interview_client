@@ -73,6 +73,8 @@ export const ErrorCodes = {
     TrialNotAvailable: "trial_not_available",
     /** Not enough credit left for this; a session ends when it runs out (docs/05 §12). */
     CreditExhausted: "credit_exhausted",
+    /** The plan's allowance for this is used up: a session's screenshots so far (docs/05 §3), later a month's jobs. */
+    QuotaExceeded: "quota_exceeded",
   },
   /** The live session's state (docs/03 §7). */
   Session: {
@@ -87,6 +89,10 @@ export const ErrorCodes = {
      * that one (`opened_elsewhere`) and starts here.
      */
     ActiveElsewhere: "session_active_elsewhere",
+    /** A practice interview is running: the copilot answers again once it is stopped (docs/02 §12). */
+    PracticeRunning: "practice_running",
+    /** Practice needs the résumé or the job description first: its questions are written from them. */
+    NoContext: "no_context",
   },
   /** The AI path (docs/03 §7). */
   Ai: {
@@ -108,6 +114,18 @@ export const ErrorCodes = {
     NoBillingCustomer: "no_billing_customer",
   },
 } as const;
+
+/** Why a `NoticeEvent` was sent. Published: spellings never change. */
+export const NoticeCodes = {
+  /** A screenshot query found the question's screenshots attached already: it answered with those, not the new one. */
+  AttachmentsFull: "attachments_full",
+  /**
+   * Writing a screen turn's notes failed twice: a later question asked without a new screenshot won't know what it
+   * showed (docs/02 §7).
+   */
+  ScreenNotesFailed: "screen_notes_failed",
+} as const;
+export type NoticeCode = (typeof NoticeCodes)[keyof typeof NoticeCodes];
 
 /** Why a session ended (`SessionEndedEvent.Reason`, docs/03 §4). Published: spellings never change. */
 export const SessionEndReasons = {
@@ -184,6 +202,48 @@ export const AskMode = {
 } as const;
 export type AskMode = (typeof AskMode)[keyof typeof AskMode];
 
+export const PracticeDifficulty = {
+  Easy: 0,
+  Medium: 1,
+  Hard: 2,
+} as const;
+export type PracticeDifficulty = (typeof PracticeDifficulty)[keyof typeof PracticeDifficulty];
+
+/** What a practice interview asks about (v1's focuses). */
+export const PracticeFocus = {
+  /** Behavioral and technical questions mixed. */
+  Mixed: 0,
+  Behavioral: 1,
+  /** About the job's skills, tools and systems; the answer bank's questions are left out. */
+  Technical: 2,
+} as const;
+export type PracticeFocus = (typeof PracticeFocus)[keyof typeof PracticeFocus];
+
+/** Where a practice question came from: written by the model, one of the answer bank's, or one the user chose (Q22). */
+export const PracticeQuestionSource = {
+  Model: 0,
+  Bank: 1,
+  Chosen: 2,
+} as const;
+export type PracticeQuestionSource = (typeof PracticeQuestionSource)[keyof typeof PracticeQuestionSource];
+
+/** Where a practice interview is: waiting for its next question, for the answer, for the score, or on the feedback. */
+export const PracticeState = {
+  Off: 0,
+  Preparing: 1,
+  Answering: 2,
+  Scoring: 3,
+  Feedback: 4,
+} as const;
+export type PracticeState = (typeof PracticeState)[keyof typeof PracticeState];
+
+/** A main question, or the one follow-up a weak main answer gets. */
+export const PracticeTurnKind = {
+  Main: 0,
+  FollowUp: 1,
+} as const;
+export type PracticeTurnKind = (typeof PracticeTurnKind)[keyof typeof PracticeTurnKind];
+
 export const SessionPhase = {
   Starting: 0,
   Live: 1,
@@ -226,6 +286,10 @@ export interface AnswerFailedEvent {
   Message: string;
 }
 
+/**
+ * An answer begins. `ScreenshotIds`: the screenshots it reads, in the order taken (empty for one with none). A screen
+ * turn's `Question` is its label, what the interview remembers it by; a Tip on one reads its screenshots again.
+ */
 export interface AnswerStartEvent {
   Seq: number;
   AtMs: number;
@@ -233,12 +297,26 @@ export interface AnswerStartEvent {
   Question: string;
   Kind: AnswerKind;
   Instruction: string | null;
+  ScreenshotIds: Array<string>;
 }
 
 export interface AskRequest {
   CommandId: Guid;
   Mode: AskMode;
   Text: string;
+}
+
+/** A screenshot waiting for the next answer. The server never sends an image back: the client keeps its own copy. */
+export interface AttachedScreenshot {
+  Id: string;
+}
+
+/** The screenshots waiting for the next answer (`Items`, in the order attached) and how many one question can take. */
+export interface AttachmentsEvent {
+  Seq: number;
+  AtMs: number;
+  Items: Array<AttachedScreenshot>;
+  Max: number;
 }
 
 /** One 100 ms frame of PCM16 mono at 24 kHz; `Seq` counts frames, so a resend after a reconnect is dropped. */
@@ -258,6 +336,11 @@ export interface CommandRequest {
   CommandId: Guid;
 }
 
+export interface DetachScreenshotRequest {
+  CommandId: Guid;
+  Id: string;
+}
+
 /**
  * The account's plan or minutes changed: a purchase, a renewal, a trial, a refund (docs/05 §9). `Token` is the new
  * signed snapshot, the one `GET /api/v1/me/entitlements` returns (docs/05 §10), for display only. The minutes aren't in
@@ -270,6 +353,94 @@ export interface EntitlementsUpdatedEvent {
   Token: string;
 }
 
+/**
+ * A practice answer: what the client transcribed of the user's speech (`Spoken`, with its `Metrics`) or what they
+ * typed. The server never hears the user. At most 20,000 characters, of which the first 6,000 are scored; an empty one
+ * is asked for again, in `MockState`'s error.
+ */
+export interface MockAnswerRequest {
+  CommandId: Guid;
+  Text: string;
+  Spoken: boolean;
+  Metrics: PracticeMetrics | null;
+}
+
+/**
+ * A practice answer scored: the score (1 to 10, or null when the model gave none), up to 2 things that were good, up to
+ * 3 to improve, a stronger answer to say, and the user's prepared answer for a bank question. `Raw`: the model answered
+ * in prose rather than the shape asked for, kept as the one thing to improve.
+ */
+export interface MockFeedbackEvent {
+  Seq: number;
+  AtMs: number;
+  N: number;
+  Kind: PracticeTurnKind;
+  Question: string;
+  Answer: string;
+  Spoken: boolean;
+  Metrics: PracticeMetrics | null;
+  Score: number | null;
+  Good: Array<string>;
+  Improve: Array<string>;
+  ModelAnswer: string;
+  Prepared: string;
+  Raw: boolean;
+}
+
+/** A practice question asked: the `N`th, the `MainN`th main one of `Total`. */
+export interface MockQuestionEvent {
+  Seq: number;
+  AtMs: number;
+  N: number;
+  MainN: number;
+  Total: number;
+  Kind: PracticeTurnKind;
+  Question: string;
+  Source: PracticeQuestionSource;
+  Difficulty: PracticeDifficulty;
+}
+
+/**
+ * Starts a practice interview (docs/02 §12): `Count` main questions (1 to 10) on `Focus`, or the `Questions` chosen to
+ * practice (at most 10, 400 characters each), which then set the count (Q22).
+ */
+export interface MockStartRequest {
+  CommandId: Guid;
+  Count: number;
+  Focus: PracticeFocus;
+  Questions: Array<string> | null;
+}
+
+/** Practice's state: `Status` is null when no practice interview runs. */
+export interface MockStateEvent {
+  Seq: number;
+  AtMs: number;
+  Status: PracticeStatus | null;
+}
+
+/**
+ * A practice interview's summary (v1's): the questions asked and answered, the average score, the best and the worst
+ * (by `N`; with two scored answers or more), the delivery from the spoken answers (talk time, pace once there is 10 s
+ * of it, filler words), the focus and difficulty it ended on, and up to 3 tips, from the weakest answers first.
+ */
+export interface MockSummaryEvent {
+  Seq: number;
+  AtMs: number;
+  Asked: number;
+  Answered: number;
+  Average: number | null;
+  Turns: Array<PracticeTurnSummary>;
+  Best: number | null;
+  Worst: number | null;
+  TalkSeconds: number;
+  Wpm: number | null;
+  Fillers: number;
+  FillersPer100Words: number | null;
+  Focus: PracticeFocus;
+  Difficulty: PracticeDifficulty;
+  Tips: Array<string>;
+}
+
 export interface NoticeEvent {
   Seq: number;
   AtMs: number;
@@ -277,11 +448,84 @@ export interface NoticeEvent {
   Text: string;
 }
 
+/** What the client measured of a spoken answer on the device: talk time, words, pace and filler words. */
+export interface PracticeMetrics {
+  TalkSeconds: number;
+  Words: number;
+  Wpm: number | null;
+  Fillers: number;
+}
+
+/**
+ * Where a practice interview is: its `State`, the questions asked (`N`, follow-ups included) and the main ones of
+ * `Total`, its focus and difficulty now, `Last` on the final feedback (the client offers the results, not a next
+ * question), the question being answered or scored, and what went wrong, if something did.
+ */
+export interface PracticeStatus {
+  State: PracticeState;
+  N: number;
+  MainN: number;
+  Total: number;
+  Focus: PracticeFocus;
+  Difficulty: PracticeDifficulty;
+  Last: boolean;
+  Question: string;
+  Error: string | null;
+}
+
+/** One question of a practice interview, in its summary. */
+export interface PracticeTurnSummary {
+  N: number;
+  Kind: PracticeTurnKind;
+  Question: string;
+  Source: PracticeQuestionSource;
+  Score: number | null;
+  Answered: boolean;
+}
+
+/** The prep doc a session holds: its file's name, its length in characters, and whether the client cut it. */
+export interface PrepDocSummary {
+  Name: string;
+  Chars: number;
+  Cut: boolean;
+}
+
+/**
+ * An answer the user prepared (the answer bank lives on the client): the question first, then other ways it gets asked
+ * (at most 6 in all, 300 characters each), and the answer (at most 4,000 characters). `Id` is the client's own, at most
+ * 40 characters: the snapshot names the ones that fit the prompt by it.
+ */
+export interface PreparedAnswer {
+  Id: string;
+  Phrasings: Array<string>;
+  Answer: string;
+}
+
 export interface ResumeSessionRequest {
   CommandId: Guid;
   SessionId: Guid;
   LastSeq: number;
   DeviceProof: string;
+}
+
+/** A screenshot to answer at once, with the user's note on it (`Hint`, at most 500 characters). */
+export interface ScreenshotQueryRequest {
+  CommandId: Guid;
+  Id: string;
+  Bytes: Uint8Array;
+  Hint: string | null;
+}
+
+/**
+ * A screenshot (docs/03 §6): the PNG or JPEG bytes as they are, which the server reads the format from (it is never
+ * told one), at most 2 MB and 2,048 pixels on either edge. `Id` is the client's own name for it, at most 40 characters:
+ * `AttachmentsEvent` and `AnswerStartEvent.ScreenshotIds` name it by that. An id attached already is replaced, in its
+ * place.
+ */
+export interface ScreenshotRequest {
+  CommandId: Guid;
+  Id: string;
+  Bytes: Uint8Array;
 }
 
 export interface SessionEndedEvent {
@@ -312,6 +556,14 @@ export interface SessionResumed {
   LastSeq: number;
 }
 
+/**
+ * One snapshot of the session, to redraw after a (re)connect. `Attachments` are the screenshots waiting for the next
+ * answer and `MaxAttachments` how many one question can take. A session that moved to another instance has none: images
+ * are never saved, so the client attaches them again. `PrepDoc` is the prep doc it holds, or null;
+ * `CustomInstructionsChars` how long its custom instructions are; `PreparedInPrompt` the ids of the prepared answers
+ * that fit the prompt's budget (v1's 12,000 characters, in the bank's order), the others matched on the client only.
+ * `Practice` is where a practice interview is, or null when none runs.
+ */
 export interface SessionSnapshot {
   SessionId: Guid;
   Phase: SessionPhase;
@@ -320,6 +572,12 @@ export interface SessionSnapshot {
   ContextReady: boolean;
   Heard: string;
   LastSeq: number;
+  Attachments: Array<AttachedScreenshot>;
+  MaxAttachments: number;
+  PrepDoc: PrepDocSummary | null;
+  CustomInstructionsChars: number;
+  PreparedInPrompt: Array<string>;
+  Practice: PracticeStatus | null;
 }
 
 export interface SessionStarted {
@@ -340,6 +598,29 @@ export interface SetModeRequest {
   CommandId: Guid;
   Auto: boolean | null;
   Paused: boolean | null;
+}
+
+/**
+ * The user's preferences for every answer (docs/03 §3): custom instructions (at most 4,000 characters) and the answer
+ * bank's enabled entries (at most 100), in the bank's order. Omitted values stay as they are; an empty one clears.
+ */
+export interface SetPreferencesRequest {
+  CommandId: Guid;
+  CustomInstructions: string | null;
+  PreparedAnswers: Array<PreparedAnswer> | null;
+}
+
+/**
+ * The interview's prep doc (docs/03 §3, §6): the text the client took from the user's file, with the file's name (at
+ * most 200 characters), at most 100,000 characters. `Cut`: the client cut a longer one at a line break, so the model is
+ * told it has only the start (v1's note). No text takes the prep doc away. A new interview's documents (`SetContext`)
+ * leave it as it is, as v1 did.
+ */
+export interface SetPrepDocRequest {
+  CommandId: Guid;
+  Name: string | null;
+  Text: string | null;
+  Cut: boolean;
 }
 
 export interface SpeechStartedEvent {
@@ -407,12 +688,45 @@ export interface LiveHub {
   uploadAudio(frames: StreamSubject<AudioFrame>): Promise<void>;
   /** A new interview: the documents as text (the client parses the files). */
   setContext(request: SetContextRequest): Promise<Ack>;
+  /** The interview's prep doc, as text, or none. The same interview: what it remembers stays. */
+  setPrepDoc(request: SetPrepDocRequest): Promise<Ack>;
+  /**
+   * The user's custom instructions and the answer bank's enabled entries, for every answer. The same interview: what it
+   * remembers stays. Which prepared answers fit the prompt, `LiveHub.getState` says.
+   */
+  setPreferences(request: SetPreferencesRequest): Promise<Ack>;
   setMode(request: SetModeRequest): Promise<Ack>;
   /** Answer now: the given text, or the question heard so far. */
   trigger(request: TriggerRequest): Promise<Ack>;
   ask(request: AskRequest): Promise<Ack>;
+  /**
+   * Keeps a screenshot for the next answer (MANUAL's capture): the trigger, a typed question or Tip (as its note), or
+   * AUTO's next answer takes every one attached. `too_large` once the plan's screenshots per question are attached;
+   * `quota_exceeded` once the session has had its plan's screenshots.
+   */
+  attachScreenshot(request: ScreenshotRequest): Promise<Ack>;
+  /** Takes back an attached screenshot; an id that isn't attached changes nothing. */
+  detachScreenshot(request: DetachScreenshotRequest): Promise<Ack>;
+  /**
+   * AUTO's capture: the screenshot joins any attached and they are answered at once, with the hint and the speech heard
+   * since the last answer. With the question's screenshots already attached, it answers with those and sends a
+   * `Notice`.
+   */
+  screenshotQuery(request: ScreenshotQueryRequest): Promise<Ack>;
   clear(request: CommandRequest): Promise<Ack>;
   clearHeard(request: CommandRequest): Promise<Ack>;
+  /**
+   * Starts a practice interview (docs/02 §12): a count of questions and a focus, or the questions chosen to practice
+   * (Q22). The copilot pauses meanwhile: `practice_running` answers its commands, and what the interviewer says is
+   * ignored. `no_entitlement` on a plan without practice, `no_context` without a résumé or a job description.
+   */
+  mockStart(request: MockStartRequest): Promise<Ack>;
+  /** The answer to the question being asked, as text (the client transcribes speech on the device), to be scored. */
+  mockAnswer(request: MockAnswerRequest): Promise<Ack>;
+  /** After the feedback: the next question, or the summary after the last; also tries a failed question again. */
+  mockNext(request: CommandRequest): Promise<Ack>;
+  /** Ends the practice now, with its summary; the copilot comes back. */
+  mockStop(request: CommandRequest): Promise<Ack>;
   /** One snapshot of the session, after a (re)connect. */
   getState(): Promise<Ack<SessionSnapshot>>;
 }
@@ -436,6 +750,9 @@ export interface LiveClient {
   answerCancelled(e: AnswerEndEvent): void;
   answerFailed(e: AnswerFailedEvent): void;
   cleared(e: ClearedEvent): void;
+  /** The screenshots waiting for the next answer, after each change, and how many one question can take. */
+  attachments(e: AttachmentsEvent): void;
+  /** Something the user should know that changes nothing on screen; `Code` is one of `NoticeCodes`. */
   notice(e: NoticeEvent): void;
   /** A minute was charged: the balance, the session's minutes, and a warning when the balance runs low. */
   usage(e: UsageEvent): void;
@@ -444,6 +761,14 @@ export interface LiveClient {
   sessionEnded(e: SessionEndedEvent): void;
   /** The account's plan or minutes changed: its new signed snapshot, to any connection, session or not. */
   entitlementsUpdated(e: EntitlementsUpdatedEvent): void;
+  /** Practice's state after each change: off, or where the practice interview is. */
+  mockState(e: MockStateEvent): void;
+  /** A practice question is asked: the answer starts now. */
+  mockQuestion(e: MockQuestionEvent): void;
+  /** A practice answer's score, what was good, what to improve, and a stronger answer to say. */
+  mockFeedback(e: MockFeedbackEvent): void;
+  /** The practice interview is over: its summary, computed on the server with no model call. */
+  mockSummary(e: MockSummaryEvent): void;
 }
 
 /** The C# names of `LiveHub`'s methods, which are what goes on the wire. */
@@ -453,11 +778,20 @@ export const LiveHubMethods = {
   endSession: "EndSession",
   uploadAudio: "UploadAudio",
   setContext: "SetContext",
+  setPrepDoc: "SetPrepDoc",
+  setPreferences: "SetPreferences",
   setMode: "SetMode",
   trigger: "Trigger",
   ask: "Ask",
+  attachScreenshot: "AttachScreenshot",
+  detachScreenshot: "DetachScreenshot",
+  screenshotQuery: "ScreenshotQuery",
   clear: "Clear",
   clearHeard: "ClearHeard",
+  mockStart: "MockStart",
+  mockAnswer: "MockAnswer",
+  mockNext: "MockNext",
+  mockStop: "MockStop",
   getState: "GetState",
 } as const;
 
@@ -473,11 +807,16 @@ export const LiveClientMethods = {
   answerCancelled: "AnswerCancelled",
   answerFailed: "AnswerFailed",
   cleared: "Cleared",
+  attachments: "Attachments",
   notice: "Notice",
   usage: "Usage",
   sessionEnding: "SessionEnding",
   sessionEnded: "SessionEnded",
   entitlementsUpdated: "EntitlementsUpdated",
+  mockState: "MockState",
+  mockQuestion: "MockQuestion",
+  mockFeedback: "MockFeedback",
+  mockSummary: "MockSummary",
 } as const;
 
 // ---- Bindings to a SignalR connection, with no dependency of their own --------------------------------------------
@@ -508,11 +847,20 @@ export function createLiveHub(connection: HubConnectionLike): LiveHub {
     endSession: (request) => connection.invoke<Ack>(LiveHubMethods.endSession, request),
     uploadAudio: (frames) => connection.send(LiveHubMethods.uploadAudio, frames),
     setContext: (request) => connection.invoke<Ack>(LiveHubMethods.setContext, request),
+    setPrepDoc: (request) => connection.invoke<Ack>(LiveHubMethods.setPrepDoc, request),
+    setPreferences: (request) => connection.invoke<Ack>(LiveHubMethods.setPreferences, request),
     setMode: (request) => connection.invoke<Ack>(LiveHubMethods.setMode, request),
     trigger: (request) => connection.invoke<Ack>(LiveHubMethods.trigger, request),
     ask: (request) => connection.invoke<Ack>(LiveHubMethods.ask, request),
+    attachScreenshot: (request) => connection.invoke<Ack>(LiveHubMethods.attachScreenshot, request),
+    detachScreenshot: (request) => connection.invoke<Ack>(LiveHubMethods.detachScreenshot, request),
+    screenshotQuery: (request) => connection.invoke<Ack>(LiveHubMethods.screenshotQuery, request),
     clear: (request) => connection.invoke<Ack>(LiveHubMethods.clear, request),
     clearHeard: (request) => connection.invoke<Ack>(LiveHubMethods.clearHeard, request),
+    mockStart: (request) => connection.invoke<Ack>(LiveHubMethods.mockStart, request),
+    mockAnswer: (request) => connection.invoke<Ack>(LiveHubMethods.mockAnswer, request),
+    mockNext: (request) => connection.invoke<Ack>(LiveHubMethods.mockNext, request),
+    mockStop: (request) => connection.invoke<Ack>(LiveHubMethods.mockStop, request),
     getState: () => connection.invoke<Ack<SessionSnapshot>>(LiveHubMethods.getState),
   };
 }
@@ -530,11 +878,16 @@ export function registerLiveClient(connection: HubConnectionLike, client: LiveCl
     [LiveClientMethods.answerCancelled, (e: AnswerEndEvent) => client.answerCancelled(e)],
     [LiveClientMethods.answerFailed, (e: AnswerFailedEvent) => client.answerFailed(e)],
     [LiveClientMethods.cleared, (e: ClearedEvent) => client.cleared(e)],
+    [LiveClientMethods.attachments, (e: AttachmentsEvent) => client.attachments(e)],
     [LiveClientMethods.notice, (e: NoticeEvent) => client.notice(e)],
     [LiveClientMethods.usage, (e: UsageEvent) => client.usage(e)],
     [LiveClientMethods.sessionEnding, (e: SessionEndingEvent) => client.sessionEnding(e)],
     [LiveClientMethods.sessionEnded, (e: SessionEndedEvent) => client.sessionEnded(e)],
     [LiveClientMethods.entitlementsUpdated, (e: EntitlementsUpdatedEvent) => client.entitlementsUpdated(e)],
+    [LiveClientMethods.mockState, (e: MockStateEvent) => client.mockState(e)],
+    [LiveClientMethods.mockQuestion, (e: MockQuestionEvent) => client.mockQuestion(e)],
+    [LiveClientMethods.mockFeedback, (e: MockFeedbackEvent) => client.mockFeedback(e)],
+    [LiveClientMethods.mockSummary, (e: MockSummaryEvent) => client.mockSummary(e)],
   ];
   for (const [method, handler] of handlers) {
     connection.on(method, handler);

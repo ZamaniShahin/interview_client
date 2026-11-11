@@ -1,6 +1,7 @@
 // The overlay's only bridge to main. Sandboxed: it can load nothing but Electron's renderer modules, so it imports
 // channel names and types, never a package. Main checks every payload; this only forwards.
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import type { OverlayHotkey } from '../shared/ipc';
 import { IpcChannels } from '../shared/ipc-channels';
 import type { LiveViewState } from '../shared/live/view-state';
 import type { Settings } from '../shared/settings';
@@ -16,6 +17,12 @@ const api: OverlayApi = {
   command: (command) => ipcRenderer.invoke(IpcChannels.overlayCommand, command),
   window: (action) => ipcRenderer.send(IpcChannels.overlayWindow, action),
   copy: (text) => ipcRenderer.send(IpcChannels.overlayCopy, text),
+  screenshot: (id) => ipcRenderer.invoke(IpcChannels.overlayScreenshot, id),
+  onHotkey: (listener) => {
+    const handler = (_event: IpcRendererEvent, hotkey: OverlayHotkey) => listener(hotkey);
+    ipcRenderer.on(IpcChannels.overlayHotkey, handler);
+    return () => ipcRenderer.removeListener(IpcChannels.overlayHotkey, handler);
+  },
   getSettings: () => ipcRenderer.invoke(IpcChannels.settingsGet),
   setSettings: (patch) => ipcRenderer.invoke(IpcChannels.settingsSet, patch),
   onSettings: (listener) => {

@@ -10,6 +10,8 @@ export const sessionHotkeys = {
   next: 'CommandOrControl+Shift+Right',
   compact: 'CommandOrControl+Shift+M',
   hide: 'CommandOrControl+Shift+H',
+  // v1's screenshot key (3.6); pressed again while the selector shows, it takes the whole display.
+  capture: 'CommandOrControl+Shift+G',
 } as const;
 
 export type HotkeyAction = keyof typeof sessionHotkeys;
@@ -23,6 +25,7 @@ export const hotkeyRows: { label: string; actions: HotkeyAction[] }[] = [
   { label: 'Earlier or later answer', actions: ['previous', 'next'] },
   { label: 'Compact or full view', actions: ['compact'] },
   { label: 'Hide or show the overlay', actions: ['hide'] },
+  { label: 'Screenshot of an area', actions: ['capture'] },
 ];
 
 const keyNames: Record<string, string> = {

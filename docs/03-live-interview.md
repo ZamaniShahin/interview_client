@@ -61,12 +61,13 @@ One small window floats over the call, always on top. It never takes focus from 
 
 Over a limit, the command is refused with the field named; nothing is cut silently.
 
-## Screenshots (Phase 3)
+## Screenshots (built 2026-11-11, 3.6)
 
-- **The user selects a region of the screen** (a coding problem, a diagram) with the region selector, and attaches it to the next question. Up to 5 per question, each at most 2 MB (PNG, JPEG or WebP, at most 2,048 px on the long edge). The app encodes them.
-- **"Ask about this screen"**, with an optional hint (500 characters), answers at once.
+- **The user selects a region of the screen** (a coding problem, a diagram) with the region selector: the screenshot button beside Answer, or Ctrl+Shift+G. The display under the pointer freezes; a click takes all of it, a drag an area, Esc or a right-click nothing. Up to the plan's number per question (5), each at most 2 MB (the app makes PNG or JPEG, at most 2,048 px on the long edge and 1.5 MB).
+- **In MANUAL it waits, attached** to the next question, over the ask bar; Answer (or Ctrl+Enter) takes it, what is typed its note.
+- **In AUTO it is asked about at once**, what is typed going as its note (500 characters at most).
 - **The plan caps screenshots per session.** The latest screen turns' images are sent again with later questions; older ones are remembered as text notes the server writes.
-- **The client keeps the screenshots**, so it can attach them again if the session moves to another server.
+- **The client keeps the screenshots, in memory only**, so the overlay can show them and attach them again if the session moves to another server. Under an answer are the screenshots it read, each to attach again (＋). The choices are in [decisions.md](decisions.md) §15.
 
 ## Answers
 

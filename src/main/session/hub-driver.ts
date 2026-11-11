@@ -43,6 +43,11 @@ export interface HubDriverDependencies {
   takeOver?: boolean;
   /** The account's plan or minutes changed (`EntitlementsUpdated`): main reads the account again. */
   onEntitlementsUpdated?: () => void;
+  /**
+   * A kept screenshot's bytes by its id (3.6): after a resume, what was attached here and the server no longer holds
+   * (a session that moved: the server keeps no image) is attached again.
+   */
+  screenshot?: (id: string) => Uint8Array | null;
   /** Waits between reconnection attempts; the last one repeats. */
   retryDelaysMs?: number[];
   /** How long a dropped session may take to resume: the server's suspend grace. */
@@ -197,6 +202,7 @@ export class HubDriver implements SessionDriver {
     answerCancelled: (e) => this.emit({ name: 'answerCancelled', e }),
     answerFailed: (e) => this.emit({ name: 'answerFailed', e }),
     cleared: (e) => this.emit({ name: 'cleared', e }),
+    attachments: (e) => this.emit({ name: 'attachments', e }),
     notice: (e) => this.emit({ name: 'notice', e }),
     usage: (e) => this.emit({ name: 'usage', e }),
     sessionEnding: (e) => this.emit({ name: 'sessionEnding', e }),
@@ -209,6 +215,10 @@ export class HubDriver implements SessionDriver {
     entitlementsUpdated: () => {
       if (!this.disposed) this.deps.onEntitlementsUpdated?.();
     },
+    mockState: (e) => this.emit({ name: 'mockState', e }),
+    mockQuestion: (e) => this.emit({ name: 'mockQuestion', e }),
+    mockFeedback: (e) => this.emit({ name: 'mockFeedback', e }),
+    mockSummary: (e) => this.emit({ name: 'mockSummary', e }),
   };
 
   private emit(event: LiveEvent): void {
@@ -272,13 +282,20 @@ export class HubDriver implements SessionDriver {
           }
           throw new Error(ack.Code ?? 'The session could not be resumed.');
         }
+        // What was attached here before the drop, read before a snapshot redraws it.
+        const attached = this.state().attachments.ids;
         // Events after LastSeq were replayed through the new connection; if some were too old to keep, redraw.
-        if (!ack.Value?.Replayed) {
-          const snapshot = await hub.getState();
-          if (snapshot.Ok && snapshot.Value) this.dispatch({ type: 'snapshot', snapshot: snapshot.Value });
-        }
+        const snapshot = await hub.getState();
+        if (!ack.Value?.Replayed && snapshot.Ok && snapshot.Value)
+          this.dispatch({ type: 'snapshot', snapshot: snapshot.Value });
         this.openUpload(hub);
         this.dispatch({ type: 'connectionRestored' });
+        if (snapshot.Ok && snapshot.Value)
+          await this.reattach(
+            hub,
+            attached,
+            snapshot.Value.Attachments.map((a) => a.Id),
+          );
         return;
       } catch {
         const transport = this.transport;
@@ -293,6 +310,19 @@ export class HubDriver implements SessionDriver {
   private end(reason: string): void {
     this.dispatch({ type: 'ended', reason });
     this.dispose();
+  }
+
+  /**
+   * After a resume: the screenshots attached here that the server no longer holds go again, in their order, from the
+   * copies kept in main (the server keeps no image, so a session that moved has none). One it refuses is let go.
+   */
+  private async reattach(hub: LiveHub, attached: string[], held: string[]): Promise<void> {
+    for (const id of attached) {
+      if (held.includes(id) || this.disposed) continue;
+      const bytes = this.deps.screenshot?.(id);
+      if (!bytes) continue;
+      await hub.attachScreenshot({ CommandId: randomUUID(), Id: id, Bytes: bytes }).catch(() => undefined);
+    }
   }
 }
 
@@ -311,6 +341,12 @@ function send(hub: LiveHub, command: SessionCommand, CommandId: string): Promise
       return hub.clearHeard({ CommandId });
     case 'endSession':
       return hub.endSession({ CommandId });
+    case 'attachScreenshot':
+      return hub.attachScreenshot({ CommandId, Id: command.id, Bytes: command.bytes });
+    case 'detachScreenshot':
+      return hub.detachScreenshot({ CommandId, Id: command.id });
+    case 'screenshotQuery':
+      return hub.screenshotQuery({ CommandId, Id: command.id, Bytes: command.bytes, Hint: command.hint });
   }
 }
 

@@ -4,8 +4,18 @@ import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult, OverlayCommand } from '../../shared/ipc';
 import { reduceLive, type LiveAction } from '../../shared/live/reducer';
 import { initialLiveState, type LiveViewState } from '../../shared/live/view-state';
+import { captureCode, captureFailureText, type CaptureFailure } from '../../shared/screenshots';
+import type { CaptureOutcome } from '../screenshots/screen-capture';
+import type { ScreenshotShelf } from '../screenshots/screenshot-shelf';
 
-export type SessionCommand = Exclude<OverlayCommand, { type: 'view' }>;
+/**
+ * The overlay's commands as a driver gets them. A capture arrives as its picture, taken in main (3.6), so a driver
+ * attaches it, or asks about it at once; looking back through answers never reaches a driver.
+ */
+export type SessionCommand =
+  | Exclude<OverlayCommand, { type: 'view' | 'capture' | 'reattachScreenshot' }>
+  | { type: 'attachScreenshot'; id: string; bytes: Uint8Array }
+  | { type: 'screenshotQuery'; id: string; bytes: Uint8Array; hint: string | null };
 
 export interface SessionDriver {
   /** Starts the session; events come back through `dispatch`. `state` reads the current view (a resume needs LastSeq). */
@@ -17,15 +27,37 @@ export interface SessionDriver {
   dispose(): void;
 }
 
+/** Screenshots (3.6): taking one, and keeping each in memory while the session shows or needs it. */
+export interface SessionScreenshots {
+  capture(): Promise<CaptureOutcome>;
+  readonly shelf: ScreenshotShelf;
+}
+
 /** While an answer streams, the overlay gets at most one state every 33 ms, about 30 a second. */
 const publishEveryMs = 33;
+
+/** The latest answers whose screenshots are always kept (3.6). */
+export const keepScreenshotsOfAnswers = 10;
+
+const notInSession: CommandResult = {
+  ok: false,
+  code: ErrorCodes.Session.NotInSession,
+  message: 'No session is running.',
+};
+
+function captureFailed(failure: CaptureFailure): CommandResult {
+  return { ok: false, code: captureCode(failure), message: failure === 'cancelled' ? '' : captureFailureText[failure] };
+}
 
 export class SessionController {
   private state: LiveViewState = initialLiveState;
   private driver: SessionDriver | null = null;
   private publishTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private readonly publish: (state: LiveViewState) => void) {}
+  constructor(
+    private readonly publish: (state: LiveViewState) => void,
+    private readonly screenshots: SessionScreenshots | null = null,
+  ) {}
 
   get current(): LiveViewState {
     return this.state;
@@ -37,6 +69,9 @@ export class SessionController {
 
   readonly dispatch = (action: LiveAction): void => {
     this.state = reduceLive(this.state, action);
+    if (action.type === 'event' && (action.event.name === 'attachments' || action.event.name === 'answerStart')) {
+      this.screenshots?.shelf.prune(this.screenshotsInUse());
+    }
     this.schedulePublish();
   };
 
@@ -53,13 +88,35 @@ export class SessionController {
   }
 
   async command(command: OverlayCommand): Promise<CommandResult> {
-    if (command.type === 'view') {
-      this.dispatch({ type: 'view', index: command.index });
-      return { ok: true };
+    switch (command.type) {
+      case 'view':
+        this.dispatch({ type: 'view', index: command.index });
+        return { ok: true };
+      case 'capture':
+        return this.capture(command.hint);
+      case 'reattachScreenshot':
+        return this.reattach(command.id);
+      default:
+        return this.send(command);
     }
-    if (!this.driver) {
-      return { ok: false, code: ErrorCodes.Session.NotInSession, message: 'No session is running.' };
-    }
+  }
+
+  /** A frame of the call's sound, for the running session's driver; nothing when no session runs. */
+  audio(pcm: Uint8Array, capturedAtMs: number): void {
+    if (this.running) this.driver?.audio?.(pcm, capturedAtMs);
+  }
+
+  /** After the overlay is closed on an ended session: its screenshots go with it. */
+  reset(): void {
+    this.driver?.dispose();
+    this.driver = null;
+    this.screenshots?.shelf.clear();
+    this.state = { ...initialLiveState, minutesLeft: this.state.minutesLeft, tier: this.state.tier };
+    this.schedulePublish();
+  }
+
+  private async send(command: SessionCommand): Promise<CommandResult> {
+    if (!this.driver) return notInSession;
     const result = await this.driver.command(command);
     if (result.ok) {
       // Any command keeps the session in use, which the server counts against inactivity too.
@@ -70,17 +127,57 @@ export class SessionController {
     return result;
   }
 
-  /** A frame of the call's sound, for the running session's driver; nothing when no session runs. */
-  audio(pcm: Uint8Array, capturedAtMs: number): void {
-    if (this.running) this.driver?.audio?.(pcm, capturedAtMs);
+  /**
+   * A screenshot (3.6, v1's): in AUTO it is answered at once, with what was typed as its note; in MANUAL it waits,
+   * attached, for the next answer. A question that has all it can take says so before anything is captured.
+   */
+  private async capture(hint: string | null): Promise<CommandResult> {
+    if (!this.running) return notInSession;
+    if (!this.screenshots) return captureFailed('failed');
+    const asksAtOnce = this.state.auto && this.state.autoAvailable;
+    if (!asksAtOnce && this.state.attachments.ids.length >= this.state.attachments.max) return captureFailed('full');
+
+    const taken = await this.screenshots.capture();
+    if (!taken.ok) return captureFailed(taken.failure);
+    // The session may have ended while the selector showed.
+    if (!this.running) return notInSession;
+
+    const id = this.screenshots.shelf.keep(taken.shot);
+    const result = await this.send(
+      asksAtOnce
+        ? { type: 'screenshotQuery', id, bytes: taken.shot.bytes, hint: hint || null }
+        : { type: 'attachScreenshot', id, bytes: taken.shot.bytes },
+    );
+    // A screenshot the server didn't take is shown nowhere: it isn't kept either.
+    if (!result.ok) this.screenshots.shelf.drop(id);
+    return result;
   }
 
-  /** After the overlay is closed on an ended session. */
-  reset(): void {
-    this.driver?.dispose();
-    this.driver = null;
-    this.state = { ...initialLiveState, minutesLeft: this.state.minutesLeft, tier: this.state.tier };
-    this.schedulePublish();
+  /** A kept screenshot attached again for the next answer, so the model sees it again (＋ under an answer). */
+  private async reattach(id: string): Promise<CommandResult> {
+    if (!this.running) return notInSession;
+    const shot = this.screenshots?.shelf.get(id);
+    if (!shot) {
+      return {
+        ok: false,
+        code: ErrorCodes.Request.NotFound,
+        message: 'That screenshot is no longer kept. Take it again.',
+      };
+    }
+    if (this.state.attachments.ids.includes(id)) return { ok: true };
+    if (this.state.attachments.ids.length >= this.state.attachments.max) return captureFailed('full');
+    return this.send({ type: 'attachScreenshot', id, bytes: shot.bytes });
+  }
+
+  /**
+   * The screenshots still in use: those attached, and those under the latest answers. Older answers' may go once the
+   * shelf is full (v1 kept its latest pages' only): the overlay then says the screenshot is no longer kept.
+   */
+  private screenshotsInUse(): string[] {
+    return [
+      ...this.state.attachments.ids,
+      ...this.state.answers.slice(-keepScreenshotsOfAnswers).flatMap((a) => a.screenshotIds),
+    ];
   }
 
   private schedulePublish(): void {

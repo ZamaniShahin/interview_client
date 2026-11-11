@@ -11,6 +11,16 @@ export const IpcChannels = {
   overlayWindow: 'overlay:window',
   /** overlay → main (send): a code block's text for the clipboard (an answer's Copy, 1.13). */
   overlayCopy: 'overlay:copy',
+  /** overlay → main (invoke): one kept screenshot's image by its id, as a data URL; null once it is gone (3.6). */
+  overlayScreenshot: 'overlay:screenshot',
+  /** main → overlay: a hotkey the overlay finishes, since it holds what it needs (the capture's typed note, 3.6). */
+  overlayHotkey: 'overlay:hotkey',
+  /** selector → main (invoke): the frozen display to paint (3.6). */
+  selectorInit: 'selector:init',
+  /** selector → main (send): the frozen display is painted, so the window can show. */
+  selectorReady: 'selector:ready',
+  /** selector → main (send): what was chosen: the whole display, an area, or nothing. */
+  selectorDone: 'selector:done',
   /** app window → main (send): minimize, maximize, close. */
   appWindow: 'app:window',
   /** app window → main (invoke): the app's state (sign-in, account, problem). */

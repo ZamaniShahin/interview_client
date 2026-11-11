@@ -14,7 +14,19 @@ interface ScriptedAnswer {
   text: string;
   /** Stop streaming after this share of the text: the next question will take over. */
   cutAt?: number;
+  /** The screenshots it reads (3.6). */
+  screenshotIds?: string[];
 }
+
+/** What the preview answers about a screenshot. */
+const fromScreen =
+  'From your screenshot: this is ***Two Sum***. Keep a ***hash map*** of each number to its index, and for every ' +
+  'number look up its ***complement*** first:\n\n```python\ndef two_sum(nums, target):\n    seen = {}\n' +
+  '    for i, n in enumerate(nums):\n        if target - n in seen:\n            return [seen[target - n], i]\n' +
+  '        seen[n] = i\n```\n\nThat is ***O(n)*** time and space.';
+
+/** Screenshots a question can take in the preview, as the server's plans say (5). */
+const previewMaxAttachments = 5;
 
 const kindOfMode: Record<AskMode, AnswerKind> = {
   [AskMode.Question]: AnswerKind.Typed,
@@ -67,6 +79,8 @@ export class PreviewDriver implements SessionDriver {
   private heard = '';
   private lastQuestion = '';
   private answers = 0;
+  /** The screenshots attached for the next answer (3.6). */
+  private attached: string[] = [];
 
   async start(dispatch: (action: LiveAction) => void): Promise<CommandResult> {
     this.dispatch = dispatch;
@@ -102,21 +116,50 @@ export class PreviewDriver implements SessionDriver {
     switch (command.type) {
       case 'ask': {
         const tip = command.mode === AskMode.Tip;
+        // A typed question or Tip takes the attached screenshots, its text their note; a Result never does.
+        const shots = command.mode === AskMode.Result ? [] : this.takeAttached();
         this.answer(250, {
           question: tip ? this.lastQuestion || 'The last question' : command.text,
-          kind: kindOfMode[command.mode],
+          kind: shots.length > 0 ? AnswerKind.Screen : kindOfMode[command.mode],
           instruction: tip ? command.text : null,
-          text: cannedByMode[command.mode],
+          text: shots.length > 0 ? fromScreen : cannedByMode[command.mode],
+          screenshotIds: shots,
         });
         return { ok: true };
       }
-      case 'trigger':
+      case 'trigger': {
+        const shots = this.takeAttached();
         this.answer(250, {
           question: command.text ?? (this.heard || this.lastQuestion || 'The last question'),
-          kind: command.text ? AnswerKind.Typed : AnswerKind.Spoken,
-          text: cannedByMode[AskMode.Question],
+          kind: shots.length > 0 ? AnswerKind.Screen : command.text ? AnswerKind.Typed : AnswerKind.Spoken,
+          text: shots.length > 0 ? fromScreen : cannedByMode[AskMode.Question],
+          screenshotIds: shots,
         });
         return { ok: true };
+      }
+      case 'attachScreenshot':
+        if (!this.attached.includes(command.id)) {
+          if (this.attached.length >= previewMaxAttachments) {
+            return { ok: false, code: ErrorCodes.Request.TooLarge, message: 'This question has all the screenshots it can take.' };
+          }
+          this.attached = [...this.attached, command.id];
+        }
+        this.emitAttachments();
+        return { ok: true };
+      case 'detachScreenshot':
+        this.attached = this.attached.filter((id) => id !== command.id);
+        this.emitAttachments();
+        return { ok: true };
+      case 'screenshotQuery': {
+        const shots = [...this.takeAttached(), command.id].slice(0, previewMaxAttachments);
+        this.answer(250, {
+          question: command.hint ? `About the screen: ${command.hint}` : 'What is on the screen',
+          kind: AnswerKind.Screen,
+          text: fromScreen,
+          screenshotIds: shots,
+        });
+        return { ok: true };
+      }
       case 'setMode':
         this.auto = command.auto ?? this.auto;
         this.paused = command.paused ?? this.paused;
@@ -124,6 +167,7 @@ export class PreviewDriver implements SessionDriver {
         return { ok: true };
       case 'clear':
         this.emit({ name: 'cleared', e: this.stamp() });
+        if (this.attached.length > 0) this.takeAttached();
         return { ok: true };
       case 'clearHeard':
         this.heard = '';
@@ -166,7 +210,14 @@ export class PreviewDriver implements SessionDriver {
       this.answers += 1;
       this.emit({
         name: 'answerStart',
-        e: { ...this.stamp(), AnswerId: id, Question: a.question, Kind: a.kind, Instruction: a.instruction ?? null },
+        e: {
+          ...this.stamp(),
+          AnswerId: id,
+          Question: a.question,
+          Kind: a.kind,
+          Instruction: a.instruction ?? null,
+          ScreenshotIds: a.screenshotIds ?? [],
+        },
       });
     });
     for (let i = 0; i < stopAt; i += charsPerDelta) {
@@ -182,6 +233,22 @@ export class PreviewDriver implements SessionDriver {
       this.at(t, () => this.emit({ name: 'answerDone', e: { ...this.stamp(), AnswerId: id } }));
     }
     return t;
+  }
+
+  /** The attached screenshots, taken by the answer about to start: none wait any more. */
+  private takeAttached(): string[] {
+    const shots = this.attached;
+    if (shots.length === 0) return shots;
+    this.attached = [];
+    this.emitAttachments();
+    return shots;
+  }
+
+  private emitAttachments(): void {
+    this.emit({
+      name: 'attachments',
+      e: { ...this.stamp(), Items: this.attached.map((Id) => ({ Id })), Max: previewMaxAttachments },
+    });
   }
 
   private status(): void {

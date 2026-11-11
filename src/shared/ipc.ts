@@ -2,6 +2,7 @@
 // sender (src/main/ipc/register.ts): a renderer is untrusted input. The channel names are in ipc-channels.ts.
 import { z } from 'zod';
 import { AskMode } from './contracts/sotto-contracts';
+import { screenshotHintMaxChars, screenshotIdSchema } from './screenshots';
 import { askLimits } from './text-limits';
 
 export { IpcChannels } from './ipc-channels';
@@ -27,6 +28,15 @@ export const overlayCommandSchema = z
     z.object({ type: z.literal('endSession') }),
     /** Look at an earlier answer, or follow the newest (null). Local: nothing goes to the server. */
     z.object({ type: z.literal('view'), index: z.number().int().min(0).nullable() }),
+    /**
+     * Capture a screen region (3.6): attached for the next answer, or in AUTO answered at once, with what was typed
+     * as its note (`hint`). Main takes the picture: the overlay never sees the screen.
+     */
+    z.object({ type: z.literal('capture'), hint: z.string().trim().max(screenshotHintMaxChars).nullable() }),
+    /** Take back a screenshot attached for the next answer. */
+    z.object({ type: z.literal('detachScreenshot'), id: screenshotIdSchema }),
+    /** Attach a kept screenshot again, so the model sees it again rather than only its notes (＋ under an answer). */
+    z.object({ type: z.literal('reattachScreenshot'), id: screenshotIdSchema }),
   ])
   .superRefine((command, ctx) => {
     if (command.type === 'ask' && command.text.length > askLimits[command.mode]) {
@@ -54,6 +64,12 @@ export type OverlayWindowAction = z.infer<typeof overlayWindowActionSchema>;
  * than the limit; the limit only keeps a renderer from handing main anything at all.
  */
 export const copyTextSchema = z.string().min(1).max(100_000);
+
+/** A screenshot the overlay asks to see, by its id (3.6). */
+export const screenshotRequestSchema = screenshotIdSchema;
+
+/** The hotkeys main hands to the overlay to finish (3.6: the capture takes what was typed as its note). */
+export type OverlayHotkey = 'capture';
 
 /** The first-run notice's version the user read: main keeps it only when it is the current one. */
 export const acknowledgeNoticeSchema = z.object({ version: z.number().int().positive() }).strict();

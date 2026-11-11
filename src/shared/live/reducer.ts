@@ -105,6 +105,8 @@ function applySnapshot(state: LiveViewState, s: SessionSnapshot): LiveViewState 
     autoAvailable: s.ContextReady,
     // The snapshot carries the question so far; the phrase in progress comes back with the next partial.
     heard: { finished: s.Heard, live: '' },
+    // A session that moved has none: the driver attaches the kept copies again, and their events follow.
+    attachments: { ids: s.Attachments.map((a) => a.Id), max: s.MaxAttachments },
     lastSeq: Math.max(state.lastSeq, s.LastSeq),
   };
 }
@@ -145,6 +147,7 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
         ending: 'writing',
         failureMessage: null,
         startedAtMs: event.e.AtMs,
+        screenshotIds: event.e.ScreenshotIds ?? [],
       };
       return {
         ...next,
@@ -174,7 +177,25 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
       );
 
     case 'cleared':
-      return { ...next, answers: [], viewing: null, heard: { finished: '', live: '' }, notice: null };
+      // Starting over takes the attached screenshots too; the server's `Attachments` that follows says the same.
+      return {
+        ...next,
+        answers: [],
+        viewing: null,
+        heard: { finished: '', live: '' },
+        notice: null,
+        attachments: { ...next.attachments, ids: [] },
+      };
+
+    case 'attachments':
+      return { ...next, attachments: { ids: event.e.Items.map((item) => item.Id), max: event.e.Max } };
+
+    // Practice (backend 3.3) is drawn by the client's practice checkpoint; until then its events only move LastSeq.
+    case 'mockState':
+    case 'mockQuestion':
+    case 'mockFeedback':
+    case 'mockSummary':
+      return next;
 
     case 'notice':
       return { ...next, notice: { code: event.e.Code, text: event.e.Text } };

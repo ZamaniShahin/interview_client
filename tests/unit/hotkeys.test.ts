@@ -16,6 +16,7 @@ describe('the hotkeys the first run shows (1.14)', () => {
       'Earlier or later answer': 'Ctrl Shift ← →',
       'Compact or full view': 'Ctrl Shift M',
       'Hide or show the overlay': 'Ctrl Shift H',
+      'Screenshot of an area': 'Ctrl Shift G',
     });
   });
 });

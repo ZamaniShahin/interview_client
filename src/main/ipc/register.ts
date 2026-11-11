@@ -17,6 +17,7 @@ import {
   overlayWindowActionSchema,
   paymentActionSchema,
   purchaseSchema,
+  screenshotRequestSchema,
   signInPageActionSchema,
   soundCheckActionSchema,
   startSessionSchema,
@@ -31,7 +32,9 @@ import {
   type SoundCheckAction,
   type StartSessionRequest,
 } from '../../shared/ipc';
+import { selectionSchema } from '../../shared/screenshots';
 import { settingsPatchSchema } from '../../shared/settings';
+import type { OpenSelector } from '../screenshots/region-selector';
 import type { SessionController } from '../session/session-controller';
 import type { SettingsStore } from '../settings-store';
 
@@ -67,6 +70,10 @@ export interface IpcDependencies {
   exportData: () => Promise<CommandResult>;
   deleteAccount: (confirm: string) => Promise<CommandResult>;
   dismiss: (target: DismissTarget) => void;
+  /** A kept screenshot's image as a data URL, for the overlay to draw (3.6); null once it is gone. */
+  screenshotImage: (id: string) => string | null;
+  /** The region selector showing, if one is: its page alone may talk on the selector's channels (3.6). */
+  selector: () => OpenSelector | null;
 }
 
 const invalid: CommandResult = {
@@ -102,6 +109,30 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromOverlay(event)) return;
     const parsed = overlayWindowActionSchema.safeParse(payload);
     if (parsed.success) deps.onOverlayWindow(parsed.data);
+  });
+
+  ipcMain.handle(IpcChannels.overlayScreenshot, (event, payload: unknown): string | null => {
+    if (!fromOverlay(event)) return null;
+    const parsed = screenshotRequestSchema.safeParse(payload);
+    return parsed.success ? deps.screenshotImage(parsed.data) : null;
+  });
+
+  // The region selector's page: only the one showing, each message checked (3.6).
+  const selectorOf = (event: IpcMainEvent | IpcMainInvokeEvent) => {
+    const open = deps.selector();
+    return open !== null && event.sender.id === open.contentsId ? open : null;
+  };
+
+  ipcMain.handle(IpcChannels.selectorInit, (event) => selectorOf(event)?.frame ?? null);
+
+  ipcMain.on(IpcChannels.selectorReady, (event) => selectorOf(event)?.ready());
+
+  ipcMain.on(IpcChannels.selectorDone, (event, payload: unknown) => {
+    const open = selectorOf(event);
+    if (!open) return;
+    const parsed = selectionSchema.safeParse(payload);
+    // Anything but a valid answer cancels: nothing is taken that the user didn't choose.
+    open.finish(parsed.success ? parsed.data : null);
   });
 
   ipcMain.on(IpcChannels.overlayCopy, (event, payload: unknown) => {

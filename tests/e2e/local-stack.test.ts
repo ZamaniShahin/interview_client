@@ -16,10 +16,25 @@ import { OpenIdClient } from '../../src/main/auth/oidc';
 import { MemorySecretStore } from '../../src/main/auth/secret-store';
 import { createLiveTransport } from '../../src/main/connection/live-connection';
 import { DeviceIdentity } from '../../src/main/device/device-identity';
+import { ScreenshotShelf } from '../../src/main/screenshots/screenshot-shelf';
 import { HubDriver, type HubDriverDependencies } from '../../src/main/session/hub-driver';
-import { SessionController } from '../../src/main/session/session-controller';
-import { AskMode, ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
+import { SessionController, type SessionScreenshots } from '../../src/main/session/session-controller';
+import { AnswerKind, AskMode, ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
 import { signUpInBrowser } from './keycloak-browser';
+
+/** A real PNG, one pixel: the server reads a screenshot's format and size from its header (backend 3.1). */
+const onePixelPng = Uint8Array.from(
+  Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64',
+  ),
+);
+
+/** Screenshots as main takes them (3.6), the selector stood in for: each capture is the one-pixel PNG. */
+const screenshots = (): SessionScreenshots => ({
+  capture: async () => ({ ok: true, shot: { bytes: onePixelPng, mime: 'image/png', width: 1, height: 1 } }),
+  shelf: new ScreenshotShelf(),
+});
 
 /** The documents a session takes, as the driver sends them (`SetContext`). */
 type SessionDocuments = NonNullable<HubDriverDependencies['context']>;
@@ -109,7 +124,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       code: ErrorCodes.Identity.DeviceProofInvalid,
     });
 
-    const session = new SessionController(() => {});
+    const session = new SessionController(() => {}, screenshots());
     const driver = driverWith();
 
     expect(await session.start(driver)).toEqual({ ok: true });
@@ -144,13 +159,29 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       { timeout: 30_000, interval: 100 },
     );
 
+    // 3.6: in MANUAL a screenshot waits, attached, and the trigger answers it as a screen turn.
+    expect(await session.command({ type: 'capture', hint: null })).toEqual({ ok: true });
+    await vi.waitFor(() => expect(session.current.attachments.ids).toHaveLength(1), { timeout: 15_000, interval: 100 });
+    const attached = session.current.attachments.ids[0]!;
+    expect(await session.command({ type: 'trigger', text: null })).toEqual({ ok: true });
+    await vi.waitFor(
+      () => {
+        const answer = session.current.answers.at(-1);
+        expect(answer?.kind).toBe(AnswerKind.Screen);
+        expect(answer?.screenshotIds).toEqual([attached]);
+        expect(answer?.ending).toBe('done');
+        expect(session.current.attachments.ids).toEqual([]);
+      },
+      { timeout: 30_000, interval: 100 },
+    );
+
     // The server sends SessionEnded before it answers EndSession: the answer must still arrive.
     expect(await session.command({ type: 'endSession' })).toEqual({ ok: true });
     await vi.waitFor(() => expect(session.current.phase).toBe('ended'), { timeout: 15_000, interval: 100 });
 
     // 1.14: a session in AUTO with this computer's documents. The server answers on its own only once SetContext
     // has brought the résumé and the job description, so a heard question answered with no Trigger proves they came.
-    const withDocuments = new SessionController(() => {});
+    const withDocuments = new SessionController(() => {}, screenshots());
     const documents: SessionDocuments = {
       Name: 'Sam Rivera',
       Resume: 'Backend engineer, 7 years: payments in Go and Kafka.',
@@ -166,6 +197,18 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       () => {
         const answer = withDocuments.current.answers.at(-1);
         expect(answer?.question).toBe('How do you keep a ledger consistent?');
+        expect(answer?.ending).toBe('done');
+      },
+      { timeout: 30_000, interval: 100 },
+    );
+
+    // 3.6: in AUTO a screenshot is answered at once, with its note.
+    expect(await withDocuments.command({ type: 'capture', hint: 'the second loop' })).toEqual({ ok: true });
+    await vi.waitFor(
+      () => {
+        const answer = withDocuments.current.answers.at(-1);
+        expect(answer?.kind).toBe(AnswerKind.Screen);
+        expect(answer?.screenshotIds).toHaveLength(1);
         expect(answer?.ending).toBe('done');
       },
       { timeout: 30_000, interval: 100 },

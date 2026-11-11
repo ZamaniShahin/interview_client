@@ -7,6 +7,7 @@ import type {
   CommandResult,
   DismissTarget,
   OverlayCommand,
+  OverlayHotkey,
   OverlayWindowAction,
   HidingTestAction,
   PaymentAction,
@@ -16,6 +17,7 @@ import type {
   StartSessionRequest,
 } from '../shared/ipc';
 import type { LiveViewState } from '../shared/live/view-state';
+import type { Selection, SelectorFrame } from '../shared/screenshots';
 import type { Settings, SettingsPatch } from '../shared/settings';
 
 export interface SettingsApi {
@@ -33,6 +35,20 @@ export interface OverlayApi extends SettingsApi {
   window(action: OverlayWindowAction): void;
   /** Puts a code block's source on the clipboard (an answer's Copy). */
   copy(text: string): void;
+  /** A kept screenshot's image, as a data URL; null once it is no longer kept (3.6). */
+  screenshot(id: string): Promise<string | null>;
+  /** A hotkey main hands over to finish here: the capture, which takes what was typed. Returns how to stop listening. */
+  onHotkey(listener: (hotkey: OverlayHotkey) => void): () => void;
+}
+
+/** `window.selectorApi`, in the screenshot region selector only (3.6). */
+export interface SelectorApi {
+  /** The frozen display to paint; null once the selection is over. */
+  init(): Promise<SelectorFrame | null>;
+  /** The picture is painted: main shows the window. */
+  ready(): void;
+  /** The whole display, an area, or nothing. */
+  done(selection: Selection): void;
 }
 
 /** `window.appApi`, in the app window only. */

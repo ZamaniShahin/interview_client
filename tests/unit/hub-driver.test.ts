@@ -154,6 +154,23 @@ function harness(setup: Setup = {}) {
 
 const hear = (seq: number, text: string) => ({ Seq: seq, AtMs: seq, Text: text });
 
+/** A live session's snapshot with nothing attached, no prep doc, no preferences and no practice. */
+const snapshotOf = (heard: string, lastSeq: number): SessionSnapshot => ({
+  SessionId: 'session-1',
+  Phase: SessionPhase.Live,
+  Auto: false,
+  Paused: false,
+  ContextReady: false,
+  Heard: heard,
+  LastSeq: lastSeq,
+  Attachments: [],
+  MaxAttachments: 5,
+  PrepDoc: null,
+  CustomInstructionsChars: 0,
+  PreparedInPrompt: [],
+  Practice: null,
+});
+
 describe('the hub driver', () => {
   it("starts the session with a device proof bound to the connection's token", async () => {
     const h = harness();
@@ -363,21 +380,13 @@ describe('the hub driver', () => {
       method: 'ResumeSession',
       request: { SessionId: 'session-1', LastSeq: 5, DeviceProof: 'proof-ResumeSession-token-2' },
     });
-    // Every missed event came again: nothing to redraw.
-    expect(h.transports[1]!.connection.methods()).not.toContain('GetState');
-    expect(h.state().phase).toBe('live');
+    // Every missed event came again: nothing to redraw, though the state is read for the screenshots the server holds.
+    expect(h.actions.some((action) => action.type === 'snapshot')).toBe(false);
+    expect(h.state()).toMatchObject({ phase: 'live', heard: { finished: 'Why this role?', live: '' } });
   });
 
   it('redraws from a snapshot when the missed events were too old to replay', async () => {
-    const snapshot: SessionSnapshot = {
-      SessionId: 'session-1',
-      Phase: SessionPhase.Live,
-      Auto: true,
-      Paused: false,
-      ContextReady: false,
-      Heard: 'And your strengths?',
-      LastSeq: 40,
-    };
+    const snapshot: SessionSnapshot = { ...snapshotOf('And your strengths?', 40), Auto: true };
     const h = harness({
       connection: (t, index) => {
         if (index !== 1) return;
@@ -394,6 +403,65 @@ describe('the hub driver', () => {
 
     await vi.waitFor(() => expect(h.types().at(-1)).toBe('connectionRestored'));
     expect(h.actions).toContainEqual({ type: 'snapshot', snapshot });
+  });
+
+  it('attaches again the screenshots a moved session lost, in their order, from the copies kept here', async () => {
+    const kept: Record<string, Uint8Array> = { 'shot-a': new Uint8Array([1]), 'shot-b': new Uint8Array([2]) };
+    const h = harness({
+      deps: { screenshot: (id) => kept[id] ?? null },
+      connection: (t, index) => {
+        if (index !== 1) return;
+        t.connection.replies.set('ResumeSession', () => ({ Ok: true, Value: { SessionId: 'session-1', Replayed: false, LastSeq: 9 } }));
+        // The new server holds none of them: images are never saved.
+        t.connection.replies.set('GetState', () => ({ Ok: true, Value: snapshotOf('', 9) }));
+      },
+    });
+    await h.start();
+    h.transports[0]!.events.attachments({ Seq: 3, AtMs: 3, Items: [{ Id: 'shot-a' }, { Id: 'shot-b' }], Max: 5 });
+
+    h.transports[0]!.close(new Error('dropped'));
+
+    await vi.waitFor(() => expect(h.transports[1]!.connection.methods().filter((m) => m === 'AttachScreenshot')).toHaveLength(2));
+    const attached = h.transports[1]!.connection.invocations.filter((call) => call.method === 'AttachScreenshot');
+    expect(attached.map((call) => call.request)).toMatchObject([
+      { Id: 'shot-a', Bytes: kept['shot-a'] },
+      { Id: 'shot-b', Bytes: kept['shot-b'] },
+    ]);
+  });
+
+  it('attaches nothing again that the server still holds, or that is no longer kept here', async () => {
+    const h = harness({
+      deps: { screenshot: (id) => (id === 'shot-a' ? new Uint8Array([1]) : null) },
+      connection: (t, index) => {
+        if (index !== 1) return;
+        t.connection.replies.set('ResumeSession', () => ({ Ok: true, Value: { SessionId: 'session-1', Replayed: true, LastSeq: 3 } }));
+        t.connection.replies.set('GetState', () => ({ Ok: true, Value: { ...snapshotOf('', 3), Attachments: [{ Id: 'shot-a' }] } }));
+      },
+    });
+    await h.start();
+    h.transports[0]!.events.attachments({ Seq: 3, AtMs: 3, Items: [{ Id: 'shot-a' }, { Id: 'shot-gone' }], Max: 5 });
+
+    h.transports[0]!.close(new Error('dropped'));
+
+    await vi.waitFor(() => expect(h.types().at(-1)).toBe('connectionRestored'));
+    expect(h.transports[1]!.connection.methods()).not.toContain('AttachScreenshot');
+  });
+
+  it('sends a screenshot to attach, to take back, and to ask about at once, with its note', async () => {
+    const h = harness();
+    await h.start();
+    const bytes = new Uint8Array([137, 80, 78, 71]);
+
+    await h.driver.command({ type: 'attachScreenshot', id: 'shot-a', bytes });
+    await h.driver.command({ type: 'detachScreenshot', id: 'shot-a' });
+    await h.driver.command({ type: 'screenshotQuery', id: 'shot-b', bytes, hint: 'the second loop' });
+
+    const calls = h.transports[0]!.connection.invocations.slice(-3);
+    expect(calls).toMatchObject([
+      { method: 'AttachScreenshot', request: { Id: 'shot-a', Bytes: bytes } },
+      { method: 'DetachScreenshot', request: { Id: 'shot-a' } },
+      { method: 'ScreenshotQuery', request: { Id: 'shot-b', Bytes: bytes, Hint: 'the second loop' } },
+    ]);
   });
 
   it('ends the session when the server says it expired', async () => {
@@ -677,6 +745,7 @@ describe("the hub driver's documents for a session (1.14)", () => {
     h.transports[0]!.close(new Error('WebSocket closed with status code: 1006.'));
     await vi.waitFor(() => expect(h.types().at(-1)).toBe('connectionRestored'));
 
-    expect(h.transports[1]!.connection.methods()).toEqual(['ResumeSession']);
+    // The state is read for the screenshots the server holds (3.6); the documents are not sent again.
+    expect(h.transports[1]!.connection.methods()).toEqual(['ResumeSession', 'GetState']);
   });
 });
