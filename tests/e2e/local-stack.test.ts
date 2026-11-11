@@ -19,7 +19,13 @@ import { DeviceIdentity } from '../../src/main/device/device-identity';
 import { ScreenshotShelf } from '../../src/main/screenshots/screenshot-shelf';
 import { HubDriver, type HubDriverDependencies } from '../../src/main/session/hub-driver';
 import { SessionController, type SessionScreenshots } from '../../src/main/session/session-controller';
-import { AnswerKind, AskMode, ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
+import {
+  AnswerKind,
+  AskMode,
+  createLiveHub,
+  ErrorCodes,
+  type LiveHub,
+} from '../../src/shared/contracts/sotto-contracts';
 import { signUpInBrowser } from './keycloak-browser';
 
 /** A real PNG, one pixel: the server reads a screenshot's format and size from its header (backend 3.1). */
@@ -103,26 +109,33 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
 
     // 1.12: a live session over the hub, driven as the overlay drives it.
     // The connection opens with this computer's proof (backend docs/04 §6); the server refuses one that isn't.
+    // The driver's latest connection, for the test to ask the server what the session holds (`GetState`).
+    let latest: LiveHub | null = null;
     const driverWith = ({
       forgeProof = false,
       auto = false,
       context = null as SessionDocuments | null,
+      prepDoc = null as HubDriverDependencies['prepDoc'],
       preferences = null as HubDriverDependencies['preferences'],
     } = {}) =>
       new HubDriver({
-        connect: (accessToken, deviceProof, events) =>
-          createLiveTransport({
+        connect: (accessToken, deviceProof, events) => {
+          const transport = createLiveTransport({
             apiBaseUrl,
             clientVersion,
             accessToken,
             deviceProof: forgeProof ? 'not-a-proof' : deviceProof,
             events,
-          }),
+          });
+          latest = createLiveHub(transport.connection);
+          return transport;
+        },
         accessToken: () => auth.accessToken(),
         connectProof: (token) => accounts.connectProof(token),
         proof: (method, token) => accounts.hubProof(method, token),
         auto,
         context,
+        prepDoc,
         preferences,
       });
     expect(await new SessionController(() => {}).start(driverWith({ forgeProof: true }))).toMatchObject({
@@ -202,8 +215,25 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
     };
     withDocuments.useBank([{ id: prepared.Id, phrasings: prepared.Phrasings, answer: prepared.Answer, enabled: true }]);
     const preferences = { CustomInstructions: 'Keep answers short.', PreparedAnswers: [prepared] };
-    expect(await withDocuments.start(driverWith({ auto: true, context: documents, preferences }))).toEqual({
+    // 3.10: the prep doc goes with it, as main reads it from this computer: cut, with its file's name.
+    const prepDoc = {
+      Name: 'payments-guide.pdf',
+      Text: 'Ledgers: double entry.\nIdempotency keys on every write.',
+      Cut: true,
+    };
+    expect(await withDocuments.start(driverWith({ auto: true, context: documents, prepDoc, preferences }))).toEqual({
       ok: true,
+    });
+    // The driver lets a refusal of any of these pass (the session runs without them): the server must hold all three.
+    const held = await latest!.getState();
+    expect(held).toMatchObject({
+      Ok: true,
+      Value: {
+        ContextReady: true,
+        PrepDoc: { Name: prepDoc.Name, Chars: prepDoc.Text.length, Cut: true },
+        CustomInstructionsChars: preferences.CustomInstructions.length,
+        PreparedInPrompt: [prepared.Id],
+      },
     });
     withDocuments.audio(
       new TextEncoder().encode('SOTTO-SCRIPT final: How do you keep a ledger consistent?'),

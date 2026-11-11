@@ -21,7 +21,7 @@ The numbers are the backend's (`docs/decisions.md` §2). Settled there:
   - Q37: v1's source is on GitHub (`ZamaniShahin/interview_app`);
   - Q18: the level meter and the no-audio warning come with audio capture (1.11).
 
-Q27–Q44 are open there too, apart from the ones above. The rows below are the ones that change something in the client.
+Q27–Q49 are open there too, apart from the ones above. The rows below are the ones that change something in the client.
 
 | # | Question | Assumed until decided | What it changes in the client | Needed by |
 |---|---|---|---|---|
@@ -40,6 +40,7 @@ Q27–Q44 are open there too, apart from the ones above. The rows below are the 
 | Q31 | **`SessionMigrate`**: the server could tell the app to move before an instance stops. Today the connection closes and the app resumes on another instance, as after any drop | not sent | a handler that resumes at once, without waiting for the drop | no deadline |
 | Q36 | **At most 3 hub connections per user** (backend docs/08 §5) | no limit | a fourth connection is refused, and the app says why | before launch |
 | Q44 | **DPoP**: Keycloak supports it; turned on, the tokens are bound to a key the app holds | off | the app sends a DPoP proof when it gets tokens and with every call: a protocol change, made on both sides together | before launch (proposed: with 2.13) |
+| Q49 | **How strict the 📌 match is** (3.8). It is v1's `best_match`, ported unchanged: an F1 of 0.6 over content words, with 60% of the phrasing covered. The deep round found it gives a prepared answer to a different question that shares most of its words: "where do you see the company in five years" gets the answer to "…yourself in five years", and "how did you cut costs by forty percent" the one to "…cut latency by forty percent". Be stricter than v1 (a higher threshold, or every content word of the phrasing required)? | v1's, as built; proposed: keep it until real sessions show how often it misfires | the 📌 card shows less often, and never for a near miss | before launch |
 
 ## Unknowns that aren't decisions
 

@@ -36,12 +36,16 @@ export function decodeText(bytes: Uint8Array): string | null {
 
 /**
  * A document's text as it is kept: line breaks as \n, no control characters but tabs, no spaces at a line's end, no
- * more than one empty line in a row, nothing around it.
+ * more than one empty line in a row, nothing around it. A page or paragraph break (a form feed, as text made from a
+ * PDF has between pages) is an empty line, and a vertical tab (Word's line break in its plain text) a line break, so
+ * the words either side never run together.
  */
 export function normalizeText(text: string): string {
   return (
     text
-      .replace(/\r\n?/g, '\n')
+      // eslint-disable-next-line no-control-regex -- a vertical tab is a line break, as a file means it
+      .replace(/\r\n?|[\u000B\u0085\u2028]/g, '\n')
+      .replace(/[\f\u2029]/g, '\n\n')
       // eslint-disable-next-line no-control-regex -- the control characters a file may carry are exactly what goes
       .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
       .split('\n')

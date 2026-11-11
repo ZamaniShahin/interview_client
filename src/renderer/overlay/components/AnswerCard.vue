@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // One answer in each of its endings (handoff §7.2, states 5 to 9): writing, done, stopped early, didn't finish,
-// hidden. What it showed stays, except a hidden answer, whose text is already gone from the state.
+// hidden. What it showed stays, except a hidden answer, whose text is already gone from the state. The user's own
+// prepared answer (📌) stays even then: it is theirs, matched on this computer, never the model's.
 //
 // A long answer follows its newest line only while the reader is at the bottom (design.md). Scrolled up, they keep
 // their place, and "New text below" offers the way back down.
@@ -113,10 +114,15 @@ onBeforeUnmount(() => resizes?.disconnect());
       />
     </header>
 
-    <div v-if="answer.ending === 'hidden'" class="hidden" role="status">
-      <SIcon name="hidden" />
-      <span>This answer can't be shown. Try asking another way.</span>
-    </div>
+    <template v-if="answer.ending === 'hidden'">
+      <div v-if="answer.prepared" class="kept">
+        <PreparedCard :phrasing="answer.prepared.phrasing" :answer="answer.prepared.answer" />
+      </div>
+      <div class="hidden" role="status">
+        <SIcon name="hidden" />
+        <span>This answer can't be shown. Try asking another way.</span>
+      </div>
+    </template>
     <div v-else class="scroller">
       <div ref="body" class="body" :class="{ dimmed: answer.ending === 'stopped' }" @scroll.passive="onScroll">
         <!-- One element, so the observer below sees the answer grow, whether or not a prepared answer comes first. -->
@@ -253,5 +259,8 @@ p.when {
 .hidden > :first-child {
   margin-top: 2px;
   color: var(--text-0);
+}
+.kept {
+  margin: 4px 12px 0;
 }
 </style>
