@@ -70,7 +70,10 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
   - the screenshot button and Ctrl+Shift+G: in AUTO asked about at once with what was typed as its note, in MANUAL attached for the next answer; the attached ones over the ask bar, and under each answer the ones it read, to attach again;
   - the images in main's memory only, never on disk, and attached again after the session moves to another server (decisions §15).
 - [ ] 3.7 The speech coach, on the device (engine: Q5).
-- [ ] 3.8 The prepared-answer match 📌, on the device.
+- [x] **3.8 The prepared-answer match 📌, on the device** (2026-11-11, `7dffc62`, branch `feature/answer-bank`, on 3.10's; with the preferences of the server's 3.2; checked with the unit and renderer tests, the app tests, 23 of 23, and the end-to-end tests against the local stack, 4 of 4):
+  - Prepare's custom instructions and answer bank, kept on this computer (the `answer_bank` table of docs/07 §5, by migration 2), held to v1's entry rules;
+  - the instructions and the enabled entries sent with each session (`SetPreferences`);
+  - v1's `best_match`, ported and checked against v1's own tables, run in main as an answer starts, and the user's own answer shown at once in the 📌 card (decisions §17).
 - [ ] 3.9 Local history and the debrief view.
 - [x] **3.10 Reading documents (PDF, Word) on the device** (2026-11-11, `9d5bace`, branch `feature/documents`, on 3.6's; with the prep doc of the server's 3.2; checked with the unit and renderer tests and the app tests reading real files, 4 of 4):
   - "From a file" in Prepare for the résumé, the job description, the notes and the prep doc; the text read shows in the editor first, and a document over its limit comes back whole, its limit named;
