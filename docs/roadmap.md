@@ -6,7 +6,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 **Where it stands (2026-11-11):**
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
-- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round; next: 3.9, practice, 3.13 and 3.12, then 4.1 and 4.2 (3.7 waits on Q5, 3.11 on 4.8's wording);
+- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9; next: 3.13, 4.1, 4.2 and 3.12 (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -74,7 +74,11 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
   - Prepare's custom instructions and answer bank, kept on this computer (the `answer_bank` table of docs/07 §5, by migration 2), held to v1's entry rules;
   - the instructions and the enabled entries sent with each session (`SetPreferences`);
   - v1's `best_match`, ported and checked against v1's own tables, run in main as an answer starts, and the user's own answer shown at once in the 📌 card (decisions §17).
-- [ ] 3.9 Local history and the debrief view.
+- [x] **3.9 Local history and the debrief view** (2026-11-11: history `a48a175`, prep drafts `4c2a59c`, branch `feature/history`, on the deep round's; with the jobs of the server's 3.4; checked with the unit and renderer tests, the app tests, 28 of 28, and the end-to-end tests against the local stack, 4 of 4):
+  - each live session kept on this computer as it goes: its answers once over, the interviewer's words while "Keep transcripts" is on, its end (docs/07 §5's tables, by migration 3);
+  - History lists them and opens one whole; deleting one or all waits for a confirmation;
+  - a debrief written by the server only when asked, kept with the interview, and shown: scores, strengths, what to do better, stronger answers, follow-ups, a thank-you email to copy;
+  - prep drafts in Prepare's answer bank, written by the server from the documents, each kept in the bank or skipped (decisions §19). v1's HTML report is not built yet.
 - [x] **3.10 Reading documents (PDF, Word) on the device** (2026-11-11, `9d5bace`, branch `feature/documents`, on 3.6's; with the prep doc of the server's 3.2; checked with the unit and renderer tests and the app tests reading real files, 4 of 4):
   - "From a file" in Prepare for the résumé, the job description, the notes and the prep doc; the text read shows in the editor first, and a document over its limit comes back whole, its limit named;
   - files read by pdf.js and mammoth in a hidden, sandboxed window of their own, never in main; 20 MB, 500 pages and 20 s at most;
