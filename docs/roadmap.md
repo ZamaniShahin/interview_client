@@ -6,7 +6,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 **Where it stands (2026-11-11):**
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
-- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9; next: 3.13, 4.1, 4.2 and 3.12 (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
+- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9 and 3.13; next: 4.1, 4.2 and 3.12 (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -85,7 +85,9 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
   - the prep doc kept with its file's name, cut at a line break past 100,000 characters as v1 cut it, and sent at a session's start (`SetPrepDoc`) (decisions §16).
 - [ ] 3.11 The consent checkbox before each session. It is drawn, and main already refuses a start without it; this checkpoint is its final wording (4.8) and its tests end to end.
 - [ ] 3.12 Recording, opt-in.
-- [ ] 3.13 Settings, kept in the local database; hotkeys remappable.
+- [x] **3.13 Settings, kept in the local database; hotkeys remappable** (2026-11-11, `d65b8ca`, branch `feature/settings-hotkeys`, on 3.9's; checked with the unit and renderer tests and the app tests, 30 of 30):
+  - the settings were kept since 1.14; each session hotkey is now changed in Settings by pressing the new keys, checked as pressed (Ctrl or Alt; a second modifier with a letter; never one Windows keeps or another action's), kept, and put back one or all;
+  - main registers the keys in effect, and the setup and the overlay name them (decisions §20).
 - [ ] Practice (with the server's 3.3): Claude Design's practice screens redrawn on these tokens, following Q21–Q24 as answered on 2026-11-09 ([design.md](design.md)).
 
 Tests, deep round over 3.6, 3.8 and 3.10 (2026-11-11, `a46422b`, branch `feature/deep-round-3.6-3.8-3.10`): every feature mapped and triggered again, widened with data points, every outcome given a test; 533 tests more (1,380 in all), the app tests 23 of 23, end to end 4 of 4, the server now asked what it holds after a start. Two fixes: a page break or a vertical tab in a file no longer runs the words either side together, and the 📌 card stays when the generated answer is hidden. One question for Shahin: how strict the 📌 match is (Q49). Decisions §18.
