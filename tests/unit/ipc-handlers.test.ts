@@ -298,3 +298,25 @@ describe('history, for the app window only (3.9)', () => {
     expect(calls.copyText).toEqual([['Thank you, Priya.']]);
   });
 });
+
+describe('prep drafts, for the app window only (3.9)', () => {
+  it('asks for drafts, and keeps or skips one named by its id', async () => {
+    expect(await invoke(IpcChannels.appWriteDrafts, appId)).toEqual({ ok: true });
+    expect(await invoke(IpcChannels.appKeepDraft, appId, 3)).toEqual({ ok: true });
+    expect(await invoke(IpcChannels.appSkipDraft, appId, 4)).toEqual({ ok: true });
+    expect([calls.writeDrafts, calls.keepDraft, calls.skipDraft]).toEqual([[[]], [[3]], [[4]]]);
+  });
+
+  it.each([0, -2, 2.5, '3', null, undefined])('names no draft by %j', async (id) => {
+    expect(await invoke(IpcChannels.appKeepDraft, appId, id)).toEqual(invalid);
+    expect(await invoke(IpcChannels.appSkipDraft, appId, id)).toEqual(invalid);
+    expect(calls.keepDraft ?? calls.skipDraft).toBeUndefined();
+  });
+
+  it('hears nothing of drafts from the overlay', async () => {
+    expect(await invoke(IpcChannels.appWriteDrafts, overlayId)).toEqual(invalid);
+    expect(await invoke(IpcChannels.appKeepDraft, overlayId, 1)).toEqual(invalid);
+    expect(await invoke(IpcChannels.appSkipDraft, overlayId, 1)).toEqual(invalid);
+    expect(Object.keys(calls)).toEqual([]);
+  });
+});

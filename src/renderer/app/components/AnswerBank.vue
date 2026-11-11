@@ -17,6 +17,7 @@ import SConfirm from '../../shared/components/SConfirm.vue';
 import SSwitch from '../../shared/components/SSwitch.vue';
 import STextArea from '../../shared/components/STextArea.vue';
 import { useAppStore } from '../app-store';
+import DraftList from './DraftList.vue';
 
 const store = useAppStore();
 const bank = computed(() => store.preferences.bank);
@@ -182,6 +183,8 @@ const also = (entry: BankEntry) =>
         The bank is full: {{ formatCount(maxBankEntries) }} answers. Delete one to add another.
       </span>
     </div>
+
+    <DraftList />
   </div>
 </template>
 

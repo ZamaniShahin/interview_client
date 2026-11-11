@@ -18,6 +18,7 @@ import { createLiveTransport } from '../../src/main/connection/live-connection';
 import { DeviceIdentity } from '../../src/main/device/device-identity';
 import { HistoryRecorder } from '../../src/main/history/history-recorder';
 import { HistoryService } from '../../src/main/history/history-service';
+import { DraftsService } from '../../src/main/jobs/drafts-service';
 import { runJob } from '../../src/main/jobs/run-job';
 import { openDatabase } from '../../src/main/storage/local-database';
 import { LocalStore } from '../../src/main/storage/local-store';
@@ -32,6 +33,8 @@ import {
   ErrorCodes,
   type LiveHub,
 } from '../../src/shared/contracts/sotto-contracts';
+import { emptyPreferences } from '../../src/shared/answer-bank';
+import { emptyDocuments } from '../../src/shared/documents';
 import { signUpInBrowser } from './keycloak-browser';
 
 /** A real PNG, one pixel: the server reads a screenshot's format and size from its header (backend 3.1). */
@@ -296,6 +299,22 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       raw: true,
       summary: 'Sure, here is the answer.',
     });
+
+    // 3.9: prep drafts asked for from the documents. The scripted AI writes no JSON, so the server finds no draft
+    // and fails the job: the request was taken and the job ran, end to end.
+    const drafts = new DraftsService({
+      documents: () => ({
+        ...emptyDocuments,
+        name: 'Sam Rivera',
+        resume: documents.Resume ?? '',
+        jobDescription: documents.JobDescription ?? '',
+      }),
+      preferences: () => ({ ...emptyPreferences, bank: [] }),
+      job: (path, body) => runJob(path, body, { rest }),
+      keep: () => ({ ok: true }),
+      changed: () => {},
+    });
+    expect(await drafts.write()).toMatchObject({ ok: false, code: ErrorCodes.Ai.ProviderUnavailable });
 
     // Renewal rotates the refresh token, and the new one is kept; signing out forgets it.
     const before = await secrets.get('refresh-token');

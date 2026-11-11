@@ -41,6 +41,7 @@ import {
   type StartSessionRequest,
 } from '../../shared/ipc';
 import { bankEntryInputSchema, bankIdSchema, instructionsSchema, type BankEntryInput } from '../../shared/answer-bank';
+import { draftIdSchema } from '../../shared/drafts';
 import { interviewIdSchema, type InterviewView } from '../../shared/history';
 import { selectionSchema } from '../../shared/screenshots';
 import { settingsPatchSchema } from '../../shared/settings';
@@ -102,6 +103,12 @@ export interface IpcDependencies {
   clearHistory: () => CommandResult;
   /** Asks the server for an interview's debrief, and keeps it (3.9). */
   debrief: (id: number) => Promise<CommandResult>;
+  /** Asks the server for prep drafts (3.9). */
+  writeDrafts: () => Promise<CommandResult>;
+  /** Keeps a draft in the answer bank (3.9). */
+  keepDraft: (id: number) => CommandResult;
+  /** Skips a draft (3.9). */
+  skipDraft: (id: number) => CommandResult;
 }
 
 const invalid: CommandResult = {
@@ -332,6 +339,23 @@ export function registerIpc(deps: IpcDependencies): void {
   ipcMain.handle(IpcChannels.appClearHistory, (event): CommandResult =>
     fromApp(event) ? deps.clearHistory() : invalid,
   );
+
+  // Prep drafts (3.9): the app window only, a draft named by its id.
+  ipcMain.handle(IpcChannels.appWriteDrafts, async (event): Promise<CommandResult> =>
+    fromApp(event) ? deps.writeDrafts() : invalid,
+  );
+
+  ipcMain.handle(IpcChannels.appKeepDraft, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = draftIdSchema.safeParse(payload);
+    return parsed.success ? deps.keepDraft(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appSkipDraft, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = draftIdSchema.safeParse(payload);
+    return parsed.success ? deps.skipDraft(parsed.data) : invalid;
+  });
 
   ipcMain.on(IpcChannels.appCopy, (event, payload: unknown) => {
     if (!fromApp(event)) return;

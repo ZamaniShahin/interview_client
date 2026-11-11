@@ -4,6 +4,7 @@ import type { AccountView, DeviceRemovalsView, DeviceView } from './account';
 import { emptyPreferences, type PreferencesView } from './answer-bank';
 import { emptyDocuments, type DocumentsView } from './documents';
 import { initialFirstRun, type FirstRunView } from './first-run';
+import { emptyDrafts, type DraftsView } from './drafts';
 import type { InterviewSummary } from './history';
 
 export type AuthView =
@@ -62,6 +63,8 @@ export interface AppState {
   history: InterviewSummary[];
   /** The interviews whose debrief the server is writing (3.9). */
   debriefing: number[];
+  /** Prep drafts being written, or waiting to be kept or skipped (3.9). */
+  drafts: DraftsView;
 }
 
 export const initialAppState: AppState = {
@@ -78,4 +81,5 @@ export const initialAppState: AppState = {
   deviceLimit: null,
   history: [],
   debriefing: [],
+  drafts: emptyDrafts,
 };

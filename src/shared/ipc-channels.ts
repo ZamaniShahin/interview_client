@@ -59,6 +59,12 @@ export const IpcChannels = {
   appDebrief: 'app:debrief',
   /** app window → main (send): text for the clipboard, main's to write, as the overlay's Copy is (3.9). */
   appCopy: 'app:copy',
+  /** app window → main (invoke): ask the server for prep drafts from the documents (3.9). */
+  appWriteDrafts: 'app:write-drafts',
+  /** app window → main (invoke): keep a draft in the answer bank, by its id (3.9). */
+  appKeepDraft: 'app:keep-draft',
+  /** app window → main (invoke): skip a draft, by its id (3.9). */
+  appSkipDraft: 'app:skip-draft',
   /**
    * main → documents window (3.10): the port files go through to be read. Like `capturePort`, it carries no payload of
    * its own; main checks every reply that comes back over it (main/documents/document-reader.ts).

@@ -43,6 +43,22 @@ describe.skipIf(!run)('the preferences in the built app, against the preview (3.
     await home.getByRole('status').getByText('Saved.').waitFor();
   });
 
+  it('drafts answers from the documents, keeping one in the bank and skipping the other (3.9)', async () => {
+    await home.getByRole('button', { name: 'Answer bank', exact: true }).click();
+    await home.getByRole('button', { name: 'Draft answers' }).click();
+    const drafts = home.getByRole('list', { name: 'Drafted answers' });
+    await drafts.waitFor({ timeout: 15_000 });
+    expect(await drafts.getByRole('listitem').count()).toBe(2);
+
+    await home.getByRole('button', { name: 'Keep “Why do you want to work on payments?”' }).click();
+    await home
+      .getByRole('list', { name: 'Prepared answers' })
+      .getByText('Why do you want to work on payments?')
+      .waitFor();
+    await home.getByRole('button', { name: 'Skip “How do you handle being on call?”' }).click();
+    await drafts.waitFor({ state: 'detached' });
+  });
+
   it("shows the user's own prepared answer at once when the interviewer's question matches it", async () => {
     await home.getByRole('button', { name: 'Home', exact: true }).click();
     await home.locator('input[type=checkbox]').check();

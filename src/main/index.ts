@@ -76,7 +76,8 @@ import { databaseKey, isUnreadable, openDatabase, setAside } from './storage/loc
 import { LocalStore, readinessFrom } from './storage/local-store';
 import { migrations } from './storage/schema';
 import { previewBank, previewDocuments } from './preview/documents';
-import { previewDebrief, previewDebriefMs } from './preview/history';
+import { previewDebrief, previewDebriefMs, previewDrafts } from './preview/history';
+import { DraftsService } from './jobs/drafts-service';
 import { HistoryRecorder } from './history/history-recorder';
 import { HistoryService } from './history/history-service';
 import { runJob } from './jobs/run-job';
@@ -152,14 +153,35 @@ session.recordTo((event) => recorder?.record(event));
 const history = new HistoryService({
   store: () => store?.history ?? null,
   running: () => recorder?.interviewId ?? null,
-  job: (path, body) => {
-    if (preview) return new Promise((resolve) => setTimeout(() => resolve(previewDebrief), previewDebriefMs));
-    if (!rest || auth?.current.status !== 'signed-in')
-      return Promise.reject(new ApiError(401, ErrorCodes.Identity.Unauthenticated, 'Sign in first.'));
-    return runJob(path, body, { rest });
-  },
+  job: serverJob,
   changed: (view) => setAppState(view),
 });
+
+// Prep drafts (3.9): written by the server from the documents, held here until each is kept or skipped.
+const drafts = new DraftsService({
+  documents: () => store?.documents() ?? null,
+  preferences: () => store?.preferences() ?? null,
+  job: serverJob,
+  keep: (input) => {
+    if (!store) return { ok: false, problem: "This computer's preferences can't be kept right now." };
+    const saved = store.saveBankEntry(input, 'draft');
+    if (!saved.ok) return saved;
+    setAppState({ preferences: store.preferences() });
+    return { ok: true };
+  },
+  changed: (view) => setAppState({ drafts: view }),
+});
+
+/** A job on the server (3.4): its result once done. The preview answers its own, after a moment. */
+function serverJob(path: string, body: unknown): Promise<unknown> {
+  if (preview) {
+    const result = path.endsWith('/prep-drafts') ? previewDrafts : previewDebrief;
+    return new Promise((resolve) => setTimeout(() => resolve(result), previewDebriefMs));
+  }
+  if (!rest || auth?.current.status !== 'signed-in')
+    return Promise.reject(new ApiError(401, ErrorCodes.Identity.Unauthenticated, 'Sign in first.'));
+  return runJob(path, body, { rest });
+}
 
 // A purchase finished in the browser shows in the account by itself (F8 · b, c): read again until it does.
 const payments = new PaymentWatch({
@@ -1136,6 +1158,9 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       deleteInterview: (id) => history.delete(id),
       clearHistory: () => history.clear(),
       debrief: (id) => history.debrief(id),
+      writeDrafts: () => drafts.write(),
+      keepDraft: (id) => drafts.keep(id),
+      skipDraft: (id) => drafts.skip(id),
     });
 
     const win = createAppWindow();

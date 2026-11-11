@@ -218,6 +218,21 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.debrief(id);
   }
 
+  // Prep drafts (3.9): held in main until each is kept or skipped.
+  const drafts = computed(() => state.value.drafts);
+
+  function writeDrafts(): Promise<CommandResult> {
+    return window.appApi.writeDrafts();
+  }
+
+  function keepDraft(id: number): Promise<CommandResult> {
+    return window.appApi.keepDraft(id);
+  }
+
+  function skipDraft(id: number): Promise<CommandResult> {
+    return window.appApi.skipDraft(id);
+  }
+
   return {
     state,
     loaded,
@@ -252,6 +267,10 @@ export const useAppStore = defineStore('app', () => {
     deleteInterview,
     clearHistory,
     debrief,
+    drafts,
+    writeDrafts,
+    keepDraft,
+    skipDraft,
     openSetup,
     showSetupScreen,
     closeSetup,

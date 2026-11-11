@@ -89,6 +89,12 @@ export interface AppApi extends SettingsApi {
   debrief(id: number): Promise<CommandResult>;
   /** Puts text on the clipboard, through main (a debrief's thank-you email, 3.9). */
   copy(text: string): void;
+  /** Asks the server for prep drafts from the documents; answers once they are here, or why not (3.9). */
+  writeDrafts(): Promise<CommandResult>;
+  /** Keeps a draft in the answer bank (3.9). */
+  keepDraft(id: number): Promise<CommandResult>;
+  /** Skips a draft (3.9). */
+  skipDraft(id: number): Promise<CommandResult>;
   /** The first-run notice was read, in this version. */
   acknowledgeNotice(version: number): Promise<CommandResult>;
   /** The setup wizard was finished: it no longer opens by itself. */
