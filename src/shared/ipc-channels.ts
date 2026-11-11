@@ -65,6 +65,8 @@ export const IpcChannels = {
   appKeepDraft: 'app:keep-draft',
   /** app window → main (invoke): skip a draft, by its id (3.9). */
   appSkipDraft: 'app:skip-draft',
+  /** app window → main (invoke): install the downloaded update now; the app restarts (4.2). */
+  appInstallUpdate: 'app:install-update',
   /**
    * main → documents window (3.10): the port files go through to be read. Like `capturePort`, it carries no payload of
    * its own; main checks every reply that comes back over it (main/documents/document-reader.ts).

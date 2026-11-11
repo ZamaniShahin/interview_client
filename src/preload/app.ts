@@ -32,6 +32,7 @@ const api: AppApi = {
   writeDrafts: () => ipcRenderer.invoke(IpcChannels.appWriteDrafts),
   keepDraft: (id) => ipcRenderer.invoke(IpcChannels.appKeepDraft, id),
   skipDraft: (id) => ipcRenderer.invoke(IpcChannels.appSkipDraft, id),
+  installUpdate: () => ipcRenderer.invoke(IpcChannels.appInstallUpdate),
   acknowledgeNotice: (version) => ipcRenderer.invoke(IpcChannels.appAcknowledgeNotice, { version }),
   finishSetup: () => ipcRenderer.invoke(IpcChannels.appFinishSetup),
   soundCheck: (action) => ipcRenderer.invoke(IpcChannels.appSoundCheck, action),

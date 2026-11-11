@@ -109,6 +109,8 @@ export interface IpcDependencies {
   keepDraft: (id: number) => CommandResult;
   /** Skips a draft (3.9). */
   skipDraft: (id: number) => CommandResult;
+  /** Installs the downloaded update now (4.2). */
+  installUpdate: () => CommandResult;
 }
 
 const invalid: CommandResult = {
@@ -356,6 +358,10 @@ export function registerIpc(deps: IpcDependencies): void {
     const parsed = draftIdSchema.safeParse(payload);
     return parsed.success ? deps.skipDraft(parsed.data) : invalid;
   });
+
+  ipcMain.handle(IpcChannels.appInstallUpdate, (event): CommandResult =>
+    fromApp(event) ? deps.installUpdate() : invalid,
+  );
 
   ipcMain.on(IpcChannels.appCopy, (event, payload: unknown) => {
     if (!fromApp(event)) return;

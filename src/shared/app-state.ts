@@ -6,6 +6,7 @@ import { emptyDocuments, type DocumentsView } from './documents';
 import { initialFirstRun, type FirstRunView } from './first-run';
 import { emptyDrafts, type DraftsView } from './drafts';
 import type { InterviewSummary } from './history';
+import { updatesOff, type UpdateView } from './updates';
 
 export type AuthView =
   | { status: 'signed-out' }
@@ -65,6 +66,8 @@ export interface AppState {
   debriefing: number[];
   /** Prep drafts being written, or waiting to be kept or skipped (3.9). */
   drafts: DraftsView;
+  /** Where an automatic update stands (4.2). */
+  update: UpdateView;
 }
 
 export const initialAppState: AppState = {
@@ -82,4 +85,5 @@ export const initialAppState: AppState = {
   history: [],
   debriefing: [],
   drafts: emptyDrafts,
+  update: updatesOff,
 };

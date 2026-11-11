@@ -8,6 +8,7 @@ import { useSettings } from '../shared/use-settings';
 import { useAppStore } from './app-store';
 import SideNav from './components/SideNav.vue';
 import DeviceLimitScreen from './DeviceLimitScreen.vue';
+import UpdateBanner from './components/UpdateBanner.vue';
 import WindowChrome from './components/WindowChrome.vue';
 import AccountPage from './pages/AccountPage.vue';
 import HelpPage from './pages/HelpPage.vue';
@@ -101,6 +102,7 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
         </template>
       </SideNav>
       <main class="main">
+        <UpdateBanner />
         <HomePage v-if="current === 'home'" />
         <PreparePage v-else-if="current === 'prepare'" />
         <AccountPage v-else-if="current === 'account'" />

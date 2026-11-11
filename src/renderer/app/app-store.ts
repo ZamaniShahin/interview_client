@@ -233,6 +233,13 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.skipDraft(id);
   }
 
+  // Automatic updates (4.2): where one stands, and installing it now.
+  const update = computed(() => state.value.update);
+
+  function installUpdate(): Promise<CommandResult> {
+    return window.appApi.installUpdate();
+  }
+
   return {
     state,
     loaded,
@@ -271,6 +278,8 @@ export const useAppStore = defineStore('app', () => {
     writeDrafts,
     keepDraft,
     skipDraft,
+    update,
+    installUpdate,
     openSetup,
     showSetupScreen,
     closeSetup,

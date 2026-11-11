@@ -46,7 +46,7 @@ const files = asar.listPackage(archive, { isPack: false }).map((f) => f.replaceA
 const has = (prefix) => files.some((f) => f.startsWith(prefix));
 check(has('/out/main/index.js'), 'the main process');
 check(has('/out/renderer/overlay/index.html') && has('/out/renderer/app/index.html'), 'the pages');
-for (const needed of ['@microsoft/signalr', 'better-sqlite3-multiple-ciphers', 'zod']) {
+for (const needed of ['@microsoft/signalr', 'better-sqlite3-multiple-ciphers', 'zod', 'electron-updater']) {
   check(has(`/node_modules/${needed}/`), `main's package ${needed}`);
 }
 for (const left of [

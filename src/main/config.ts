@@ -5,6 +5,8 @@ export interface ClientConfig {
   oidcIssuer: string;
   oidcClientId: string;
   scopes: string;
+  /** The update feed (4.2): where newer installers and their latest.yml are. None until the domain is chosen (Q4). */
+  updateUrl: string | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ClientConfig {
@@ -13,5 +15,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ClientConfig {
     oidcIssuer: env['SOTTO_OIDC_ISSUER'] ?? 'http://localhost:8080/realms/sotto',
     oidcClientId: env['SOTTO_OIDC_CLIENT_ID'] ?? 'desktop',
     scopes: 'openid email profile offline_access',
+    updateUrl: env['SOTTO_UPDATE_URL'] || null,
   };
 }

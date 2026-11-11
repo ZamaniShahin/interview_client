@@ -357,3 +357,12 @@ describe('the settings, hotkeys included, from either window (3.13)', () => {
     expect(updates).toEqual([]);
   });
 });
+
+describe('installing an update, for the app window only (4.2)', () => {
+  it('installs for the app window, and refuses any other', async () => {
+    expect(await invoke(IpcChannels.appInstallUpdate, appId)).toEqual({ ok: true });
+    expect(await invoke(IpcChannels.appInstallUpdate, overlayId)).toEqual(invalid);
+    expect(await invoke(IpcChannels.appInstallUpdate, selectorId)).toEqual(invalid);
+    expect(calls.installUpdate).toEqual([[]]);
+  });
+});

@@ -33,6 +33,7 @@ export function fakeAppApi(state: AppState, overrides: Partial<AppApi> = {}) {
     writeDrafts: vi.fn<AppApi['writeDrafts']>(async () => ({ ok: true })),
     keepDraft: vi.fn<AppApi['keepDraft']>(async () => ({ ok: true })),
     skipDraft: vi.fn<AppApi['skipDraft']>(async () => ({ ok: true })),
+    installUpdate: vi.fn<AppApi['installUpdate']>(async () => ({ ok: true })),
     acknowledgeNotice: vi.fn(async () => ({ ok: true as const })),
     finishSetup: vi.fn(async () => ({ ok: true as const })),
     soundCheck: vi.fn(async () => ({ ok: true as const })),

@@ -79,6 +79,8 @@ import { migrations } from './storage/schema';
 import { previewBank, previewDocuments } from './preview/documents';
 import { previewDebrief, previewDebriefMs, previewDrafts } from './preview/history';
 import { DraftsService } from './jobs/drafts-service';
+import { autoUpdater } from 'electron-updater';
+import { Updates } from './updates/updates';
 import { HistoryRecorder } from './history/history-recorder';
 import { HistoryService } from './history/history-service';
 import { runJob } from './jobs/run-job';
@@ -173,6 +175,13 @@ const drafts = new DraftsService({
     return { ok: true };
   },
   changed: (view) => setAppState({ drafts: view }),
+});
+
+// Automatic updates (4.2): only a packaged app with a feed checks one; the window learns where it stands.
+const updates = new Updates({
+  updater: app.isPackaged ? autoUpdater : null,
+  feedUrl: config.updateUrl,
+  changed: (view) => setAppState({ update: view }),
 });
 
 /** A job on the server (3.4): its result once done. The preview answers its own, after a moment. */
@@ -1126,6 +1135,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     });
     setAppState({ documents: store.documents(), preferences: store.preferences(), history: history.list() });
     showFirstRun();
+    updates.start();
 
     registerIpc({
       overlayWindow: () => overlayWindow,
@@ -1171,6 +1181,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       writeDrafts: () => drafts.write(),
       keepDraft: (id) => drafts.keep(id),
       skipDraft: (id) => drafts.skip(id),
+      installUpdate: () => updates.install(session.running || soundCheck.running),
     });
 
     const win = createAppWindow();

@@ -95,6 +95,8 @@ export interface AppApi extends SettingsApi {
   keepDraft(id: number): Promise<CommandResult>;
   /** Skips a draft (3.9). */
   skipDraft(id: number): Promise<CommandResult>;
+  /** Installs the downloaded update now: the app quits and comes back updated; refused during a session (4.2). */
+  installUpdate(): Promise<CommandResult>;
   /** The first-run notice was read, in this version. */
   acknowledgeNotice(version: number): Promise<CommandResult>;
   /** The setup wizard was finished: it no longer opens by itself. */
