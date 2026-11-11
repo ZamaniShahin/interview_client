@@ -72,7 +72,10 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
 - [ ] 3.7 The speech coach, on the device (engine: Q5).
 - [ ] 3.8 The prepared-answer match 📌, on the device.
 - [ ] 3.9 Local history and the debrief view.
-- [ ] 3.10 Reading documents (PDF, Word) on the device.
+- [x] **3.10 Reading documents (PDF, Word) on the device** (2026-11-11, `9d5bace`, branch `feature/documents`, on 3.6's; with the prep doc of the server's 3.2; checked with the unit and renderer tests and the app tests reading real files, 4 of 4):
+  - "From a file" in Prepare for the résumé, the job description, the notes and the prep doc; the text read shows in the editor first, and a document over its limit comes back whole, its limit named;
+  - files read by pdf.js and mammoth in a hidden, sandboxed window of their own, never in main; 20 MB, 500 pages and 20 s at most;
+  - the prep doc kept with its file's name, cut at a line break past 100,000 characters as v1 cut it, and sent at a session's start (`SetPrepDoc`) (decisions §16).
 - [ ] 3.11 The consent checkbox before each session. It is drawn, and main already refuses a start without it; this checkpoint is its final wording (4.8) and its tests end to end.
 - [ ] 3.12 Recording, opt-in.
 - [ ] 3.13 Settings, kept in the local database; hotkeys remappable.
