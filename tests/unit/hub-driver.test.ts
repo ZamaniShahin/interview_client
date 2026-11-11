@@ -744,6 +744,32 @@ describe("the hub driver's documents for a session (1.14)", () => {
     expect(none.transports[0]!.connection.methods()).toEqual(['StartSession', 'SetContext']);
   });
 
+  it('sends the preferences last, after the documents and the prep doc (3.8)', async () => {
+    const preferences = {
+      CustomInstructions: 'Keep answers short.',
+      PreparedAnswers: [{ Id: 'intro', Phrasings: ['Tell me about yourself'], Answer: 'I build payment systems.' }],
+    };
+    const h = harness({ deps: { context, prepDoc: { Name: 'p.pdf', Text: 'x', Cut: false }, preferences } });
+
+    await h.start();
+
+    expect(h.transports[0]!.connection.methods()).toEqual(['StartSession', 'SetContext', 'SetPrepDoc', 'SetPreferences']);
+    expect(h.transports[0]!.connection.invocations[3]!.request).toMatchObject(preferences);
+  });
+
+  it('sends no preferences when there are none, and starts even when the server refuses them (3.8)', async () => {
+    const none = harness({ deps: { context, preferences: null } });
+    await none.start();
+    expect(none.transports[0]!.connection.methods()).not.toContain('SetPreferences');
+
+    const refused = harness({
+      deps: { context: null, preferences: { CustomInstructions: 'x', PreparedAnswers: [] } },
+      connection: (t) => t.connection.replies.set('SetPreferences', () => ({ Ok: false, Code: 'too_long', Message: 'Too long.' })),
+    });
+    expect(await refused.start()).toEqual({ ok: true });
+    expect(refused.transports[0]!.connection.methods()).toEqual(['StartSession', 'SetPreferences']);
+  });
+
   it('starts the session even when the server refuses the prep doc (3.10)', async () => {
     const h = harness({
       deps: { context, prepDoc: { Name: 'p.pdf', Text: 'x', Cut: false } },

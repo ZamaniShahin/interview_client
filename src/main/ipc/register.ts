@@ -40,6 +40,7 @@ import {
   type SoundCheckAction,
   type StartSessionRequest,
 } from '../../shared/ipc';
+import { bankEntryInputSchema, bankIdSchema, instructionsSchema, type BankEntryInput } from '../../shared/answer-bank';
 import { selectionSchema } from '../../shared/screenshots';
 import { settingsPatchSchema } from '../../shared/settings';
 import type { OpenSelector } from '../screenshots/region-selector';
@@ -86,6 +87,12 @@ export interface IpcDependencies {
   setPrepDoc: (change: SetPrepDocRequest) => CommandResult;
   /** Reads a document from a file the user picks, for the window to show before it is kept (3.10). */
   readDocument: (target: ReadTarget) => Promise<ReadDocumentResult>;
+  /** Keeps the custom instructions (3.8). */
+  setInstructions: (text: string) => CommandResult;
+  /** Keeps an answer-bank entry, new or changed (3.8). */
+  saveBankEntry: (input: BankEntryInput) => CommandResult;
+  /** Deletes an answer-bank entry (3.8). */
+  removeBankEntry: (id: string) => CommandResult;
 }
 
 const invalid: CommandResult = {
@@ -277,6 +284,27 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromApp(event)) return refusal;
     const parsed = readTargetSchema.safeParse(payload);
     return parsed.success ? deps.readDocument(parsed.data) : refusal;
+  });
+
+  ipcMain.handle(IpcChannels.appSetInstructions, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = instructionsSchema.safeParse(payload);
+    if (parsed.success) return deps.setInstructions(parsed.data);
+    return typeof payload === 'string'
+      ? { ok: false, code: ErrorCodes.Field.TooLong, message: 'That is longer than Sotto can take.' }
+      : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appSaveBankEntry, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = bankEntryInputSchema.safeParse(payload);
+    return parsed.success ? deps.saveBankEntry(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appRemoveBankEntry, (event, payload: unknown): CommandResult => {
+    if (!fromApp(event)) return invalid;
+    const parsed = bankIdSchema.safeParse(payload);
+    return parsed.success ? deps.removeBankEntry(parsed.data) : invalid;
   });
 
   ipcMain.handle(IpcChannels.settingsGet, (event) =>

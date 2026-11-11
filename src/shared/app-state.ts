@@ -1,6 +1,7 @@
 // What the app window shows of the app as a whole: who is signed in, the account, this computer's documents, and the
 // one problem to explain. Main owns it and sends it whole on every change.
 import type { AccountView, DeviceRemovalsView, DeviceView } from './account';
+import { emptyPreferences, type PreferencesView } from './answer-bank';
 import { emptyDocuments, type DocumentsView } from './documents';
 import { initialFirstRun, type FirstRunView } from './first-run';
 
@@ -44,6 +45,8 @@ export interface AppState {
   preview: boolean;
   /** What answers are grounded in, as kept on this computer (1.14). */
   documents: DocumentsView;
+  /** Custom instructions and the answer bank, as kept on this computer (3.8). */
+  preferences: PreferencesView;
   /** The first run: the notice acknowledged, setup finished, hiding tested (1.14). */
   firstRun: FirstRunView;
   /** Why the last session ended (a `SessionEndReasons` value), until the window has said it: F8 · a's offer. */
@@ -62,6 +65,7 @@ export const initialAppState: AppState = {
   problem: null,
   preview: false,
   documents: emptyDocuments,
+  preferences: emptyPreferences,
   firstRun: initialFirstRun,
   lastSessionEnd: null,
   payment: null,

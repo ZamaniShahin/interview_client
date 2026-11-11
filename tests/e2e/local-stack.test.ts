@@ -103,7 +103,12 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
 
     // 1.12: a live session over the hub, driven as the overlay drives it.
     // The connection opens with this computer's proof (backend docs/04 §6); the server refuses one that isn't.
-    const driverWith = ({ forgeProof = false, auto = false, context = null as SessionDocuments | null } = {}) =>
+    const driverWith = ({
+      forgeProof = false,
+      auto = false,
+      context = null as SessionDocuments | null,
+      preferences = null as HubDriverDependencies['preferences'],
+    } = {}) =>
       new HubDriver({
         connect: (accessToken, deviceProof, events) =>
           createLiveTransport({
@@ -118,6 +123,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
         proof: (method, token) => accounts.hubProof(method, token),
         auto,
         context,
+        preferences,
       });
     expect(await new SessionController(() => {}).start(driverWith({ forgeProof: true }))).toMatchObject({
       ok: false,
@@ -188,7 +194,17 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       JobDescription: 'Senior Backend Engineer, Payments.',
       Notes: null,
     };
-    expect(await withDocuments.start(driverWith({ auto: true, context: documents }))).toEqual({ ok: true });
+    // 3.8: the preferences go with it, and the bank is matched here: the question heard is one the user prepared.
+    const prepared = {
+      Id: 'ledger',
+      Phrasings: ['How do you keep a ledger consistent?'],
+      Answer: 'Double entry, and idempotent writes.',
+    };
+    withDocuments.useBank([{ id: prepared.Id, phrasings: prepared.Phrasings, answer: prepared.Answer, enabled: true }]);
+    const preferences = { CustomInstructions: 'Keep answers short.', PreparedAnswers: [prepared] };
+    expect(await withDocuments.start(driverWith({ auto: true, context: documents, preferences }))).toEqual({
+      ok: true,
+    });
     withDocuments.audio(
       new TextEncoder().encode('SOTTO-SCRIPT final: How do you keep a ledger consistent?'),
       Date.now(),
@@ -197,6 +213,10 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       () => {
         const answer = withDocuments.current.answers.at(-1);
         expect(answer?.question).toBe('How do you keep a ledger consistent?');
+        expect(answer?.prepared).toEqual({
+          phrasing: 'How do you keep a ledger consistent?',
+          answer: 'Double entry, and idempotent writes.',
+        });
         expect(answer?.ending).toBe('done');
       },
       { timeout: 30_000, interval: 100 },

@@ -1,4 +1,5 @@
 // What each window may ask of main: the whole surface, typed. Types only, so renderers can import it freely.
+import type { BankEntryInput } from '../shared/answer-bank';
 import type { AppState } from '../shared/app-state';
 import type { ReadDocumentResult, ReadTarget, SetDocumentRequest, SetPrepDocRequest } from '../shared/documents';
 import type { SoundCheckView } from '../shared/first-run';
@@ -71,6 +72,12 @@ export interface AppApi extends SettingsApi {
   setPrepDoc(change: SetPrepDocRequest): Promise<CommandResult>;
   /** Reads a document from a file the user picks: its text, for the window to show before it is kept (3.10). */
   readDocument(target: ReadTarget): Promise<ReadDocumentResult>;
+  /** Keeps the custom instructions on this computer (3.8); empty removes them. */
+  setInstructions(text: string): Promise<CommandResult>;
+  /** Keeps an answer-bank entry, new (no id) or changed (3.8); refused in words when it isn't one. */
+  saveBankEntry(input: BankEntryInput): Promise<CommandResult>;
+  /** Deletes an answer-bank entry (3.8). */
+  removeBankEntry(id: string): Promise<CommandResult>;
   /** The first-run notice was read, in this version. */
   acknowledgeNotice(version: number): Promise<CommandResult>;
   /** The setup wizard was finished: it no longer opens by itself. */

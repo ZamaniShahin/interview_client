@@ -43,6 +43,12 @@ export const IpcChannels = {
   appSetPrepDoc: 'app:set-prep-doc',
   /** app window → main (invoke): read a document from a file the user picks; answers its text (3.10). */
   appReadDocument: 'app:read-document',
+  /** app window → main (invoke): the custom instructions, whole (3.8). */
+  appSetInstructions: 'app:set-instructions',
+  /** app window → main (invoke): keep an answer-bank entry, new or changed (3.8). */
+  appSaveBankEntry: 'app:save-bank-entry',
+  /** app window → main (invoke): delete an answer-bank entry, by its id (3.8). */
+  appRemoveBankEntry: 'app:remove-bank-entry',
   /**
    * main → documents window (3.10): the port files go through to be read. Like `capturePort`, it carries no payload of
    * its own; main checks every reply that comes back over it (main/documents/document-reader.ts).

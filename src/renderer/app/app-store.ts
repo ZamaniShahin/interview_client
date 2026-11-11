@@ -4,6 +4,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { initialAppState, type AppState } from '../../shared/app-state';
+import type { BankEntryInput } from '../../shared/answer-bank';
 import type { ReadDocumentResult, ReadTarget, SetDocumentRequest, SetPrepDocRequest } from '../../shared/documents';
 import { idleSoundCheck, notice as firstRunNotice, type SoundCheckView } from '../../shared/first-run';
 import type {
@@ -181,6 +182,21 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.readDocument(target);
   }
 
+  /** The preferences (3.8): main sends them next with the state. */
+  const preferences = computed(() => state.value.preferences);
+
+  function setInstructions(text: string): Promise<CommandResult> {
+    return window.appApi.setInstructions(text);
+  }
+
+  function saveBankEntry(input: BankEntryInput): Promise<CommandResult> {
+    return window.appApi.saveBankEntry(input);
+  }
+
+  function removeBankEntry(id: string): Promise<CommandResult> {
+    return window.appApi.removeBankEntry(id);
+  }
+
   return {
     state,
     loaded,
@@ -205,6 +221,10 @@ export const useAppStore = defineStore('app', () => {
     setDocument,
     setPrepDoc,
     readDocument,
+    preferences,
+    setInstructions,
+    saveBankEntry,
+    removeBankEntry,
     openSetup,
     showSetupScreen,
     closeSetup,

@@ -1,7 +1,8 @@
 // What the app keeps on this computer, over the encrypted database (local-database.ts, schema.ts). Where each thing
 // lives follows backend docs/07 §5: the résumé, the job description and the prep doc are `documents` (the prep doc
 // with its file's name); the candidate's name, the notes and the settings are `settings` rows, each a key and a JSON
-// value, as is whether the prep doc was cut.
+// value, as is whether the prep doc was cut. The answer bank is its own table (3.8), and the custom instructions a
+// settings row.
 import {
   emptyDocuments,
   type DocumentField,
@@ -9,6 +10,15 @@ import {
   type PrepDocView,
   type SetPrepDocRequest,
 } from '../../shared/documents';
+import { randomUUID } from 'node:crypto';
+import {
+  bankEntryProblem,
+  maxBankEntries,
+  phrasingsOf,
+  type BankEntry,
+  type BankEntryInput,
+  type PreferencesView,
+} from '../../shared/answer-bank';
 import type { FirstRunView } from '../../shared/first-run';
 import { settingsSchema, type Settings } from '../../shared/settings';
 import type { LocalDatabase } from './local-database';
@@ -107,6 +117,102 @@ export class LocalStore {
       this.setSetting(place.key, { text, savedAt: at } satisfies SavedText);
     }
     return this.documents();
+  }
+
+  /** The preferences (3.8): custom instructions, and the answer bank in the order its entries were added. */
+  preferences(): PreferencesView {
+    const instructions = this.setting('preferences.instructions');
+    return {
+      instructions: isSavedText(instructions) ? instructions.text : '',
+      instructionsSavedAt: isSavedText(instructions) ? instructions.savedAt : null,
+      bank: this.bank(),
+    };
+  }
+
+  /** Keeps the custom instructions whole; empty removes them. Checked by the IPC handler. */
+  setInstructions(text: string): PreferencesView {
+    if (text.trim() === '') this.deleteSetting('preferences.instructions');
+    else this.setSetting('preferences.instructions', { text, savedAt: this.now() } satisfies SavedText);
+    return this.preferences();
+  }
+
+  /**
+   * Keeps an entry, cleaned as v1 kept it (`normalize_entry`): new, it gets an id and goes last; known, it is changed in
+   * its place. Refused in words when it isn't one (no question, no answer, past a limit), or the bank is full.
+   */
+  saveBankEntry(
+    input: BankEntryInput,
+    source: BankEntry['source'] = 'manual',
+  ): { ok: true; entry: BankEntry } | { ok: false; problem: string } {
+    const phrasings = phrasingsOf(input.phrasings);
+    const answer = input.answer.trim();
+    const problem = bankEntryProblem(phrasings, answer);
+    if (problem) return { ok: false, problem };
+    const known = input.id !== null && this.bank().some((e) => e.id === input.id);
+    if (!known && this.bank().length >= maxBankEntries) {
+      return { ok: false, problem: `The answer bank is full (${maxBankEntries} answers): delete one first.` };
+    }
+    const entry: BankEntry = {
+      id: known ? input.id! : randomUUID().replace(/-/g, ''),
+      phrasings,
+      answer,
+      enabled: input.enabled,
+      source: known ? (this.bank().find((e) => e.id === input.id)?.source ?? source) : source,
+      updatedAt: this.now(),
+    };
+    this.db
+      .prepare(
+        `INSERT INTO answer_bank (id, phrasings, answer, enabled, source, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (id) DO UPDATE SET phrasings = excluded.phrasings, answer = excluded.answer,
+           enabled = excluded.enabled, updated_at = excluded.updated_at`,
+      )
+      .run(
+        entry.id,
+        JSON.stringify(entry.phrasings),
+        entry.answer,
+        entry.enabled ? 1 : 0,
+        entry.source,
+        new Date(entry.updatedAt).toISOString(),
+      );
+    return { ok: true, entry };
+  }
+
+  removeBankEntry(id: string): void {
+    this.db.prepare('DELETE FROM answer_bank WHERE id = ?').run(id);
+  }
+
+  /** The answer bank, oldest first. A row that no longer reads is left out. */
+  bank(): BankEntry[] {
+    const rows = this.db
+      .prepare('SELECT id, phrasings, answer, enabled, source, updated_at FROM answer_bank ORDER BY rowid')
+      .all() as {
+      id: string;
+      phrasings: string;
+      answer: string;
+      enabled: number;
+      source: string;
+      updated_at: string;
+    }[];
+    const entries: BankEntry[] = [];
+    for (const row of rows) {
+      let phrasings: unknown;
+      try {
+        phrasings = JSON.parse(row.phrasings);
+      } catch {
+        continue;
+      }
+      if (!Array.isArray(phrasings) || phrasings.length === 0 || !phrasings.every((p) => typeof p === 'string'))
+        continue;
+      entries.push({
+        id: row.id,
+        phrasings: phrasings as string[],
+        answer: row.answer,
+        enabled: row.enabled === 1,
+        source: row.source === 'draft' ? 'draft' : 'manual',
+        updatedAt: Date.parse(row.updated_at),
+      });
+    }
+    return entries;
   }
 
   /** The settings kept, field by field. One that no longer reads (from an older app, say) is left out: its default stands. */

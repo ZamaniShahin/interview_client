@@ -14,7 +14,7 @@ One small window floats over the call, always on top. It never takes focus from 
 | **History ‹ ›** | the earlier answers of this interview, to step back and forth |
 | **Ask bar** | a text box with the modes Question, Tip, Study and Result |
 | **Coach strip** (Phase 3) | the candidate's own talk time, words per minute, fillers, and which key words of the answer they used; a nudge to wrap up at 90 s |
-| **Prepared answer 📌** (Phase 3) | when the question matches one of the candidate's prepared answers, that answer at once, while the generated one is written |
+| **Prepared answer 📌** (built 2026-11-11, 3.8) | when the question matches one of the candidate's prepared answers (v1's match, on this computer), that answer at once, while the generated one is written |
 | **Screenshots** (Phase 3) | the screenshots attached to the next question |
 | **Practice panel** (Phase 3) | the mock interview ([02](02-journeys.md) J9) |
 

@@ -83,7 +83,7 @@ A packaged build never runs the preview.
 - **The computers**, removed after asking, with the removals left; **the device limit**, met by removing one in this computer's place.
 - **The ledger**, paged by "Show earlier"; signing out asks first.
 
-**Not yet:** the microphone (with the coach, 3.7), history and the answer bank (later, in the same database), packaging hardening.
+**Not yet:** the microphone (with the coach, 3.7), history (later, in the same database), packaging hardening. The answer bank came with 3.8 (2026-11-11), in the same database.
 
 ## Tech decisions
 

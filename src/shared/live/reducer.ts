@@ -49,6 +49,8 @@ export type LiveAction =
   | { type: 'view'; index: number | null }
   /** Minutes and tier come from the account until the hub carries usage (backend 2.4). */
   | { type: 'account'; minutesLeft: number | null; tier: Tier | null }
+  /** The question an answer started for matched one of the user's prepared answers, on this computer (3.8). */
+  | { type: 'prepared'; answerId: string; phrasing: string; answer: string }
   /** The session ended without a `SessionEnded` event: it couldn't be resumed in time, or the server said it expired. */
   | { type: 'ended'; reason: string };
 
@@ -74,6 +76,11 @@ export function reduceLive(state: LiveViewState, action: LiveAction): LiveViewSt
       return { ...state, viewing: clampView(state, action.index) };
     case 'account':
       return { ...state, minutesLeft: action.minutesLeft, tier: action.tier };
+    case 'prepared':
+      return updateAnswer(state, action.answerId, (a) => ({
+        ...a,
+        prepared: { phrasing: action.phrasing, answer: action.answer },
+      }));
     case 'ended':
       return state.phase === 'ended' ? state : endSession(state, action.reason);
   }
@@ -148,6 +155,7 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
         failureMessage: null,
         startedAtMs: event.e.AtMs,
         screenshotIds: event.e.ScreenshotIds ?? [],
+        prepared: null,
       };
       return {
         ...next,

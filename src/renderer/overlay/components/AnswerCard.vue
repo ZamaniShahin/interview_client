@@ -12,6 +12,7 @@ import { ago } from '../../shared/use-now';
 import AnswerBody from './AnswerBody.vue';
 import HistoryPager from './HistoryPager.vue';
 import KindBadge from './KindBadge.vue';
+import PreparedCard from './PreparedCard.vue';
 import ScreenshotStrip from './ScreenshotStrip.vue';
 
 const props = defineProps<{
@@ -118,7 +119,11 @@ onBeforeUnmount(() => resizes?.disconnect());
     </div>
     <div v-else class="scroller">
       <div ref="body" class="body" :class="{ dimmed: answer.ending === 'stopped' }" @scroll.passive="onScroll">
-        <AnswerBody :text="answer.text" :writing="answer.ending === 'writing'" />
+        <!-- One element, so the observer below sees the answer grow, whether or not a prepared answer comes first. -->
+        <div class="content">
+          <PreparedCard v-if="answer.prepared" :phrasing="answer.prepared.phrasing" :answer="answer.prepared.answer" />
+          <AnswerBody :text="answer.text" :writing="answer.ending === 'writing'" />
+        </div>
         <div v-if="answer.ending === 'failed'" class="end" role="status">
           <SIcon name="attention" />
           <span>{{ answer.failureMessage || 'This answer stopped early.' }}</span>

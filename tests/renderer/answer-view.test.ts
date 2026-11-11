@@ -160,6 +160,7 @@ const answer = (text: string, id = 'a', ending: AnswerView['ending'] = 'writing'
   failureMessage: null,
   startedAtMs: 0,
   screenshotIds: [],
+  prepared: null,
 });
 
 describe('a long answer (1.13)', () => {

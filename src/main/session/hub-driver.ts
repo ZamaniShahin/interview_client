@@ -13,6 +13,7 @@ import {
   type LiveClient,
   type LiveHub,
   type SetContextRequest,
+  type SetPreferencesRequest,
   type SetPrepDocRequest,
 } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult } from '../../shared/ipc';
@@ -39,6 +40,8 @@ export interface HubDriverDependencies {
   context?: Omit<SetContextRequest, 'CommandId'> | null;
   /** The prep doc, sent after the documents (`SetPrepDoc`, 3.10): its name, its text and whether it was cut. */
   prepDoc?: Omit<SetPrepDocRequest, 'CommandId'> | null;
+  /** The custom instructions and the bank's enabled entries, sent last (`SetPreferences`, 3.8). */
+  preferences?: Omit<SetPreferencesRequest, 'CommandId'> | null;
   /**
    * End the account's live session on another device and start here. Only after the user said yes to it, never by
    * default (the contract's `TakeOver`).
@@ -190,6 +193,8 @@ export class HubDriver implements SessionDriver {
     if (context) await hub.setContext({ CommandId: randomUUID(), ...context }).catch(() => undefined);
     const prepDoc = this.deps.prepDoc;
     if (prepDoc) await hub.setPrepDoc({ CommandId: randomUUID(), ...prepDoc }).catch(() => undefined);
+    const preferences = this.deps.preferences;
+    if (preferences) await hub.setPreferences({ CommandId: randomUUID(), ...preferences }).catch(() => undefined);
   }
 
   /**

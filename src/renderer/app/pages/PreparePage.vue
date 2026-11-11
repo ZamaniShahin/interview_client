@@ -2,7 +2,8 @@
 // Prepare (F14): the documents answers are grounded in, each counted against its limit and edited in place. They stay
 // on this computer, encrypted, and go to the server only with a session (main sends them as `SetContext`, and the prep
 // doc as `SetPrepDoc`). Each can be typed, pasted, or read from a file on this computer (3.10): the text read shows
-// in the editor first, and nothing is kept until it is saved. Instructions and the answer bank come with 3.8.
+// in the editor first, and nothing is kept until it is saved. Then the preferences (3.8): custom instructions and the
+// answer bank.
 import { computed, ref } from 'vue';
 import { fieldLimits, type DocumentField, type ReadTarget } from '../../../shared/documents';
 import { documentLimits, formatCount } from '../../../shared/text-limits';
@@ -10,6 +11,8 @@ import SButton from '../../shared/components/SButton.vue';
 import SSegmented from '../../shared/components/SSegmented.vue';
 import STextArea from '../../shared/components/STextArea.vue';
 import { useAppStore } from '../app-store';
+import AnswerBank from '../components/AnswerBank.vue';
+import InstructionsEditor from '../components/InstructionsEditor.vue';
 
 type Part = 'documents' | 'instructions' | 'bank';
 const part = ref<Part>('documents');
@@ -216,14 +219,8 @@ async function save(): Promise<void> {
         </div>
       </div>
     </template>
-    <p v-else class="lede">
-      {{
-        part === 'instructions'
-          ? 'Your custom instructions, up to 4,000 characters.'
-          : 'Prepared answers, each with the phrasings it answers.'
-      }}
-      They come with the later phase (F14).
-    </p>
+    <InstructionsEditor v-else-if="part === 'instructions'" />
+    <AnswerBank v-else />
   </section>
 </template>
 

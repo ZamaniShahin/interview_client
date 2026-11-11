@@ -1,6 +1,7 @@
 // Owns the live session's view state in main: the overlay can reload without losing it, and nothing in a renderer
 // talks to the network. Commands go to a driver: the hub (hub-driver.ts), or the scripted preview in development.
-import { ErrorCodes } from '../../shared/contracts/sotto-contracts';
+import { bestMatch, buildIndex, type MatchEntry, type MatchIndex } from '../../shared/answer-match';
+import { AnswerKind, ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult, OverlayCommand } from '../../shared/ipc';
 import { reduceLive, type LiveAction } from '../../shared/live/reducer';
 import { initialLiveState, type LiveViewState } from '../../shared/live/view-state';
@@ -53,6 +54,8 @@ export class SessionController {
   private state: LiveViewState = initialLiveState;
   private driver: SessionDriver | null = null;
   private publishTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The answer bank's enabled entries, indexed once per session (3.8). */
+  private bank: MatchIndex = [];
 
   constructor(
     private readonly publish: (state: LiveViewState) => void,
@@ -67,13 +70,37 @@ export class SessionController {
     return this.driver !== null && this.state.phase !== 'ended';
   }
 
+  /** The answer bank the session's questions are matched to (3.8): its enabled entries, in its order. */
+  useBank(entries: readonly MatchEntry[]): void {
+    this.bank = buildIndex(entries);
+  }
+
   readonly dispatch = (action: LiveAction): void => {
     this.state = reduceLive(this.state, action);
+    if (action.type === 'event' && action.event.name === 'answerStart') this.matchPrepared(action.event.e);
     if (action.type === 'event' && (action.event.name === 'attachments' || action.event.name === 'answerStart')) {
       this.screenshots?.shelf.prune(this.screenshotsInUse());
     }
     this.schedulePublish();
   };
+
+  /**
+   * The 📌 card (3.8, v1's prepared_match): a spoken or typed question, the trigger's included, matched to the user's
+   * own prepared answers as its answer starts, so theirs shows at once while the generated one is written. Not a Tip,
+   * Study, Result or a screen's: those aren't the interviewer's questions.
+   */
+  private matchPrepared(e: { AnswerId: string; Question: string; Kind: AnswerKind }): void {
+    if (this.bank.length === 0 || (e.Kind !== AnswerKind.Spoken && e.Kind !== AnswerKind.Typed)) return;
+    const match = bestMatch(this.bank, e.Question);
+    if (match) {
+      this.state = reduceLive(this.state, {
+        type: 'prepared',
+        answerId: e.AnswerId,
+        phrasing: match.phrasing,
+        answer: match.answer,
+      });
+    }
+  }
 
   async start(driver: SessionDriver): Promise<CommandResult> {
     if (this.running) {

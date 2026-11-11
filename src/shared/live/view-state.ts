@@ -39,6 +39,11 @@ export interface AnswerView {
   startedAtMs: number;
   /** The screenshots this answer reads, by the client's ids, in the order taken (3.6); empty for one with none. */
   screenshotIds: string[];
+  /**
+   * The user's own prepared answer for this question, matched on this computer as the answer started (3.8, the 📌
+   * card): the phrasing it matched, and the answer as prepared. Null when none matched.
+   */
+  prepared: { phrasing: string; answer: string } | null;
 }
 
 /** The screenshots waiting for the next answer (3.6): the client's ids, in the order attached, and how many fit. */

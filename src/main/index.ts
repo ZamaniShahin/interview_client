@@ -17,6 +17,7 @@ import { hostname, release } from 'node:os';
 import { join } from 'node:path';
 import type { AccountView } from '../shared/account';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
+import { preferencesToSend, type BankEntryInput } from '../shared/answer-bank';
 import { ErrorCodes } from '../shared/contracts/sotto-contracts';
 import {
   answersOnItsOwn,
@@ -74,7 +75,7 @@ import { SettingsStore } from './settings-store';
 import { databaseKey, isUnreadable, openDatabase, setAside } from './storage/local-database';
 import { LocalStore, readinessFrom } from './storage/local-store';
 import { migrations } from './storage/schema';
-import { previewDocuments } from './preview/documents';
+import { previewBank, previewDocuments } from './preview/documents';
 import { createAppWindow } from './windows/app-window';
 import { openCaptureWindow } from './windows/capture-window';
 import { openDocumentsWindow } from './windows/documents-window';
@@ -629,6 +630,37 @@ function setDocument(change: SetDocumentRequest): CommandResult {
   return { ok: true };
 }
 
+/** The preferences can't be kept without the database: said in words. */
+const noStore: CommandResult = {
+  ok: false,
+  code: ErrorCodes.Request.Unavailable,
+  message: "This computer's preferences can't be kept right now.",
+};
+
+/** Keeps the custom instructions on this computer (3.8). */
+function setInstructions(text: string): CommandResult {
+  if (!store) return noStore;
+  setAppState({ preferences: store.setInstructions(text) });
+  return { ok: true };
+}
+
+/** Keeps an answer-bank entry, new or changed (3.8); refused in words when it isn't one, or the bank is full. */
+function saveBankEntry(input: BankEntryInput): CommandResult {
+  if (!store) return noStore;
+  const saved = store.saveBankEntry(input);
+  if (!saved.ok) return { ok: false, code: ErrorCodes.Request.InvalidInput, message: saved.problem };
+  setAppState({ preferences: store.preferences() });
+  return { ok: true };
+}
+
+/** Deletes an answer-bank entry (3.8). */
+function removeBankEntry(id: string): CommandResult {
+  if (!store) return noStore;
+  store.removeBankEntry(id);
+  setAppState({ preferences: store.preferences() });
+  return { ok: true };
+}
+
 /** Keeps the prep doc on this computer, whole, with its name and whether it was cut (3.10). */
 function setPrepDoc(change: SetPrepDocRequest): CommandResult {
   if (!store) {
@@ -680,6 +712,8 @@ async function openStore(): Promise<LocalStore> {
   if (preview) {
     const sample = new LocalStore(openDatabase(null, null, migrations));
     for (const [field, text] of Object.entries(previewDocuments)) sample.setDocument(field as DocumentField, text);
+    // A prepared answer the scripted interview asks for, so its 📌 card shows (3.8).
+    for (const entry of previewBank) sample.saveBankEntry(entry);
     sample.soundCheckPassed();
     sample.acknowledgeNotice(notice.version);
     sample.finishSetup();
@@ -714,7 +748,10 @@ async function openStore(): Promise<LocalStore> {
 
 /** A driver over the hub, signed in: a session's, or the sound check's. */
 function hubDriver(
-  options: Pick<HubDriverDependencies, 'auto' | 'context' | 'prepDoc' | 'takeOver' | 'onEntitlementsUpdated'>,
+  options: Pick<
+    HubDriverDependencies,
+    'auto' | 'context' | 'prepDoc' | 'preferences' | 'takeOver' | 'onEntitlementsUpdated'
+  >,
 ): HubDriver {
   const signedIn = auth!;
   const service = accounts!;
@@ -778,6 +815,8 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
       prepDoc: documents?.prepDoc
         ? { Name: documents.prepDoc.name || null, Text: documents.prepDoc.text, Cut: documents.prepDoc.cut }
         : null,
+      // Then the custom instructions and the bank's enabled entries (3.8).
+      preferences: store ? preferencesToSend(store.preferences()) : null,
       // Only after the user chose "Start here" on Home, once the server said the session is open elsewhere.
       takeOver: request.takeOver === true,
       // A purchase, a renewal or a refund while the session runs: the account's minutes and plan, read again.
@@ -789,6 +828,8 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
   setAppState({ lastSessionEnd: null, notice: null });
   openOverlay();
   session.dispatch({ type: 'account', minutesLeft: account.view.minutes?.usable ?? null, tier: account.tier });
+  // The questions answered are matched to the bank's enabled entries on this computer: the 📌 card (3.8).
+  session.useBank(store?.preferences().bank ?? []);
   const result = await session.start(driver);
   if (!result.ok) {
     // The server refused (no plan, no minutes, an outdated client…): back to the window, which says why.
@@ -1015,7 +1056,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     if (!preview) await createServices();
     store = await openStore();
     settings.restore(store.settings(), (kept) => store?.saveSettings(kept));
-    setAppState({ documents: store.documents() });
+    setAppState({ documents: store.documents(), preferences: store.preferences() });
     showFirstRun();
 
     registerIpc({
@@ -1052,6 +1093,9 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       selector: () => selector.current,
       setPrepDoc,
       readDocument,
+      setInstructions,
+      saveBankEntry,
+      removeBankEntry,
     });
 
     const win = createAppWindow();
