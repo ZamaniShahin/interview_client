@@ -25,6 +25,9 @@ describe.skipIf(!run)('screenshots in the built app, against the preview (3.6)',
   async function shownSelector(): Promise<Page> {
     const selector = await page(app, 'selector/index.html');
     await expect.poll(selectorWindow, { timeout: 10_000 }).toEqual({ visible: true, excluded: true });
+    // Windows sends the window under the real pointer a mouse move when windows change. Let it land before the test's
+    // own press: arriving mid-drag, with no button held, it reads as the button let go where the page didn't see it.
+    await new Promise((resolve) => setTimeout(resolve, 400));
     return selector;
   }
 

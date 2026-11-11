@@ -4,7 +4,8 @@ import { app, BrowserWindow, desktopCapturer, MessageChannelMain, session, type 
 import { IpcChannels } from '../../shared/ipc-channels';
 import type { CaptureChannel } from '../capture/audio-capture';
 import { keepOutOfCapture, lockDown } from './stealth';
-import { loadPage, preloadPath } from './load-page';
+import { serveApp } from './app-protocol';
+import { loadPage, preloadPath, rendererRoot } from './load-page';
 
 /** In memory: nothing of it is written to disk. */
 const partition = 'sotto-capture';
@@ -33,6 +34,8 @@ function allowLoopbackOnly(captureSession: Session): void {
 export function openCaptureWindow(): CaptureChannel {
   const captureSession = session.fromPartition(partition);
   allowLoopbackOnly(captureSession);
+  // Its own session needs the built pages too (4.1).
+  serveApp(captureSession, rendererRoot);
 
   const win = new BrowserWindow({
     show: false,

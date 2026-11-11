@@ -4,7 +4,8 @@
 import { app, BrowserWindow, MessageChannelMain, session } from 'electron';
 import { IpcChannels } from '../../shared/ipc-channels';
 import type { DocumentsChannel } from '../documents/document-reader';
-import { loadPage, preloadPath } from './load-page';
+import { serveApp } from './app-protocol';
+import { loadPage, preloadPath, rendererRoot } from './load-page';
 import { denyPermissions, keepOutOfCapture, lockDown } from './stealth';
 
 /** In memory: nothing of it is written to disk. */
@@ -17,6 +18,8 @@ export function openDocumentsWindow(): DocumentsChannel {
   if (!configured) {
     configured = true;
     denyPermissions(documentsSession);
+    // Its own session needs the built pages too (4.1).
+    serveApp(documentsSession, rendererRoot);
   }
 
   const win = new BrowserWindow({

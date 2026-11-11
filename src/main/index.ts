@@ -88,6 +88,8 @@ import { openCaptureWindow } from './windows/capture-window';
 import { openDocumentsWindow } from './windows/documents-window';
 import { createOverlayWindow, overlaySize } from './windows/overlay-window';
 import { denyPermissions } from './windows/stealth';
+import { registerAppScheme, serveApp } from './windows/app-protocol';
+import { rendererRoot } from './windows/load-page';
 
 const config = loadConfig();
 
@@ -1092,6 +1094,8 @@ async function createServices(): Promise<void> {
 
 // Every renderer runs sandboxed, whatever a window's options say.
 app.enableSandbox();
+// The built pages come from app://sotto/, a scheme registered before the app is ready (4.1).
+registerAppScheme();
 
 // Development only: the capture path on this computer, checked with nothing shown (scripts/capture-check.mjs).
 if (!app.isPackaged && process.argv.includes('--capture-check')) {
@@ -1110,6 +1114,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     // No native menus: a menu is a separate window a share could see, and the app draws its own.
     Menu.setApplicationMenu(null);
     denyPermissions(electronSession.defaultSession);
+    serveApp(electronSession.defaultSession, rendererRoot);
     if (!preview) await createServices();
     store = await openStore();
     settings.restore(store.settings(), (kept) => store?.saveSettings(kept));
