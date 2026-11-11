@@ -63,7 +63,12 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 
 ## Phase 3: everything v1 did
 
-- [ ] 3.6 The screenshot region selector.
+Built by Claude in Shahin's unattended run ("anything left before deployment", 2026-11-10 and 2026-11-11), each checkpoint on a branch of its own, built on the one before; the backend's branches through `feature/deep-round-3.3-3.4` are merged first, since the contract comes from them.
+
+- [x] **3.6 The screenshot region selector** (2026-11-11, `f3b1838`, branch `feature/screenshot-selector`, on the server's 3.1; checked with the unit and renderer tests, the app tests against the real selector, 4 of 4, and the end-to-end tests against the local stack):
+  - v1's selector, ported: the display under the pointer frozen into a window that never takes focus and is left out of captures; a click takes it all, a drag an area, Esc or a right-click nothing; only where Windows leaves protected windows out of captures (build 19041 and later);
+  - the screenshot button and Ctrl+Shift+G: in AUTO asked about at once with what was typed as its note, in MANUAL attached for the next answer; the attached ones over the ask bar, and under each answer the ones it read, to attach again;
+  - the images in main's memory only, never on disk, and attached again after the session moves to another server (decisions §15).
 - [ ] 3.7 The speech coach, on the device (engine: Q5).
 - [ ] 3.8 The prepared-answer match 📌, on the device.
 - [ ] 3.9 Local history and the debrief view.
