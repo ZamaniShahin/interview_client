@@ -320,3 +320,40 @@ describe('prep drafts, for the app window only (3.9)', () => {
     expect(Object.keys(calls)).toEqual([]);
   });
 });
+
+describe('the settings, hotkeys included, from either window (3.13)', () => {
+  const settingsWith = () => {
+    const updates: unknown[] = [];
+    register({
+      settings: {
+        get: () => ({}),
+        update: (patch: unknown) => (updates.push(patch), patch),
+      } as never,
+    });
+    return updates;
+  };
+
+  it('keeps a change of hotkeys that can stand, from the app window or the overlay', async () => {
+    const updates = settingsWith();
+    await invoke(IpcChannels.settingsSet, appId, { hotkeys: { capture: 'Alt+Shift+S' } });
+    await invoke(IpcChannels.settingsSet, overlayId, { hotkeys: {} });
+    expect(updates).toEqual([{ hotkeys: { capture: 'Alt+Shift+S' } }, { hotkeys: {} }]);
+  });
+
+  it.each([
+    ['a clash', { hotkeys: { capture: 'CommandOrControl+Shift+H' } }],
+    ['a key with Ctrl alone', { hotkeys: { capture: 'CommandOrControl+S' } }],
+    ['an action there is not', { hotkeys: { record: 'Alt+Shift+R' } }],
+    ['no accelerator', { hotkeys: { capture: 'Ctrl+Shift+S' } }],
+  ])('refuses a change with %s, keeping nothing', async (_, patch) => {
+    const updates = settingsWith();
+    expect(() => invoke(IpcChannels.settingsSet, appId, patch)).toThrow();
+    expect(updates).toEqual([]);
+  });
+
+  it('refuses a change from a page that is not a Sotto window', () => {
+    const updates = settingsWith();
+    expect(() => invoke(IpcChannels.settingsSet, selectorId, { hotkeys: {} })).toThrow();
+    expect(updates).toEqual([]);
+  });
+});
