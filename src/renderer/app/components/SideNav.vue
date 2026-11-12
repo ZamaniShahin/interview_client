@@ -40,11 +40,14 @@ const emit = defineEmits<{ select: [id: T] }>();
   height: 34px;
   padding: 0 10px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-2);
   font: 500 13px/16px var(--font-sans);
   text-align: left;
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
 }
 .item:hover {
   background: var(--surface-1);
@@ -54,6 +57,7 @@ const emit = defineEmits<{ select: [id: T] }>();
   background: var(--surface-2);
   color: var(--text-0);
   font-weight: 600;
+  box-shadow: inset 0 1px 0 var(--highlight);
 }
 .foot {
   margin-top: auto;

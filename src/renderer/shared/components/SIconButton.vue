@@ -30,9 +30,16 @@ withDefaults(
   flex: none;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-2);
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out),
+    transform 100ms ease-out;
+}
+.ib:active:not(:disabled) {
+  transform: var(--press);
 }
 .s28 {
   width: 28px;

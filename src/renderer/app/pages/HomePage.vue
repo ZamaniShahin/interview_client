@@ -154,7 +154,7 @@ async function start(): Promise<void> {
 .card {
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface-1);
 }
 .h {

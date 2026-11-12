@@ -46,7 +46,7 @@ function move(delta: number): void {
   gap: 2px;
   padding: 4px;
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface-1);
 }
 .option {

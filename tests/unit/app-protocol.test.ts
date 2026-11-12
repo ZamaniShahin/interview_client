@@ -8,12 +8,22 @@ const { appUrl, fileOf } = await import('../../src/main/windows/app-protocol');
 const root = normalize('C:/Program Files/Sotto/resources/app.asar/out/renderer');
 
 describe('a page’s address (4.1)', () => {
-  it.each<[string, string | undefined, string]>([
-    ['overlay', undefined, 'app://sotto/overlay/index.html'],
-    ['app', undefined, 'app://sotto/app/index.html'],
-    ['overlay', 'hiding-test', 'app://sotto/overlay/index.html#hiding-test'],
-  ])('names %s (%s) as %s', (page, hash, url) => {
-    expect(appUrl(page, hash)).toBe(url);
+  it.each<[string, string | undefined, string | undefined, string]>([
+    ['overlay', undefined, undefined, 'app://sotto/overlay/index.html'],
+    ['app', undefined, undefined, 'app://sotto/app/index.html'],
+    ['overlay', 'hiding-test', undefined, 'app://sotto/overlay/index.html#hiding-test'],
+    // What the page is told goes before its mode, as an address has them (the glass, 2026-11-12).
+    ['app', undefined, '?glass=1', 'app://sotto/app/index.html?glass=1'],
+    ['overlay', 'hiding-test', '?glass=1', 'app://sotto/overlay/index.html?glass=1#hiding-test'],
+    ['overlay', undefined, '', 'app://sotto/overlay/index.html'],
+  ])('names %s (%s, %s) as %s', (page, hash, search, url) => {
+    expect(appUrl(page, hash, search)).toBe(url);
+  });
+
+  it('serves the page it names, whatever it is told', () => {
+    for (const url of ['app://sotto/app/index.html?glass=1', 'app://sotto/overlay/index.html?glass=1#hiding-test']) {
+      expect(fileOf(url, root)).toBe(join(root, new URL(url).pathname.slice(1)));
+    }
   });
 });
 

@@ -74,21 +74,36 @@ describe("this computer's documents (1.14)", () => {
 describe('the settings, kept on this computer (1.14)', () => {
   it('come back as they were saved', () => {
     const { local } = store();
-    local.saveSettings({ ...defaultSettings, theme: 'light', opacity: 80, keepTranscripts: true });
+    local.saveSettings({
+      ...defaultSettings,
+      theme: 'light',
+      overlayOpacity: 55,
+      appOpacity: 100,
+      keepTranscripts: true,
+    });
 
-    expect(local.settings()).toEqual({ ...defaultSettings, theme: 'light', opacity: 80, keepTranscripts: true });
+    expect(local.settings()).toEqual({
+      ...defaultSettings,
+      theme: 'light',
+      overlayOpacity: 55,
+      appOpacity: 100,
+      keepTranscripts: true,
+    });
   });
 
   it('leave out a value that no longer reads, so its default stands', () => {
     const { db, local } = store();
     local.saveSettings(defaultSettings);
     db.prepare("UPDATE settings SET value = '\"purple\"' WHERE key = 'settings.theme'").run();
-    db.prepare("UPDATE settings SET value = 'nonsense' WHERE key = 'settings.opacity'").run();
+    db.prepare("UPDATE settings SET value = '42' WHERE key = 'settings.overlayOpacity'").run();
+    // The three-step fade before the glass (2026-11-12): an old row is left alone, and the new default stands.
+    db.prepare("INSERT INTO settings (key, value) VALUES ('settings.opacity', '90')").run();
     db.prepare("INSERT INTO settings (key, value) VALUES ('settings.trayOnly', 'true')").run();
 
     const kept = local.settings();
 
     expect(kept).not.toHaveProperty('theme');
+    expect(kept).not.toHaveProperty('overlayOpacity');
     expect(kept).not.toHaveProperty('opacity');
     expect(kept).not.toHaveProperty('trayOnly');
     expect(kept).toMatchObject({ textSize: 'M', startCompact: false });

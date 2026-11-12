@@ -16,9 +16,9 @@ export function registerAppScheme(): void {
   ]);
 }
 
-/** A page's address: app://sotto/<page>/index.html, with its mode after #. */
-export function appUrl(page: string, hash?: string): string {
-  return `${appScheme}://${appHost}/${page}/index.html${hash ? `#${hash}` : ''}`;
+/** A page's address: app://sotto/<page>/index.html, with what it is told (`?glass=1`) and its mode after #. */
+export function appUrl(page: string, hash?: string, search = ''): string {
+  return `${appScheme}://${appHost}/${page}/index.html${search}${hash ? `#${hash}` : ''}`;
 }
 
 /**

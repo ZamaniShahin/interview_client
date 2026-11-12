@@ -3,12 +3,23 @@
 import { z } from 'zod';
 import { effectiveHotkeys, hotkeyOverridesSchema, hotkeyProblems } from './hotkeys';
 
+/** The least a background may be: below it, text over a busy screen stops being readable. */
+export const minOpacity = 30;
+
+/** A background opacity: 30 to 100 percent, in steps of 5. */
+export const opacityPercent = z.number().int().min(minOpacity).max(100).multipleOf(5);
+
 export const settingsSchema = z.object({
   theme: z.enum(['dark', 'light']),
   /** The answer's text size: 15, 16 or 18 px. */
   textSize: z.enum(['S', 'M', 'L']),
-  /** For comfort only: the overlay is left out of captures at any opacity. */
-  opacity: z.union([z.literal(100), z.literal(90), z.literal(80)]),
+  /**
+   * How opaque each window's background is, in percent (Shahin, 2026-11-12): behind it, Windows 11 blurs what is on
+   * screen (its acrylic material); the text stays solid. Where there is no glass (Windows 10), the overlay's fades the
+   * whole window instead, and the app window stays solid. For comfort only: the overlay is out of captures at any.
+   */
+  overlayOpacity: opacityPercent,
+  appOpacity: opacityPercent,
   // No "tray only": during a session Sotto has neither a taskbar button nor a tray icon (Q16), so nothing to choose.
   startCompact: z.boolean(),
   keepTranscripts: z.boolean(),
@@ -28,7 +39,8 @@ export type SettingsPatch = z.infer<typeof settingsPatchSchema>;
 export const defaultSettings: Settings = {
   theme: 'dark',
   textSize: 'M',
-  opacity: 100,
+  overlayOpacity: 75,
+  appOpacity: 80,
   startCompact: false,
   keepTranscripts: false,
   keepRecordings: false,

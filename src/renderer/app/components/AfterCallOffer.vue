@@ -69,7 +69,7 @@ async function run(action: () => Promise<unknown>): Promise<void> {
 .offer {
   padding: 16px;
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface-1);
 }
 .h {
@@ -88,7 +88,7 @@ async function run(action: () => Promise<unknown>): Promise<void> {
   gap: 4px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
 }
 .title {
   color: var(--text-0);

@@ -44,6 +44,43 @@ export function displayAffinity(handles: string[]): number[] {
   return out.trim().split(/\r?\n/).map(Number);
 }
 
+/** DWMSBT_TRANSIENTWINDOW: the system backdrop Electron's `backgroundMaterial: 'acrylic'` asks of Windows. */
+export const acrylicBackdrop = 3;
+
+/** WS_EX_LAYERED: a window composited as a layer of its own, as Electron's setOpacity makes one. */
+const layeredStyle = 0x80000;
+
+/**
+ * How Windows draws each window, read from Windows itself and never from the screen: whether it is layered, the
+ * system backdrop DWM was asked for (DWMWA_SYSTEMBACKDROP_TYPE), and whether its frame and backdrop are dark
+ * (DWMWA_USE_IMMERSIVE_DARK_MODE).
+ */
+export function windowLook(handles: string[]): { layered: boolean; backdrop: number; dark: boolean }[] {
+  const script =
+    "$ProgressPreference = 'SilentlyContinue'\n" +
+    "Add-Type -Namespace Sotto -Name Look -MemberDefinition '" +
+    '[DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int index);' +
+    '[DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hWnd, int attribute, out int value, int size);' +
+    "'\n" +
+    `foreach ($h in @(${handles.join(',')})) { $w = [IntPtr][int64]$h; ` +
+    '$ex = [Sotto.Look]::GetWindowLongPtr($w, -20).ToInt64(); ' +
+    '$b = 0; [void][Sotto.Look]::DwmGetWindowAttribute($w, 38, [ref]$b, 4); ' +
+    '$d = 0; [void][Sotto.Look]::DwmGetWindowAttribute($w, 20, [ref]$d, 4); ' +
+    '"$ex $b $d" }';
+  const encoded = Buffer.from(script, 'utf16le').toString('base64');
+  const out = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  return out
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => {
+      const [style, backdrop, dark] = line.trim().split(' ').map(Number) as [number, number, number];
+      return { layered: (style & layeredStyle) !== 0, backdrop, dark: dark !== 0 };
+    });
+}
+
 /** Every window: its page, its native handle, whether it is on screen. */
 export function windowsOf(app: ElectronApplication) {
   return app.evaluate(({ BrowserWindow }) =>

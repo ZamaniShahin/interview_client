@@ -18,11 +18,16 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--surface-0);
   color: var(--text-1);
   font: 400 14px/20px var(--font-sans);
   -webkit-font-smoothing: antialiased;
   user-select: none;
+}
+
+/* The window's own background, one layer only: with the glass, its material at the opacity chosen; layers on it are
+   tints, never more of it (stacked, they would turn solid). */
+body {
+  background: var(--window);
 }
 
 #app {
@@ -36,6 +41,11 @@ h3,
 ul,
 ol {
   margin: 0;
+}
+
+/* Large text draws a little tighter, as the eye reads it (the apple-design skill's typography). */
+h1 {
+  letter-spacing: -0.01em;
 }
 
 button,

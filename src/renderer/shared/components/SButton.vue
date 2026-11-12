@@ -37,12 +37,19 @@ withDefaults(
   padding: 0 12px;
   flex: none;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-1);
   font: 600 13px/16px var(--font-sans);
   white-space: nowrap;
-  transition: background-color 120ms ease-out;
+  transition:
+    background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out),
+    transform 100ms ease-out;
+}
+/* Pressed, it gives a little, at once (the apple-design skill's feedback). */
+.btn:active:not(:disabled) {
+  transform: var(--press);
 }
 .sm {
   height: 26px;
@@ -58,6 +65,9 @@ withDefaults(
 .primary {
   background: var(--primary);
   color: var(--on-primary);
+  box-shadow:
+    var(--shadow-1),
+    inset 0 1px 0 var(--primary-highlight);
 }
 .primary:hover:not(:disabled) {
   background: var(--primary-hover);
@@ -66,6 +76,7 @@ withDefaults(
   background: var(--surface-2);
   border-color: var(--line-2);
   color: var(--text-0);
+  box-shadow: inset 0 1px 0 var(--highlight);
 }
 .secondary:hover:not(:disabled) {
   background: var(--surface-3);
@@ -89,6 +100,7 @@ withDefaults(
 .primary:disabled {
   background: var(--surface-2);
   border-color: transparent;
+  box-shadow: none;
 }
 .key {
   display: inline-flex;

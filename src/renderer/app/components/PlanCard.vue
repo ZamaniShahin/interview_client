@@ -39,7 +39,7 @@ const lines = computed(() => offerLines(props.offer));
   gap: 10px;
   padding: 18px;
   border: 1px solid var(--line-2);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   background: var(--surface-1);
 }
 .plan.current {

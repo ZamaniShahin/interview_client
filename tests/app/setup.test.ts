@@ -55,7 +55,8 @@ describe.skipIf(!runAppTests)('the first run in the built app, against the previ
     expect(await heading()).toBe('Test hiding');
 
     await click('Show the overlay');
-    const card = await page(app, 'overlay/index.html#hiding-test');
+    // The overlay's page in its test mode, whatever it is told before the mode (`?glass=1`).
+    const card = await page(app, '#hiding-test');
     await card.getByText('Testing hiding').waitFor();
     const test = (await windowsOf(app)).find((w) => w.url.includes('#hiding-test'))!;
     await expect

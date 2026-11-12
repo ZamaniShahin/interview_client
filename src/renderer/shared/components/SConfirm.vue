@@ -28,7 +28,7 @@ onMounted(() => root.value?.focus());
 .confirm {
   padding: 12px;
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   outline: none;
   background: var(--surface-2);
 }

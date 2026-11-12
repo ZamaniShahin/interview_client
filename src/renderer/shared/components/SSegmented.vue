@@ -51,18 +51,21 @@ function move(delta: number): void {
   flex: none;
   gap: 2px;
   padding: 2px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface-2);
 }
 button {
   height: 28px;
   padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-chip);
   background: transparent;
   color: var(--text-2);
   font: 600 12px/16px var(--font-sans);
   white-space: nowrap;
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
 }
 .sm button {
   height: 24px;
@@ -77,7 +80,9 @@ button[aria-pressed='true'] {
   background: var(--selected);
   border-color: var(--line-2);
   color: var(--text-0);
-  box-shadow: var(--shadow-1);
+  box-shadow:
+    var(--shadow-1),
+    inset 0 1px 0 var(--highlight);
 }
 button:disabled {
   color: var(--text-off);

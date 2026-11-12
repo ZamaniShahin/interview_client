@@ -331,7 +331,7 @@ async function deleteAccount(): Promise<void> {
 .card {
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface-1);
 }
 .block {
@@ -391,7 +391,7 @@ async function deleteAccount(): Promise<void> {
   margin-top: 8px;
   padding: 12px;
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface-2);
 }
 .question {

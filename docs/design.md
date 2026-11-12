@@ -36,9 +36,16 @@ Not a brand (backend decisions.md, 2026-11-06). The brand is Q14, and on 2026-11
 - grays;
 - amber for key words, and for nothing else.
 
-The values are in [`src/renderer/shared/styles/tokens.css`](../src/renderer/shared/styles/tokens.css), identical to the canvas.
-- **Theme:** dark is the default, light is in Settings. `<html>` carries `theme-dark` or `theme-light`.
+The values are in [`src/renderer/shared/styles/tokens.css`](../src/renderer/shared/styles/tokens.css): the canvas's, but for the glass and the refinements that came with it (Shahin, 2026-11-12; [decisions.md](decisions.md) §23). The canvas keeps its own values until it is redrawn.
+- **Theme:** dark is the default, light is in Settings. `<html>` carries `theme-dark` or `theme-light`, and the theme tints what Windows draws too (each window's frame and glass).
 - **Answer size:** `text-s` or `text-l` sets it.
+- **The glass:** where Windows 11 (22H2 and later) draws its acrylic behind a window, `<html>` also carries `glass`. Then:
+  - the window's own background, `--window`, is the one layer that fades: it is painted on `<body>` at the opacity chosen for that window in Settings (30–100%), the screen behind showing through it, blurred; text, icons and controls stay solid;
+  - surfaces 1–3, `--selected` and `--code` are light tints over it, and `--surface-0`, what matched the window, is clear. Never paint a surface of its own over the window: layers stacked on the glass turn it milky;
+  - menus and popovers are `--menu`, nearly solid, blurring what is under them;
+  - with Windows' transparency effects off, the window is solid again;
+  - without the glass, every value is solid, and the overlay's setting fades the whole window instead.
+- **Corners, edges, motion:** `--radius-card` 14 px, `--radius-control` 8, `--radius-chip` 6; `--highlight`, the light on a raised layer's top edge (an inset 1 px shadow), and `--primary-highlight` on the primary button's; `--press` (`scale(0.97)`, 100 ms) as a control is pressed; `--ease-out` for every change of state, over 150 ms.
 
 ## Proposals the design makes
 
@@ -68,7 +75,7 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 | The ask bar | `overlay/components/AskBar.vue` |
 | More menu | `overlay/components/MoreMenu.vue` |
 | ◢ grip | `overlay/components/ResizeGrip.vue` |
-| Shared primitives | `renderer/shared/components/`: `SButton`, `SIconButton`, `SSegmented`, `SSwitch`, `SCheckbox`, `SOptionList`, `STextArea`, `SBanner`, `SConfirm`, `SStepper`, `SKbd`, `SIcon` |
+| Shared primitives | `renderer/shared/components/`: `SButton`, `SIconButton`, `SSegmented`, `SSwitch`, `SSlider`, `SCheckbox`, `SOptionList`, `STextArea`, `SBanner`, `SConfirm`, `SStepper`, `SKbd`, `SIcon` |
 | The window: chrome, sidebar, pages | `renderer/app/AppShell.vue`, `components/WindowChrome.vue`, `SideNav.vue`, `pages/` |
 | Account rows, plan cards | `app/components/DeviceRow.vue`, `MinutesLotRow.vue`, `LedgerRow.vue`, `PlanCard.vue`, `PlanPicker.vue` |
 | The account (F10), its ledger and computers pages | `app/pages/AccountPage.vue`; the plan's words in `src/shared/plan-words.ts`, the removal's in `device-words.ts` |

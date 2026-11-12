@@ -1,11 +1,15 @@
 <script setup lang="ts">
 // Settings: the UI canvas's proposals for the handoff's §14. Main owns them; every window follows a change at once.
 import SSegmented from '../../shared/components/SSegmented.vue';
+import SSlider from '../../shared/components/SSlider.vue';
 import SSwitch from '../../shared/components/SSwitch.vue';
-import { useSettings } from '../../shared/use-settings';
+import { minOpacity } from '../../../shared/settings';
+import { hasGlass, useSettings } from '../../shared/use-settings';
 import HotkeySettings from '../components/HotkeySettings.vue';
 
 const { settings, update } = useSettings(window.appApi);
+/** Whether Windows draws the glass behind the windows: then each background has its own opacity. */
+const glass = hasGlass();
 </script>
 
 <template>
@@ -40,19 +44,36 @@ const { settings, update } = useSettings(window.appApi);
           />
         </div>
         <div class="row">
-          <span>Overlay opacity</span>
-          <SSegmented
-            :model-value="settings.opacity"
-            :options="[
-              { value: 100, label: '100%' },
-              { value: 90, label: '90%' },
-              { value: 80, label: '80%' },
-            ]"
-            label="Overlay opacity"
-            @update:model-value="(opacity) => update({ opacity })"
+          <span>{{ glass ? 'Overlay background' : 'Overlay opacity' }}</span>
+          <SSlider
+            :model-value="settings.overlayOpacity"
+            :min="minOpacity"
+            :max="100"
+            :step="5"
+            unit="%"
+            :label="glass ? 'Overlay background' : 'Overlay opacity'"
+            @update:model-value="(overlayOpacity) => update({ overlayOpacity })"
           />
         </div>
-        <p class="small">Opacity is for your comfort only: the overlay is left out of shares either way.</p>
+        <div v-if="glass" class="row">
+          <span>Window background</span>
+          <SSlider
+            :model-value="settings.appOpacity"
+            :min="minOpacity"
+            :max="100"
+            :step="5"
+            unit="%"
+            label="Window background"
+            @update:model-value="(appOpacity) => update({ appOpacity })"
+          />
+        </div>
+        <p class="small">
+          {{
+            glass
+              ? 'How much of the screen shows through, blurred, behind the text; the text stays solid. For your comfort only: the overlay is left out of shares either way.'
+              : 'Without Windows 11’s glass, the overlay fades as a whole. For your comfort only: it is left out of shares either way.'
+          }}
+        </p>
 
         <p class="eyebrow section">During a session</p>
         <SSwitch :model-value="settings.startCompact" label="Start in compact view" @update:model-value="(startCompact) => update({ startCompact })" />
@@ -92,6 +113,10 @@ const { settings, update } = useSettings(window.appApi);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+/* A setting's name stays on one line beside its control. */
+.row > span {
+  white-space: nowrap;
 }
 .section {
   margin-top: 8px;

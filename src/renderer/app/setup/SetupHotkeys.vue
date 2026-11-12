@@ -20,7 +20,7 @@ const lede = computed(
 
 <template>
   <SetupStep heading="Your hands stay on the call" :lede="lede">
-    <ul class="keys">
+    <ul class="hotkeys">
       <li v-for="row in hotkeyRows" :key="row.label" class="key">
         <span>{{ row.label }}</span>
         <SKbd :keys="keysOf(row.actions, keys)" />
@@ -35,7 +35,7 @@ const lede = computed(
 </template>
 
 <style scoped>
-.keys {
+.hotkeys {
   margin: 0;
   padding: 0;
   list-style: none;

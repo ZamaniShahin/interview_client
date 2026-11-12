@@ -265,7 +265,7 @@ const kinds: Record<number, string> = {
 .tag {
   flex: none;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface-2);
   color: var(--text-2);
   font-size: 12px;

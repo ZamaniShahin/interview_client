@@ -66,11 +66,23 @@ function move(delta: number): void {
   z-index: 5;
   width: 236px;
   padding: 4px;
-  border-radius: 10px;
-  background: var(--surface-2);
+  border-radius: 12px;
+  /* A material of its own over the answer: nearly solid, blurring what is under it (the apple-design skill). */
+  background: var(--menu);
+  backdrop-filter: blur(24px) saturate(160%);
   box-shadow:
     var(--shadow-2),
-    0 0 0 1px var(--line-2);
+    0 0 0 1px var(--line-2),
+    inset 0 1px 0 var(--highlight);
+  /* It opens from the button that opened it. */
+  transform-origin: top right;
+  animation: menu-in 160ms var(--ease-out);
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
 .item {
   display: flex;
@@ -80,7 +92,7 @@ function move(delta: number): void {
   height: 32px;
   padding: 0 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-chip);
   background: transparent;
   color: var(--text-1);
   font: 400 13px/16px var(--font-sans);

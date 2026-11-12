@@ -78,7 +78,7 @@ const anyChanged = computed(() => Object.keys(props.changed).length > 0);
 </script>
 
 <template>
-  <ul class="keys" aria-label="Hotkeys">
+  <ul class="hotkeys" aria-label="Hotkeys">
     <li v-for="action in hotkeyActions" :key="action" class="key">
       <div class="row">
         <span class="name">{{ hotkeyLabels[action] }}</span>
@@ -131,7 +131,7 @@ const anyChanged = computed(() => Object.keys(props.changed).length > 0);
 </template>
 
 <style scoped>
-.keys {
+.hotkeys {
   display: flex;
   flex-direction: column;
   gap: 6px;
