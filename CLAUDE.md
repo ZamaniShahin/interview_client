@@ -67,6 +67,10 @@ npm run contracts:sync   # copy the backend's contracts/sotto-contracts.ts; cont
 
 **Launching from a tool hosted in VS Code** (an agent's shell, a task runner) inherits `ELECTRON_RUN_AS_NODE=1` from VS Code's extension host. Electron then runs as plain Node, and main fails at `app.isPackaged`. Start it with `env -u ELECTRON_RUN_AS_NODE npm run dev`. A normal terminal doesn't have the variable.
 
+**The app tests drive the built app on the real desktop.** Run them with the screen unlocked (the screenshot selector's tests capture the desktop), with nobody using the mouse (the selector covers the whole screen and a real click ends it: decisions §23), and with no other Sotto open: the app keeps one instance, so a preview left open makes each launch quit at once. An `npm run dev:preview` started from an agent's background shell can outlive the shell's stop, its electron-vite relaunching Electron: end that process tree before the app tests.
+
+**Never capture the screen** to check how a window looks: a capture once caught another app's window. `node scripts/ui-shots.mjs` takes pictures of the built app's own pages only (over a painted backdrop, for the glass), and what Windows draws for a window (its backdrop, whether it is layered, its dark mode) is read from Windows itself (`windowLook` in tests/app/windows.ts). How the glass looks on a real screen is Shahin's to see. `node scripts/selector-probe.mjs` opens the screenshot selector again and again, touching nothing, and records what reaches it, for a selector test that fails.
+
 **`npm run dev` needs the backend's local stack** (`dotnet run --project src/Sotto.AppHost` there; README, "Talking to a local backend"). Sign in on Home, in the browser, then start a session: it runs on the server, over the hub.
 
 **`npm run dev:preview` needs no server.** It plays a scripted interview with a sample account:
@@ -153,6 +157,10 @@ How Shahin works with agents, the same in both repositories. This was kept in on
 
   One option may carry several tags; never invent an option to fill a tag. Each question must stand on its own, since the dialog may be all he sees.
 - **Work he hands over is yours to decide.** Once he says "complete it yourself", decide its details, log each in docs/decisions.md as taken in session, and say so in one line. Still ask about what "Ask first" lists, and about brand, scope or process choices.
+- **One branch per task, and merging only on his word.** This and the next rule were in his user-level files on his first PC (`~/.claude/CLAUDE.md` and his git-commit skill) and are copied here on 2026-11-12, so they hold on any computer:
+  - before changing a tracked file for a new task, make a branch for it in each repository it touches, with the same name in each: `feature/<name>` or `bugfix/<name>`, lowercase letters, digits and `- . _` only, from a fresh `origin/development` (`git fetch origin`, then `git switch -c <branch> --no-track origin/development`). Never work on `development` itself, nor go on with an old branch;
+  - push the branch once the work is committed. When he says to merge, fast-forward `development` to the branch in each repository and push it, then commit on the branch the roadmaps' note that it is in `development`, and fast-forward again;
+- **Commits, in his format:** Conventional Commits, a lowercase imperative subject, and a body that says what was wrong or why the change exists, what was done and why that way, and what was checked, honestly: what ran and what didn't. Write the message to a file and commit with `git commit -F`, staging files by path. **Claude is never a co-author:** no `Co-Authored-By` trailer, no "Generated with" line. After each commit, `git log -1 --format=%B | grep -i -E 'co-authored-by|anthropic|claude code'` must print nothing (both repositories).
 - **An unattended run** ("go for all of the roadmap", "no interrupt, keep the questions for tomorrow"):
   - ask nothing, and take the checkpoints in your recommended order;
   - for each checkpoint: its tests, then `npm run check` (and the end-to-end test against the local stack where it applies), then commit and push, then record the commit in docs/roadmap.md;

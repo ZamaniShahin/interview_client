@@ -19,7 +19,8 @@ The numbers are the backend's (`docs/decisions.md` §2). Settled there:
   - Q33: screenshots checked by a header reader on the server;
   - Q35: Claude builds 1.11, the rest of 1.12, 1.13, 1.14 and 2.13, in order;
   - Q37: v1's source is on GitHub (`ZamaniShahin/interview_app`);
-  - Q18: the level meter and the no-audio warning come with audio capture (1.11).
+  - Q18: the level meter and the no-audio warning come with audio capture (1.11);
+- on 2026-11-12, Q50: practice is drawn now, from the protocol and v1's mock interview, and redrawn from Claude Design's export once it is at hand ([decisions.md](decisions.md) §24).
 
 Q27–Q51 are open there too, apart from the ones above. The rows below are the ones that change something in the client.
 
@@ -41,7 +42,6 @@ Q27–Q51 are open there too, apart from the ones above. The rows below are the 
 | Q36 | **At most 3 hub connections per user** (backend docs/08 §5) | no limit | a fourth connection is refused, and the app says why | before launch |
 | Q44 | **DPoP**: Keycloak supports it; turned on, the tokens are bound to a key the app holds | off | the app sends a DPoP proof when it gets tokens and with every call: a protocol change, made on both sides together | before launch (proposed: with 2.13) |
 | Q49 | **How strict the 📌 match is** (3.8). It is v1's `best_match`, ported unchanged: an F1 of 0.6 over content words, with 60% of the phrasing covered. The deep round found it gives a prepared answer to a different question that shares most of its words: "where do you see the company in five years" gets the answer to "…yourself in five years", and "how did you cut costs by forty percent" the one to "…cut latency by forty percent". Be stricter than v1 (a higher threshold, or every content word of the phrasing required)? | v1's, as built; proposed: keep it until real sessions show how often it misfires | the 📌 card shows less often, and never for a near miss | before launch |
-| Q50 | **Claude Design's practice export** isn't on this computer, and the practice screens are to be redrawn from it ([design.md](design.md)). Put it where the unattended run can read it, or draw practice from the protocol and v1's mock interview on these components now? | wait for the export | the practice screens: their layout, not their behavior, which the protocol sets | the practice checkpoint |
 | Q51 | **Recording (3.12): the go-ahead and its shape.** It opens the microphone and keeps call audio on the disk, both on this repository's "Ask first" list. Go ahead as the README plans (a WAV of the call and the microphone, opt-in in Settings, after the consent box)? How long are recordings kept? | not built | a microphone permission for the capture window; a recordings folder; History linking each interview's recording | 3.12 |
 
 ## Unknowns that aren't decisions

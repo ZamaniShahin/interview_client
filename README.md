@@ -83,7 +83,20 @@ A packaged build never runs the preview.
 - **The computers**, removed after asking, with the removals left; **the device limit**, met by removing one in this computer's place.
 - **The ledger**, paged by "Show earlier"; signing out asks first.
 
-**Not yet:** the microphone (with the coach, 3.7), history's HTML report (v1's history.py), packaging hardening. The answer bank came with 3.8 and history with 3.9 (2026-11-11), in the same database.
+**Phases 3 and 4 in Shahin's unattended run, 2026-11-10 and 2026-11-11** (each checkpoint's commit is in [docs/roadmap.md](docs/roadmap.md); [docs/decisions.md](docs/decisions.md) §15–§22):
+- **Screenshots** (3.6): the region selector, out of captures; an area attached for the next question, or asked about at once in AUTO.
+- **Documents from files** (3.10): PDF and Word read in a sandboxed window of their own, and the prep doc.
+- **The answer bank and the 📌 card** (3.8): prepared answers and custom instructions in Prepare, a question matched to them on this computer as it is answered.
+- **History and debriefs** (3.9): each interview kept here, encrypted; a debrief asked of the server; prep drafts for the answer bank.
+- **Settings and hotkeys** (3.13): kept in the database, each session hotkey changed by pressing it.
+- **Hardening** (4.1): the pages from `app://sotto/`, Electron's fuses, the ASAR's integrity, only main's packages in the installer.
+- **Automatic updates** (4.2) from a feed, installed on quit; signing is still to come.
+
+**The glass, 2026-11-12** ([docs/decisions.md](docs/decisions.md) §23): each window's background at the opacity set in Settings, the text solid; the overlay on clear glass, so the call app behind it can be read; the app window frosted by Windows 11's acrylic; a more refined look.
+
+**Practice, 2026-11-12** ([docs/decisions.md](docs/decisions.md) §24): the Practice page, v1's mock interview answered by typing, in a session of its own that hears nothing; practice kept in History with each answer's feedback.
+
+**Not yet:** the microphone, with spoken practice answers and the coach (3.7, Q5) and recording (3.12, Q51); the consent box's final words (3.11, with the legal texts); signing (4.2) and Sentry (4.1); practice redrawn from Claude Design's export (Q50); history's HTML report (v1's history.py).
 
 ## Tech decisions
 
