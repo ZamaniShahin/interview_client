@@ -7,7 +7,8 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 **Where it stands (2026-11-12):**
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
 - `development` holds the whole of Shahin's unattended run since 2026-11-12 (`ae755b5`), checked there: `npm run check`, the app tests and the end-to-end tests against the local stack; then the screenshot selector's settle time (`263250b`), which those app tests led to;
-- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9, 3.13 and 4.1 and their deep round, then 4.2's updates. What is left waits on Shahin: 3.12 (Q51) (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
+- Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9, 3.13 and 4.1 and their deep round, then 4.2's updates. What is left waits on Shahin: 3.12 (Q51) (3.7 on Q5, 3.11 on 4.8's wording);
+- then, at Shahin's word, practice (`f4f52f3`, branch `feature/practice-page`, not merged yet): the Practice page, answered by typing, and practice in History (decisions §24); its redraw waits on Claude Design's export (Q50);
 - then, at Shahin's request, the glass (`f380818`, then `1439a27`; branch `feature/glass-ui`, in `development` since 2026-11-12, `cb4f3a4`): each window's background see-through at the opacity set in Settings, the text solid, the overlay on clear glass so the call app behind it can be read, the app window frosted by Windows 11's acrylic, and a more refined look (decisions §23);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
@@ -97,7 +98,11 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
   - no window faded as a whole any more, the text with it;
   - the look refined on the apple-design skill's principles, used and not installed: corners, edges, press feedback, motion (decisions §23, [design.md](design.md));
   - not seen by Claude: either glass on a real screen, which needs a person to look; nor a Windows 10 computer.
-- [ ] Practice (with the server's 3.3): Claude Design's practice screens redrawn on these tokens, following Q21–Q24 as answered on 2026-11-09 ([design.md](design.md)).
+- [x] **Practice** (with the server's 3.3; Shahin's word, 2026-11-12, `f4f52f3`, branch `feature/practice-page`, on `development`; checked with `npm run check`, 2,179 tests, and the app tests, 38 of 38; no deep round, at his word):
+  - the Practice page in the app window: 1 to 10 questions on a focus, each answered by typing, scored, with feedback and one follow-up for a weak answer, then a summary, Retry the 2 lowest and See it in History; run in a session of its own that hears nothing and ends with the summary (decisions §24);
+  - practice in History with each answer's feedback, debriefed as an interview is, and "Practice this question" on an interviewer's question (Q22, Q24);
+  - drawn from the protocol and v1's mock interview, following Q21–Q24; [ ] redrawn from Claude Design's practice export once it is at hand (Q50, [design.md](design.md));
+  - [ ] spoken answers: with the speech coach (3.7).
 
 Tests, deep round over 3.6, 3.8 and 3.10 (2026-11-11, `a46422b`, branch `feature/deep-round-3.6-3.8-3.10`): every feature mapped and triggered again, widened with data points, every outcome given a test; 533 tests more (1,380 in all), the app tests 23 of 23, end to end 4 of 4, the server now asked what it holds after a start. Two fixes: a page break or a vertical tab in a file no longer runs the words either side together, and the 📌 card stays when the generated answer is hidden. One question for Shahin: how strict the 📌 match is (Q49). Decisions §18.
 
