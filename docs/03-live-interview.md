@@ -16,10 +16,10 @@ One small window floats over the call, always on top. It never takes focus from 
 | **Coach strip** (Phase 3) | the candidate's own talk time, words per minute, fillers, and which key words of the answer they used; a nudge to wrap up at 90 s |
 | **Prepared answer 📌** (built 2026-11-11, 3.8) | when the question matches one of the candidate's prepared answers (v1's match, on this computer), that answer at once, while the generated one is written |
 | **Screenshots** (Phase 3) | the screenshots attached to the next question |
-| **Practice panel** (Phase 3) | the mock interview ([02](02-journeys.md) J9) |
+| ~~**Practice panel**~~ (Phase 3) | the mock interview ([02](02-journeys.md) J9): built on 2026-11-12 as the app window's Practice page instead, in a session of its own; the overlay never runs one ([decisions.md](decisions.md) §24) |
 
 - **The planned windows** are the overlay, the screenshot region selector, and a hidden window that captures audio.
-- **Settings and the practice panel** live inside the overlay.
+- **Settings and the practice panel** were planned inside the overlay; both live in the app window instead (Settings since Q15, practice since 2026-11-12).
 - **During a session, nothing opens a new window** ([05](05-privacy-and-discretion.md)).
 - **Open:** whether the wizard, the account pages and history get a larger window of their own outside a session ([08](08-open-questions.md)).
 

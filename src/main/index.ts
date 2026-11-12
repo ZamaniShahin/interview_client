@@ -69,6 +69,7 @@ import type { ShotImage } from './screenshots/shot-image';
 import { PreviewBilling, previewPaymentMs } from './preview/billing';
 import { HubDriver, type HubDriverDependencies } from './session/hub-driver';
 import { SoundCheck } from './session/sound-check';
+import { PracticeRun, type PracticeDriverOutcome } from './session/practice-run';
 import { registerSessionHotkeys } from './session/hotkeys';
 import { effectiveHotkeys } from '../shared/hotkeys';
 import { PreviewDriver } from './session/preview-driver';
@@ -86,6 +87,7 @@ import { HistoryRecorder } from './history/history-recorder';
 import { HistoryService } from './history/history-service';
 import { runJob } from './jobs/run-job';
 import { roleOf } from '../shared/history';
+import type { PracticeAction } from '../shared/practice';
 import { createAppWindow } from './windows/app-window';
 import { openCaptureWindow } from './windows/capture-window';
 import { openDocumentsWindow } from './windows/documents-window';
@@ -222,9 +224,9 @@ const capture = new AudioCapture({
 });
 
 // The first run's sound check (F1 · 4): a short session of its own, heard in the app window, never in the overlay.
-const soundCheck = new SoundCheck({
+const soundCheck: SoundCheck = new SoundCheck({
   driver: () => checkDriver(),
-  busy: () => session.running,
+  busy: () => session.running || practice.running,
   startCapture: () => capture.start(),
   stopCapture: () => capture.stop(),
   passed: () => {
@@ -236,6 +238,34 @@ const soundCheck = new SoundCheck({
     // The server ended it (its minutes ran out, say): the account is read again.
     if (view.phase === 'ended') void refreshAccount();
   },
+});
+
+// Practice (the Practice page, with the server's 3.3): a live session of its own, drawn in the app window, never in the
+// overlay; it hears nothing, and ends once its summary comes. Kept in history with its scores (Q24).
+const practice: PracticeRun = new PracticeRun({
+  driver: () => practiceDriver(),
+  busy: () =>
+    session.running ? 'End the session first.' : soundCheck.running ? 'Finish the sound check first.' : null,
+  publish: (view) => {
+    if (alive(appWindow)) appWindow.webContents.send(IpcChannels.appPracticeState, view);
+  },
+  keep: (record) => {
+    let id: number | null;
+    try {
+      id = store?.history.savePractice(record) ?? null;
+    } catch {
+      // History can't be written now: the practice is still shown, only not kept.
+      return null;
+    }
+    if (id !== null) setAppState({ history: history.list() });
+    return id;
+  },
+  about: () => {
+    const documents = store?.documents();
+    return { candidate: documents?.name.trim() ?? '', role: roleOf(documents?.jobDescription ?? '') };
+  },
+  // Its minutes were charged: the account is read again, as after any session.
+  ended: () => void refreshAccount(),
 });
 
 /** Test hiding's overlay (F1 · 5b): the real overlay window, showing only its test card. */
@@ -838,6 +868,65 @@ function checkDriver(): SessionDriver {
   return preview ? new PreviewDriver() : hubDriver({ auto: false, context: null });
 }
 
+/**
+ * A practice session's driver (the Practice page): MANUAL, since nothing is heard, with this computer's documents,
+ * which the server writes the questions from, and the answer bank, which seeds some of them. The same checks as a
+ * session's before it: the notice read, signed in, the account read.
+ */
+async function practiceDriver(): Promise<PracticeDriverOutcome> {
+  if (store && !store.firstRun(notice.version).acknowledged) {
+    return {
+      ok: false,
+      code: ErrorCodes.Request.InvalidInput,
+      message: 'Before your first session, read what goes where. Help runs the setup again.',
+    };
+  }
+  if (preview) {
+    return {
+      ok: true,
+      driver: new PreviewDriver({ interview: false }),
+      minutesLeft: previewBilling.account.minutes?.usable ?? null,
+      tier: 'smart',
+    };
+  }
+  if (!auth || !accounts || auth.current.status !== 'signed-in') {
+    return { ok: false, code: ErrorCodes.Identity.Unauthenticated, message: 'Sign in first.' };
+  }
+  if (!loaded) await refreshAccount();
+  if (!loaded) return { ok: false, ...(appState.problem ?? problemFrom(new Error('The account could not be read.'))) };
+  const documents = store?.documents();
+  return {
+    ok: true,
+    driver: hubDriver({
+      auto: false,
+      context: documents ? contextOf(documents) : null,
+      prepDoc: documents?.prepDoc
+        ? { Name: documents.prepDoc.name || null, Text: documents.prepDoc.text, Cut: documents.prepDoc.cut }
+        : null,
+      preferences: store ? preferencesToSend(store.preferences()) : null,
+      onEntitlementsUpdated: () => void refreshAccount(),
+    }),
+    minutesLeft: loaded.view.minutes?.usable ?? null,
+    tier: loaded.tier,
+  };
+}
+
+/** The Practice page's asks, each to the practice running (or about to). */
+function practiceAction(action: PracticeAction): Promise<CommandResult> {
+  switch (action.type) {
+    case 'start':
+      return practice.start(action.start);
+    case 'answer':
+      return practice.answer(action.text);
+    case 'next':
+      return practice.next();
+    case 'stop':
+      return practice.stop();
+    case 'close':
+      return practice.close();
+  }
+}
+
 async function startSession(request: StartSessionRequest): Promise<CommandResult> {
   if (session.running) {
     return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'A session is already running.' };
@@ -852,6 +941,8 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
   }
   if (soundCheck.running)
     return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'Finish the sound check first.' };
+  if (practice.running)
+    return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'Finish the practice first.' };
 
   let driver: SessionDriver;
   let account: LoadedAccount;
@@ -1159,6 +1250,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       acknowledgeNotice,
       finishSetup,
       soundCheck: soundCheckAction,
+      practice: practiceAction,
       hidingTest,
       signInPage,
       startTrial,
@@ -1209,6 +1301,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     documentReader.close();
     stopHotkeys();
     void soundCheck.stop();
+    void practice.quit();
     capture.stop();
     if (alive(hidingTestWindow)) hidingTestWindow.destroy();
   });

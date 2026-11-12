@@ -8,6 +8,7 @@ import type { BankEntryInput } from '../../shared/answer-bank';
 import type { ReadDocumentResult, ReadTarget, SetDocumentRequest, SetPrepDocRequest } from '../../shared/documents';
 import { idleSoundCheck, notice as firstRunNotice, type SoundCheckView } from '../../shared/first-run';
 import type { InterviewView } from '../../shared/history';
+import { idlePractice, type PracticeStart, type PracticeView } from '../../shared/practice';
 import type {
   CommandResult,
   DismissTarget,
@@ -16,6 +17,9 @@ import type {
   PurchaseRequest,
   SignInPageAction,
 } from '../../shared/ipc';
+
+/** The window's pages, as the sidebar lists them. */
+export type PageId = 'home' | 'prepare' | 'practice' | 'history' | 'account' | 'settings' | 'help';
 
 /** The setup's screens, in order: step 5 has two, the hotkeys then Test hiding. */
 export const setupScreens = ['notice', 'signIn', 'documents', 'soundCheck', 'hotkeys', 'hiding'] as const;
@@ -32,6 +36,7 @@ export const useAppStore = defineStore('app', () => {
   const loaded = ref(false);
   let stopListening: (() => void) | null = null;
   let unlistenSoundCheck: (() => void) | null = null;
+  let unlistenPractice: (() => void) | null = null;
 
   const auth = computed(() => state.value.auth);
   const account = computed(() => state.value.account);
@@ -45,6 +50,12 @@ export const useAppStore = defineStore('app', () => {
   const deviceLimit = computed(() => state.value.deviceLimit);
   const soundCheck = ref<SoundCheckView>(idleSoundCheck);
   const setup = ref<{ mode: SetupMode; screen: SetupScreen } | null>(null);
+  /** The page shown: the sidebar's choice, or the one a page sends the user to (History to Practice, and back). */
+  const page = ref<PageId>('home');
+  /** An interview or practice History is to open when it shows next (a practice just kept, say). */
+  const historyToOpen = ref<number | null>(null);
+  /** The practice, as main runs it for the Practice page. */
+  const practice = ref<PracticeView>(idlePractice);
 
   async function load(): Promise<void> {
     stopListening ??= window.appApi.onState((changed) => {
@@ -52,11 +63,48 @@ export const useAppStore = defineStore('app', () => {
       loaded.value = true;
     });
     unlistenSoundCheck ??= window.appApi.onSoundCheck((view) => (soundCheck.value = view));
+    unlistenPractice ??= window.appApi.onPractice((view) => (practice.value = view));
     state.value = await window.appApi.getState();
     loaded.value = true;
     // The setup opens by itself until it has been finished once; after that, only for a notice whose words changed.
     if (!state.value.firstRun.finished) openSetup('full');
     else if (!state.value.firstRun.acknowledged) openSetup('notice');
+  }
+
+  function go(next: PageId): void {
+    page.value = next;
+  }
+
+  /** History, opening one interview or practice in it. */
+  function showInHistory(id: number): void {
+    historyToOpen.value = id;
+    page.value = 'history';
+  }
+
+  /**
+   * A practice: a count and a focus, or the questions chosen (History's "Practice this question", "Retry the 2
+   * lowest"). The Practice page shows it from its start.
+   */
+  function startPractice(start: PracticeStart): Promise<CommandResult> {
+    page.value = 'practice';
+    return window.appApi.practice({ type: 'start', start });
+  }
+
+  function answerPractice(text: string): Promise<CommandResult> {
+    return window.appApi.practice({ type: 'answer', text });
+  }
+
+  function nextPractice(): Promise<CommandResult> {
+    return window.appApi.practice({ type: 'next' });
+  }
+
+  function stopPractice(): Promise<CommandResult> {
+    return window.appApi.practice({ type: 'stop' });
+  }
+
+  /** Puts the practice's summary away: the setup shows again. */
+  function closePractice(): Promise<CommandResult> {
+    return window.appApi.practice({ type: 'close' });
   }
 
   function openSetup(mode: SetupMode): void {
@@ -255,6 +303,16 @@ export const useAppStore = defineStore('app', () => {
     deviceLimit,
     soundCheck,
     setup,
+    page,
+    historyToOpen,
+    practice,
+    go,
+    showInHistory,
+    startPractice,
+    answerPractice,
+    nextPractice,
+    stopPractice,
+    closePractice,
     load,
     signIn,
     cancelSignIn,

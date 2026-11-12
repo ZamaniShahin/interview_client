@@ -80,4 +80,36 @@ export const migrations: readonly Migration[] = [
         );
       `),
   },
+  {
+    version: 4,
+    name: 'practice in history (the Practice page)',
+    // Q24: one history keeps interviews and practice sessions, with their scores. A practice is an `interviews` row of
+    // its kind; its questions keep the answer typed and the server's feedback, and the practice its focus and summary.
+    // Additive only: every interview kept so far stays as it was, of the kind 'interview'.
+    up: (db) =>
+      db.exec(`
+        ALTER TABLE interviews ADD COLUMN kind TEXT NOT NULL DEFAULT 'interview' CHECK (kind IN ('interview', 'practice'));
+        CREATE TABLE practices (
+          interview_id INTEGER PRIMARY KEY REFERENCES interviews (id) ON DELETE CASCADE,
+          focus INTEGER NOT NULL,
+          average REAL,
+          summary TEXT
+        );
+        CREATE TABLE practice_turns (
+          id INTEGER PRIMARY KEY,
+          interview_id INTEGER NOT NULL REFERENCES interviews (id) ON DELETE CASCADE,
+          n INTEGER NOT NULL,
+          main_n INTEGER NOT NULL,
+          total INTEGER NOT NULL,
+          kind INTEGER NOT NULL,
+          source INTEGER NOT NULL,
+          difficulty INTEGER NOT NULL,
+          question TEXT NOT NULL,
+          answer TEXT,
+          score INTEGER CHECK (score IS NULL OR score BETWEEN 1 AND 10),
+          feedback TEXT
+        );
+        CREATE INDEX practice_turns_interview ON practice_turns (interview_id);
+      `),
+  },
 ];

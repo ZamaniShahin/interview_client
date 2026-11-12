@@ -2,14 +2,23 @@
 // History (3.9; v1's history and its report): the interviews kept on this computer, newest first, and one opened
 // whole: its debrief, its questions with the answers given, and the interviewer's words when transcripts are kept.
 // A debrief is asked of the server here, and only here: it is the one time an interview leaves this computer.
+// Practice sessions are kept here too, with their scores (Q24): one opens with each answer's feedback, and its two
+// lowest can be practised again; any question an interviewer asked can be practised on its own (Q22).
 import { computed, ref, watch } from 'vue';
-import { AnswerKind, SessionEndReasons } from '../../../shared/contracts/sotto-contracts';
+import {
+  AnswerKind,
+  PracticeFocus,
+  PracticeTurnKind,
+  SessionEndReasons,
+} from '../../../shared/contracts/sotto-contracts';
 import type { InterviewSummary, InterviewView } from '../../../shared/history';
+import { difficultyLabels, focusLabels, lowestQuestions, practiceLimits, sourceLabels } from '../../../shared/practice';
 import SButton from '../../shared/components/SButton.vue';
 import SConfirm from '../../shared/components/SConfirm.vue';
 import { useAppStore } from '../app-store';
 import DebriefView from '../components/DebriefView.vue';
 import HistoryAnswer from '../components/HistoryAnswer.vue';
+import PracticeFeedback from '../components/PracticeFeedback.vue';
 
 const store = useAppStore();
 const open = ref<InterviewView | null>(null);
@@ -27,6 +36,17 @@ function back(): void {
   failure.value = null;
   confirming.value = null;
 }
+
+// Another page sent the user here to open one (Practice's "See it in History").
+watch(
+  () => store.historyToOpen,
+  (id) => {
+    if (id === null) return;
+    store.historyToOpen = null;
+    void show(id);
+  },
+  { immediate: true },
+);
 
 // History changed (an answer kept, a debrief written, one deleted): the interview open is read again.
 watch(
@@ -76,9 +96,18 @@ function length(interview: InterviewSummary): string {
   return minutes < 1 ? 'under a minute' : `${minutes} min`;
 }
 
-const name = (interview: InterviewSummary) => interview.role || 'Interview';
+const name = (interview: InterviewSummary) =>
+  interview.kind === 'practice'
+    ? interview.role
+      ? `Practice · ${interview.role}`
+      : 'Practice'
+    : interview.role || 'Interview';
 
 function holds(interview: InterviewSummary): string {
+  if (interview.kind === 'practice') {
+    const answered = `${interview.answers} answered`;
+    return interview.average !== null ? `${answered} · average ${interview.average}` : answered;
+  }
   const answers = `${interview.answers} ${interview.answers === 1 ? 'answer' : 'answers'}`;
   return interview.lines > 0
     ? `${answers} · ${interview.lines} ${interview.lines === 1 ? 'line' : 'lines'} heard`
@@ -100,6 +129,45 @@ function about(interview: InterviewSummary): string {
     .filter(Boolean)
     .join(' · ');
 }
+
+/** The questions an interviewer asked: the ones worth practising on their own. */
+const askedByInterviewer = (kind: number) => kind === AnswerKind.Spoken || kind === AnswerKind.Typed;
+
+function practiseQuestion(question: string): void {
+  void store.startPractice({
+    count: 1,
+    focus: PracticeFocus.Mixed,
+    questions: [question.trim().slice(0, practiceLimits.question)],
+  });
+}
+
+/** A practice's two lowest-scored answers, from its summary, or from its feedback when it ended before one. */
+const lowest = computed(() => {
+  const practice = open.value?.practice;
+  if (!practice) return [];
+  const turns =
+    practice.summary?.turns ??
+    practice.turns.map((t) => ({
+      n: t.n,
+      question: t.question,
+      score: t.feedback?.score ?? null,
+      answered: t.answer !== null,
+    }));
+  return lowestQuestions(turns);
+});
+
+function retryLowest(): void {
+  const practice = open.value?.practice;
+  if (!practice || lowest.value.length === 0) return;
+  void store.startPractice({ count: lowest.value.length, focus: practice.focus, questions: lowest.value });
+}
+
+const turnHeading = (t: { kind: number; mainN: number; difficulty: number; source: number }) =>
+  [
+    t.kind === PracticeTurnKind.FollowUp ? `Follow-up to question ${t.mainN}` : `Question ${t.mainN}`,
+    difficultyLabels[t.difficulty as keyof typeof difficultyLabels],
+    sourceLabels[t.source as keyof typeof sourceLabels],
+  ].join(' · ');
 
 const kinds: Record<number, string> = {
   [AnswerKind.Spoken]: 'Heard',
@@ -134,6 +202,7 @@ const kinds: Record<number, string> = {
               <span class="small">{{ about(interview) }}</span>
             </span>
             <span class="small num">{{ holds(interview) }}</span>
+            <span v-if="interview.kind === 'practice'" class="tag">Practice</span>
             <span v-if="store.debriefing.includes(interview.id)" class="tag">Writing debrief…</span>
             <span v-else-if="interview.hasDebrief" class="tag">Debrief</span>
           </button>
@@ -167,6 +236,7 @@ const kinds: Record<number, string> = {
         <SButton v-else :variant="open.debrief ? 'secondary' : 'primary'" @click="debrief">
           {{ open.debrief ? 'Write the debrief again' : 'Get a debrief' }}
         </SButton>
+        <SButton v-if="lowest.length === 2" variant="secondary" @click="retryLowest">Retry the 2 lowest</SButton>
         <SButton variant="ghost" @click="confirming = 'one'">Delete</SButton>
       </div>
       <p v-if="!open.debrief && !writing" class="small">
@@ -186,15 +256,54 @@ const kinds: Record<number, string> = {
 
       <DebriefView v-if="open.debrief" :debrief="open.debrief" />
 
-      <h2 class="part">Questions and answers</h2>
-      <p v-if="open.qa.length === 0" class="small">No answers were kept.</p>
-      <ol v-else class="qa" aria-label="Questions and answers">
-        <li v-for="qa in open.qa" :key="qa.id" class="exchange">
-          <p class="eyebrow">{{ kinds[qa.kind] ?? 'Answer' }}</p>
-          <p class="question">{{ qa.question }}</p>
-          <HistoryAnswer :text="qa.answer" />
-        </li>
-      </ol>
+      <template v-if="open.practice">
+        <div v-if="open.practice.summary" class="summary">
+          <p class="eyebrow">Average</p>
+          <p class="average num">{{ open.practice.summary.average ?? '–' }} <span class="of">/ 10</span></p>
+          <p class="small">
+            {{ open.practice.summary.answered }} of {{ open.practice.summary.asked }} answered ·
+            {{ focusLabels[open.practice.focus] }}
+          </p>
+          <template v-if="open.practice.summary.tips.length > 0">
+            <p class="eyebrow tips">To work on</p>
+            <ul class="points">
+              <li v-for="(tip, i) in open.practice.summary.tips" :key="i">{{ tip }}</li>
+            </ul>
+          </template>
+        </div>
+        <h2 class="part">Questions</h2>
+        <ol class="qa" aria-label="Practice questions">
+          <li v-for="turn in open.practice.turns" :key="turn.n" class="exchange">
+            <p class="eyebrow">{{ turnHeading(turn) }}</p>
+            <p class="question">{{ turn.question }}</p>
+            <p v-if="turn.answer !== null" class="said">{{ turn.answer }}</p>
+            <p v-else class="small">Not answered.</p>
+            <PracticeFeedback v-if="turn.feedback" :feedback="turn.feedback" class="turn-feedback" />
+          </li>
+        </ol>
+      </template>
+
+      <template v-else>
+        <h2 class="part">Questions and answers</h2>
+        <p v-if="open.qa.length === 0" class="small">No answers were kept.</p>
+        <ol v-else class="qa" aria-label="Questions and answers">
+          <li v-for="qa in open.qa" :key="qa.id" class="exchange">
+            <p class="eyebrow">{{ kinds[qa.kind] ?? 'Answer' }}</p>
+            <p class="question">{{ qa.question }}</p>
+            <HistoryAnswer :text="qa.answer" />
+            <SButton
+              v-if="askedByInterviewer(qa.kind) && qa.question.trim() !== ''"
+              variant="ghost"
+              size="sm"
+              class="practise"
+              :aria-label="`Practice “${qa.question}”`"
+              @click="practiseQuestion(qa.question)"
+            >
+              Practice this question
+            </SButton>
+          </li>
+        </ol>
+      </template>
 
       <template v-if="open.transcript.length > 0">
         <h2 class="part">What the interviewer said</h2>
@@ -303,5 +412,54 @@ const kinds: Record<number, string> = {
 .lines li {
   padding: 4px 0;
   color: var(--text-1);
+}
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+.average {
+  color: var(--text-0);
+  font: 600 28px/32px var(--font-sans);
+  letter-spacing: -0.01em;
+}
+.of {
+  color: var(--text-2);
+  font: 400 14px/20px var(--font-sans);
+  letter-spacing: 0;
+}
+.tips {
+  margin-top: 8px;
+}
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-1);
+}
+.said {
+  margin-bottom: 10px;
+  color: var(--text-1);
+  white-space: pre-wrap;
+}
+.turn-feedback {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface-1);
+}
+.practise {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+.exchange {
+  display: flex;
+  flex-direction: column;
 }
 </style>

@@ -21,7 +21,7 @@ Where the design lives, what it holds, and which code draws each part.
 | Flows F1–F10 | first run, signing in and devices, starting and typing, running out and the trial, the account and Settings |
 | Later phase | F11 (screenshots), F14 (Prepare), F15 (the coach strip and the 📌 card) |
 
-- **Practice (F12) and its history (F13)** are in Claude Design's export of 2026-11-06, which is not in this repository.
+- **Practice (F12) and its history (F13)** are in Claude Design's export of 2026-11-06, which is not in this repository. On 2026-11-12 Shahin chose to build them before it is at hand (backend Q50): the Practice page and practice in History are drawn from the protocol and v1's mock interview on these tokens and components ([decisions.md](decisions.md) §24), to be redrawn from the export.
 - That export is styled with ARN Fintech's design system and must be redrawn on these tokens before it is built. For that reason it stays out of both repositories: Shahin keeps the file (`Sotto — interview practice.html`). `scripts/design-unbundle.mjs` and `scripts/design-split.mjs` make it readable.
 - Its open points were settled on 2026-11-09 (backend Q21–Q24), and the redrawn screens follow them:
   - a follow-up comes at a score of 4 or less, not below 7;

@@ -80,6 +80,10 @@ export const IpcChannels = {
   appSoundCheck: 'app:sound-check',
   /** main → app window: the sound check as it goes, heard here instead of in the overlay. */
   appSoundCheckState: 'app:sound-check-state',
+  /** app window → main (invoke): practice: start one, answer, go on, stop, or put its summary away. */
+  appPractice: 'app:practice',
+  /** main → app window: the practice as it goes, drawn on the Practice page and never in the overlay. */
+  appPracticeState: 'app:practice-state',
   /** app window → main (invoke): Test hiding, show or hide the overlay with its test card, or say it was hidden. */
   appHidingTest: 'app:hiding-test',
   /** app window → main (send): open the sign-in page again, or copy its link (F1 · 2). */

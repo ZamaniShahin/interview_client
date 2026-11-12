@@ -2,10 +2,18 @@
 // given and, when the user keeps transcripts, the interviewer's words; and its debrief, asked of the server (the 3.4
 // jobs) and kept here too. Nothing of it goes anywhere but for a debrief the user asks for.
 import { z } from 'zod';
+import {
+  PracticeDifficulty,
+  PracticeFocus,
+  PracticeQuestionSource,
+  PracticeTurnKind,
+} from './contracts/sotto-contracts';
+import type { PracticeFeedbackView, PracticeSummaryView, PracticeTurnView } from './practice';
 
-/** One interview in the list: what it was and what it holds. */
+/** One interview in the list, or a practice (Q24, one history for both): what it was and what it holds. */
 export interface InterviewSummary {
   id: number;
+  kind: 'interview' | 'practice';
   /** Epoch ms. */
   startedAt: number;
   endedAt: number | null;
@@ -14,9 +22,12 @@ export interface InterviewSummary {
   role: string;
   /** Why it ended (a `SessionEndReasons` value), or null while unknown. */
   endReason: string | null;
+  /** The answers given: an interview's, or a practice's answered questions. */
   answers: number;
   lines: number;
   hasDebrief: boolean;
+  /** A practice's average score, as its summary gave it; null for an interview, or a practice that had none. */
+  average: number | null;
 }
 
 /** One question and the answer it got, as the overlay showed it. */
@@ -35,10 +46,20 @@ export interface TranscriptLine {
   text: string;
 }
 
+/** A practice as history keeps it: its focus, its questions with the answers typed and their feedback, its summary. */
+export interface PracticeHistory {
+  focus: PracticeFocus;
+  turns: PracticeTurnView[];
+  /** Null for one whose session ended before its summary came. */
+  summary: PracticeSummaryView | null;
+}
+
 export interface InterviewView extends InterviewSummary {
   qa: HistoryAnswer[];
   transcript: TranscriptLine[];
   debrief: DebriefView | null;
+  /** The practice, for one of that kind; null for an interview. */
+  practice: PracticeHistory | null;
 }
 
 /** An interview's id, as a window names it. */
@@ -80,6 +101,61 @@ export const debriefSchema = z.object({
 });
 export type DebriefResult = z.infer<typeof debriefSchema>;
 
+const turnKind = z.union([z.literal(PracticeTurnKind.Main), z.literal(PracticeTurnKind.FollowUp)]);
+const questionSource = z.union([
+  z.literal(PracticeQuestionSource.Model),
+  z.literal(PracticeQuestionSource.Bank),
+  z.literal(PracticeQuestionSource.Chosen),
+]);
+const difficulty = z.union([
+  z.literal(PracticeDifficulty.Easy),
+  z.literal(PracticeDifficulty.Medium),
+  z.literal(PracticeDifficulty.Hard),
+]);
+export const practiceFocusSchema = z.union([
+  z.literal(PracticeFocus.Mixed),
+  z.literal(PracticeFocus.Behavioral),
+  z.literal(PracticeFocus.Technical),
+]);
+
+/** A practice answer's feedback as kept, read back the way a debrief is: bounded far past what the server sends. */
+export const practiceFeedbackSchema = z.object({
+  score: score,
+  good: z.array(text(4_000)).max(20),
+  improve: z.array(text(4_000)).max(20),
+  modelAnswer: text(20_000),
+  prepared: text(20_000),
+  raw: z.boolean(),
+}) satisfies z.ZodType<PracticeFeedbackView>;
+
+/** A practice's summary as kept. */
+export const practiceSummarySchema = z.object({
+  asked: z.number().int().min(0),
+  answered: z.number().int().min(0),
+  average: z.number().min(0).max(10).nullable(),
+  turns: z
+    .array(
+      z.object({
+        n: z.number().int().min(1),
+        kind: turnKind,
+        question: text(4_000),
+        source: questionSource,
+        score: score,
+        answered: z.boolean(),
+      }),
+    )
+    .max(40),
+  best: z.number().int().min(1).nullable(),
+  worst: z.number().int().min(1).nullable(),
+  talkSeconds: z.number().min(0),
+  wpm: z.number().min(0).nullable(),
+  fillers: z.number().int().min(0),
+  fillersPer100Words: z.number().min(0).nullable(),
+  focus: practiceFocusSchema,
+  difficulty,
+  tips: z.array(text(4_000)).max(20),
+}) satisfies z.ZodType<PracticeSummaryView>;
+
 export interface DebriefView extends DebriefResult {
   /** When it was kept, epoch ms. */
   createdAt: number;
@@ -117,7 +193,13 @@ export function cut(value: string, max: number): string {
  * left out, as v1 left it out. Null when nothing was recorded: the server would refuse it.
  */
 export function debriefRequestOf(interview: InterviewView): DebriefRequest | null {
-  const questions = interview.qa
+  // A practice's debrief is an interview's (Q24): its questions, with the answers the user typed.
+  const asked: { question: string; answer: string }[] = interview.practice
+    ? interview.practice.turns
+        .filter((turn) => turn.answer !== null)
+        .map((turn) => ({ question: turn.question, answer: turn.answer! }))
+    : interview.qa;
+  const questions = asked
     .filter((qa) => qa.question.trim() !== '')
     .slice(0, debriefLimits.questions)
     .map((qa) => ({

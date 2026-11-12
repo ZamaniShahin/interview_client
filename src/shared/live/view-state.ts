@@ -1,5 +1,6 @@
 // What the overlay shows of a live session. Main owns it (it holds the connection); the overlay gets a copy.
 import type { AnswerKind, Guid } from '../contracts/sotto-contracts';
+import { idlePracticeSlice, type PracticeSlice } from '../practice';
 
 /** How listening is going, as the overlay words it. The server's `degraded` reads as "down": typing still works. */
 export type Listening = 'ok' | 'reconnecting' | 'down';
@@ -81,6 +82,11 @@ export interface LiveViewState {
   /** From the account until the hub carries usage (backend 2.4); null on a plan without minutes. */
   minutesLeft: number | null;
   tier: Tier | null;
+  /**
+   * The practice interview, when the session runs one (the server's 3.3): where it is, its questions with their
+   * answers and feedback, and its summary once it ends. The Practice page draws it; the overlay never runs one.
+   */
+  practice: PracticeSlice;
   /** The newest event's sequence number: what a resume asks the server to replay after. */
   lastSeq: number;
 }
@@ -102,6 +108,7 @@ export const initialLiveState: LiveViewState = {
   endReason: null,
   minutesLeft: null,
   tier: null,
+  practice: idlePracticeSlice,
   lastSeq: 0,
 };
 

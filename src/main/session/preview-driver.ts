@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { AnswerKind, AskMode, SessionEndReasons, SpeechStates, ErrorCodes } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult } from '../../shared/ipc';
 import type { LiveAction, LiveEvent } from '../../shared/live/reducer';
+import { PreviewPractice } from './preview-practice';
 import type { SessionCommand, SessionDriver } from './session-controller';
 
 interface ScriptedAnswer {
@@ -81,10 +82,23 @@ export class PreviewDriver implements SessionDriver {
   private answers = 0;
   /** The screenshots attached for the next answer (3.6). */
   private attached: string[] = [];
+  /** The practice interviewer (the server's 3.3, scripted). */
+  private readonly practice = new PreviewPractice({
+    emit: (event) => this.emit(event),
+    stamp: () => this.stamp(),
+    at: (ms, run) => this.at(ms, run),
+  });
+
+  /** `interview: false` for a practice session: nobody speaks, the practice interviewer asks. */
+  constructor(private readonly options: { interview?: boolean } = {}) {}
 
   async start(dispatch: (action: LiveAction) => void): Promise<CommandResult> {
     this.dispatch = dispatch;
     dispatch({ type: 'starting' });
+    if (this.options.interview === false) {
+      this.at(300, () => this.status());
+      return { ok: true };
+    }
 
     let t = 500;
     this.at(t, () => this.status());
@@ -113,7 +127,26 @@ export class PreviewDriver implements SessionDriver {
     if (this.ended) {
       return { ok: false, code: ErrorCodes.Session.SessionExpired, message: 'The session is over. Start a new one.' };
     }
+    // The copilot is paused while practice runs, as the server's is (`practice_running`).
+    if (
+      this.practice.running &&
+      (command.type === 'ask' || command.type === 'trigger' || command.type === 'screenshotQuery')
+    ) {
+      return {
+        ok: false,
+        code: ErrorCodes.Session.PracticeRunning,
+        message: 'A practice interview is running: stop it to use the copilot.',
+      };
+    }
     switch (command.type) {
+      case 'mockStart':
+        return this.practice.start(command.count, command.focus, command.questions);
+      case 'mockAnswer':
+        return this.practice.answer(command.text);
+      case 'mockNext':
+        return this.practice.next();
+      case 'mockStop':
+        return this.practice.stop();
       case 'ask': {
         const tip = command.mode === AskMode.Tip;
         // A typed question or Tip takes the attached screenshots, its text their note; a Result never does.
@@ -173,6 +206,8 @@ export class PreviewDriver implements SessionDriver {
         this.heard = '';
         return { ok: true };
       case 'endSession':
+        // A practice running gives its summary first, as the server's does.
+        this.practice.endWithSession();
         this.end(SessionEndReasons.User);
         return { ok: true };
     }

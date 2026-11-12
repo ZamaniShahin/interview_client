@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import type { AppState } from '../shared/app-state';
 import type { SoundCheckView } from '../shared/first-run';
 import { IpcChannels } from '../shared/ipc-channels';
+import type { PracticeView } from '../shared/practice';
 import type { Settings } from '../shared/settings';
 import type { AppApi } from './api';
 
@@ -40,6 +41,12 @@ const api: AppApi = {
     const handler = (_event: IpcRendererEvent, view: SoundCheckView) => listener(view);
     ipcRenderer.on(IpcChannels.appSoundCheckState, handler);
     return () => ipcRenderer.removeListener(IpcChannels.appSoundCheckState, handler);
+  },
+  practice: (action) => ipcRenderer.invoke(IpcChannels.appPractice, action),
+  onPractice: (listener) => {
+    const handler = (_event: IpcRendererEvent, view: PracticeView) => listener(view);
+    ipcRenderer.on(IpcChannels.appPracticeState, handler);
+    return () => ipcRenderer.removeListener(IpcChannels.appPracticeState, handler);
   },
   hidingTest: (action) => ipcRenderer.invoke(IpcChannels.appHidingTest, action),
   signInPage: (action) => ipcRenderer.send(IpcChannels.appSignInPage, action),

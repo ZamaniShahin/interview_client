@@ -2,10 +2,10 @@
 // The window outside sessions: its own chrome, the sidebar, and the page. During a session it steps aside and the
 // overlay takes over; it comes back when the session is closed. The setup (F1) takes the whole window, framed as Setup,
 // and so does a computer that can't be added at the device limit (F3).
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted } from 'vue';
 import { planWords } from '../../shared/plan-words';
 import { useSettings } from '../shared/use-settings';
-import { useAppStore } from './app-store';
+import { useAppStore, type PageId } from './app-store';
 import SideNav from './components/SideNav.vue';
 import DeviceLimitScreen from './DeviceLimitScreen.vue';
 import UpdateBanner from './components/UpdateBanner.vue';
@@ -14,12 +14,10 @@ import AccountPage from './pages/AccountPage.vue';
 import HelpPage from './pages/HelpPage.vue';
 import HistoryPage from './pages/HistoryPage.vue';
 import HomePage from './pages/HomePage.vue';
-import LaterPage from './pages/LaterPage.vue';
+import PracticePage from './pages/PracticePage.vue';
 import PreparePage from './pages/PreparePage.vue';
 import SettingsPage from './pages/SettingsPage.vue';
 import SetupWizard from './setup/SetupWizard.vue';
-
-type PageId = 'home' | 'prepare' | 'practice' | 'history' | 'account' | 'settings' | 'help';
 
 const pages: {
   id: PageId;
@@ -35,8 +33,9 @@ const pages: {
   { id: 'help', label: 'Help', icon: 'help' },
 ];
 
-const current = ref<PageId>('home');
 const store = useAppStore();
+// The page is the store's: History sends the user to Practice, and Practice to History.
+const current = computed(() => store.page);
 useSettings(window.appApi);
 onMounted(() => void store.load());
 
@@ -88,7 +87,7 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
       @close="windowAction('close')"
     />
     <div class="body">
-      <SideNav :items="pages" :current="current" @select="(id) => (current = id)">
+      <SideNav :items="pages" :current="current" @select="(id) => store.go(id)">
         <template #footer>
           <template v-if="words">
             <p class="eyebrow">{{ words.eyebrow }}</p>
@@ -107,11 +106,7 @@ const windowAction = (action: 'minimize' | 'maximize' | 'close') => window.appAp
         <PreparePage v-else-if="current === 'prepare'" />
         <AccountPage v-else-if="current === 'account'" />
         <SettingsPage v-else-if="current === 'settings'" />
-        <LaterPage
-          v-else-if="current === 'practice'"
-          heading="Practice"
-          text="Mock interviews: the server asks, you answer aloud or by typing, then a score and feedback. Drawn in Claude Design's export; built in the later phase (3.3)."
-        />
+        <PracticePage v-else-if="current === 'practice'" />
         <HistoryPage v-else-if="current === 'history'" />
         <HelpPage v-else />
       </main>

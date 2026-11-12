@@ -19,6 +19,8 @@ const start = new Date(2026, 10, 11, 14, 5).getTime();
 
 const summary = (over: Partial<InterviewSummary> = {}): InterviewSummary => ({
   id: 1,
+  kind: 'interview',
+  average: null,
   startedAt: start,
   endedAt: start + 32 * 60_000,
   candidate: 'Sam Rivera',
@@ -46,6 +48,7 @@ const debrief: Debrief = {
 
 const whole = (over: Partial<InterviewView> = {}): InterviewView => ({
   ...summary(),
+  practice: null,
   qa: [
     {
       id: 1,

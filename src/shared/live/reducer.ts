@@ -3,6 +3,8 @@
 // design handoff's §7.2.
 import {
   ErrorCodes,
+  PracticeDifficulty,
+  PracticeQuestionSource,
   SessionEndReasons,
   SessionPhase,
   SpeechStates,
@@ -10,6 +12,15 @@ import {
   type LiveClient,
   type SessionSnapshot,
 } from '../contracts/sotto-contracts';
+import {
+  feedbackOf,
+  idlePracticeSlice,
+  statusOf,
+  summaryOf,
+  turnOf,
+  type PracticeSlice,
+  type PracticeTurnView,
+} from '../practice';
 import {
   initialLiveState,
   type AnswerView,
@@ -114,8 +125,27 @@ function applySnapshot(state: LiveViewState, s: SessionSnapshot): LiveViewState 
     heard: { finished: s.Heard, live: '' },
     // A session that moved has none: the driver attaches the kept copies again, and their events follow.
     attachments: { ids: s.Attachments.map((a) => a.Id), max: s.MaxAttachments },
+    // Where the practice is; its questions and feedback so far stay as they were drawn.
+    practice: practiceWithStatus(state.practice, s.Practice),
     lastSeq: Math.max(state.lastSeq, s.LastSeq),
   };
+}
+
+/**
+ * The practice's state, as the server says. One that runs after a summary is a new practice: the last one's questions
+ * and summary go (they were kept in history as it ended).
+ */
+function practiceWithStatus(practice: PracticeSlice, status: Parameters<typeof statusOf>[0]): PracticeSlice {
+  const next = statusOf(status);
+  if (next !== null && practice.summary !== null) return { ...idlePracticeSlice, status: next };
+  return { ...practice, status: next };
+}
+
+/** A question asked: added in its place, or put in place of one with its number (asked again after a move). */
+function withQuestion(practice: PracticeSlice, turn: PracticeTurnView): PracticeSlice {
+  const fresh = practice.summary !== null ? idlePracticeSlice : practice;
+  const turns = [...fresh.turns.filter((t) => t.n !== turn.n), turn].sort((a, b) => a.n - b.n);
+  return { ...fresh, turns };
 }
 
 function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
@@ -198,12 +228,35 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
     case 'attachments':
       return { ...next, attachments: { ids: event.e.Items.map((item) => item.Id), max: event.e.Max } };
 
-    // Practice (backend 3.3) is drawn by the client's practice checkpoint; until then its events only move LastSeq.
+    // Practice (the server's 3.3, drawn by the Practice page).
     case 'mockState':
+      return { ...next, practice: practiceWithStatus(next.practice, event.e.Status) };
+
     case 'mockQuestion':
-    case 'mockFeedback':
+      return { ...next, practice: withQuestion(next.practice, turnOf(event.e)) };
+
+    case 'mockFeedback': {
+      const e = event.e;
+      const known = next.practice.turns.find((t) => t.n === e.N);
+      // A feedback whose question was missed (a resume that couldn't replay it) brings its question with it.
+      const turn: PracticeTurnView = {
+        ...(known ?? {
+          n: e.N,
+          mainN: 0,
+          total: next.practice.status?.total ?? 0,
+          kind: e.Kind,
+          question: e.Question,
+          source: PracticeQuestionSource.Model,
+          difficulty: next.practice.status?.difficulty ?? PracticeDifficulty.Medium,
+        }),
+        answer: e.Answer,
+        feedback: feedbackOf(e),
+      };
+      return { ...next, practice: withQuestion(next.practice, turn) };
+    }
+
     case 'mockSummary':
-      return next;
+      return { ...next, practice: { ...next.practice, summary: summaryOf(event.e) } };
 
     case 'notice':
       return { ...next, notice: { code: event.e.Code, text: event.e.Text } };

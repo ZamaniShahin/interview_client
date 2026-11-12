@@ -230,10 +230,13 @@ describe('history, as kept on this computer (3.9, backend docs/07 §5)', () => {
       endedAt: nov11 + 60_000,
       candidate: 'Sam Rivera',
       role: 'Senior Backend Engineer',
+      kind: 'interview',
       endReason: SessionEndReasons.User,
       answers: 2,
       lines: 1,
       hasDebrief: false,
+      average: null,
+      practice: null,
       qa: [
         {
           id: expect.any(Number),
@@ -333,7 +336,7 @@ describe('history, as kept on this computer (3.9, backend docs/07 §5)', () => {
     ).toEqual([withLine, withDebrief].sort());
   });
 
-  it('comes with migration 3, keeping what migrations 1 and 2 kept', () => {
+  it('comes with migration 3, keeping what migrations 1 and 2 kept, through every migration since', () => {
     const dir = mkdtempSync(join(tmpdir(), 'sotto-history-'));
     try {
       const file = join(dir, 'sotto.db');
@@ -346,7 +349,7 @@ describe('history, as kept on this computer (3.9, backend docs/07 §5)', () => {
 
       const db = openDatabase(file, key, migrations);
       const after = new LocalStore(db, () => nov11);
-      expect(db.pragma('user_version', { simple: true })).toBe(3);
+      expect(db.pragma('user_version', { simple: true })).toBe(migrations.at(-1)!.version);
       expect(after.documents().resume).toBe('Go and Kafka.');
       expect(after.bank()).toHaveLength(1);
       const id = after.history.start({ startedAt: nov11, candidate: '', role: '', tier: null });
@@ -479,6 +482,7 @@ describe('the recorder, as a session goes (3.9)', () => {
 describe('a debrief asked for, within the server’s limits (3.9)', () => {
   const interview = (over: Partial<InterviewView> = {}): InterviewView => ({
     id: 1,
+    kind: 'interview',
     startedAt: nov11,
     endedAt: nov11 + 60_000,
     candidate: 'Sam Rivera',
@@ -490,6 +494,8 @@ describe('a debrief asked for, within the server’s limits (3.9)', () => {
     qa: [{ id: 1, askedAt: nov11, kind: 0, question: 'Why Kafka?', answer: 'Ordering.' }],
     transcript: [{ at: nov11, speaker: 'interviewer', text: 'Why Kafka?' }],
     debrief: null,
+    average: null,
+    practice: null,
     ...over,
   });
 

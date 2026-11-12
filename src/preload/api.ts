@@ -19,6 +19,7 @@ import type {
   StartSessionRequest,
 } from '../shared/ipc';
 import type { LiveViewState } from '../shared/live/view-state';
+import type { PracticeAction, PracticeView } from '../shared/practice';
 import type { Selection, SelectorFrame } from '../shared/screenshots';
 import type { Settings, SettingsPatch } from '../shared/settings';
 
@@ -104,6 +105,10 @@ export interface AppApi extends SettingsApi {
   soundCheck(action: SoundCheckAction): Promise<CommandResult>;
   /** Returns a function that stops listening. */
   onSoundCheck(listener: (view: SoundCheckView) => void): () => void;
+  /** Practice: start one, answer the question, go on, stop, or put the summary away. */
+  practice(action: PracticeAction): Promise<CommandResult>;
+  /** The practice as it goes. Returns a function that stops listening. */
+  onPractice(listener: (view: PracticeView) => void): () => void;
   hidingTest(action: HidingTestAction): Promise<CommandResult>;
   signInPage(action: SignInPageAction): void;
   /** Starts the free trial from this computer (F9 · a). */

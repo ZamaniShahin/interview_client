@@ -3,11 +3,13 @@ import { vi } from 'vitest';
 import type { AppApi } from '../../src/preload/api';
 import type { AppState } from '../../src/shared/app-state';
 import type { SoundCheckView } from '../../src/shared/first-run';
+import type { PracticeView } from '../../src/shared/practice';
 
 /** `overrides` are mocks too (`vi.fn`), so every method keeps its mock's type for the test's assertions. */
 export function fakeAppApi(state: AppState, overrides: Partial<AppApi> = {}) {
   const soundCheckListeners: ((view: SoundCheckView) => void)[] = [];
   const stateListeners: ((state: AppState) => void)[] = [];
+  const practiceListeners: ((view: PracticeView) => void)[] = [];
   const defaults = {
     getState: vi.fn(async () => state),
     onState: vi.fn((listener: (state: AppState) => void) => {
@@ -41,6 +43,11 @@ export function fakeAppApi(state: AppState, overrides: Partial<AppApi> = {}) {
       soundCheckListeners.push(listener);
       return () => {};
     }),
+    practice: vi.fn<AppApi['practice']>(async () => ({ ok: true })),
+    onPractice: vi.fn((listener: (view: PracticeView) => void) => {
+      practiceListeners.push(listener);
+      return () => {};
+    }),
     hidingTest: vi.fn(async () => ({ ok: true as const })),
     signInPage: vi.fn(),
     startTrial: vi.fn<AppApi['startTrial']>(async () => ({ ok: true })),
@@ -65,5 +72,7 @@ export function fakeAppApi(state: AppState, overrides: Partial<AppApi> = {}) {
     send: (next: AppState) => stateListeners.forEach((listener) => listener(next)),
     /** Main sends the sound check as it goes. */
     soundCheck: (view: SoundCheckView) => soundCheckListeners.forEach((listener) => listener(view)),
+    /** Main sends the practice as it goes. */
+    practice: (view: PracticeView) => practiceListeners.forEach((listener) => listener(view)),
   };
 }

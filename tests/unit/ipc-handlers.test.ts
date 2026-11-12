@@ -299,6 +299,43 @@ describe('history, for the app window only (3.9)', () => {
   });
 });
 
+describe('practice, for the app window only (the Practice page)', () => {
+  it.each<[unknown]>([
+    [{ type: 'start', start: { count: 3, focus: 1, questions: null } }],
+    [{ type: 'start', start: { count: 1, focus: 0, questions: ['Why us?'] } }],
+    [{ type: 'answer', text: 'Because the ledger had to balance.' }],
+    [{ type: 'next' }],
+    [{ type: 'stop' }],
+    [{ type: 'close' }],
+  ])('passes on %j', async (action) => {
+    expect(await invoke(IpcChannels.appPractice, appId, action)).toEqual({ ok: true });
+    expect(calls.practice).toEqual([[action]]);
+  });
+
+  it('passes on an answer trimmed', async () => {
+    await invoke(IpcChannels.appPractice, appId, { type: 'answer', text: '  Because.  ' });
+    expect(calls.practice).toEqual([[{ type: 'answer', text: 'Because.' }]]);
+  });
+
+  it.each<[unknown]>([
+    [{ type: 'answer', text: '' }],
+    [{ type: 'answer', text: 'x'.repeat(20_001) }],
+    [{ type: 'start', start: { count: 11, focus: 0, questions: null } }],
+    [{ type: 'start', start: { count: 3, focus: 0, questions: [] } }],
+    [{ type: 'endSession' }],
+    ['stop'],
+    [null],
+  ])('refuses %j', async (action) => {
+    expect(await invoke(IpcChannels.appPractice, appId, action)).toEqual(invalid);
+    expect(calls.practice).toBeUndefined();
+  });
+
+  it('hears nothing of practice from the overlay', async () => {
+    expect(await invoke(IpcChannels.appPractice, overlayId, { type: 'stop' })).toEqual(invalid);
+    expect(calls.practice).toBeUndefined();
+  });
+});
+
 describe('prep drafts, for the app window only (3.9)', () => {
   it('asks for drafts, and keeps or skips one named by its id', async () => {
     expect(await invoke(IpcChannels.appWriteDrafts, appId)).toEqual({ ok: true });

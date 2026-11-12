@@ -6,6 +6,8 @@ import { HubDriver, resendFrames, type HubDriverDependencies } from '../../src/m
 import {
   AskMode,
   ErrorCodes,
+  PracticeFocus,
+  PracticeState,
   SessionPhase,
   type AudioFrame,
   type HubConnectionLike,
@@ -303,6 +305,40 @@ describe('the hub driver', () => {
     expect(calls[1]!.request).toMatchObject({ Text: null });
     expect(calls[2]!.request).toMatchObject({ Auto: false, Paused: null });
     for (const call of calls) expect(call.request).toHaveProperty('CommandId');
+  });
+
+  it("sends practice to its hub methods: a start, a typed answer, next and stop (the server's 3.3)", async () => {
+    const h = harness();
+    await h.start();
+
+    await h.driver.command({ type: 'mockStart', count: 3, focus: PracticeFocus.Technical, questions: null });
+    await h.driver.command({ type: 'mockStart', count: 2, focus: PracticeFocus.Mixed, questions: ['Why us?', 'Why now?'] });
+    await h.driver.command({ type: 'mockAnswer', text: 'Because of the ledger work.' });
+    await h.driver.command({ type: 'mockNext' });
+    await h.driver.command({ type: 'mockStop' });
+
+    const calls = h.transports[0]!.connection.invocations.slice(1);
+    expect(calls.map((call) => call.method)).toEqual(['MockStart', 'MockStart', 'MockAnswer', 'MockNext', 'MockStop']);
+    expect(calls[0]!.request).toMatchObject({ Count: 3, Focus: PracticeFocus.Technical, Questions: null });
+    expect(calls[1]!.request).toMatchObject({ Count: 2, Focus: PracticeFocus.Mixed, Questions: ['Why us?', 'Why now?'] });
+    // Typed: the server never hears the user, and has no delivery to score without the coach (3.7).
+    expect(calls[2]!.request).toMatchObject({ Text: 'Because of the ledger work.', Spoken: false, Metrics: null });
+    for (const call of calls) expect(Object.keys(call.request as object)).toContain('CommandId');
+    expect(Object.keys(calls[3]!.request as object)).toEqual(['CommandId']);
+    expect(Object.keys(calls[4]!.request as object)).toEqual(['CommandId']);
+  });
+
+  it('turns the practice events into the practice the page draws', async () => {
+    const h = harness();
+    await h.start();
+    const events = h.transports[0]!.events;
+    const status = { State: PracticeState.Answering, N: 1, MainN: 1, Total: 2, Focus: PracticeFocus.Mixed, Difficulty: 1 as const, Last: false, Question: 'Why us?', Error: null };
+    events.mockQuestion({ Seq: 1, AtMs: 1, N: 1, MainN: 1, Total: 2, Kind: 0, Question: 'Why us?', Source: 0, Difficulty: 1 });
+    events.mockState({ Seq: 2, AtMs: 2, Status: status });
+
+    expect(h.state().practice.turns.map((turn) => turn.question)).toEqual(['Why us?']);
+    expect(h.state().practice.status).toMatchObject({ state: PracticeState.Answering, total: 2, question: 'Why us?' });
+    expect(h.state().lastSeq).toBe(2);
   });
 
   it("answers a refused command with the server's code", async () => {

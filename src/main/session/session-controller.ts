@@ -1,7 +1,7 @@
 // Owns the live session's view state in main: the overlay can reload without losing it, and nothing in a renderer
 // talks to the network. Commands go to a driver: the hub (hub-driver.ts), or the scripted preview in development.
 import { bestMatch, buildIndex, type MatchEntry, type MatchIndex } from '../../shared/answer-match';
-import { AnswerKind, ErrorCodes } from '../../shared/contracts/sotto-contracts';
+import { AnswerKind, ErrorCodes, type PracticeFocus } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult, OverlayCommand } from '../../shared/ipc';
 import { historyEvents, type HistoryEvent } from '../../shared/live/history-events';
 import { reduceLive, type LiveAction } from '../../shared/live/reducer';
@@ -11,13 +11,24 @@ import type { CaptureOutcome } from '../screenshots/screen-capture';
 import type { ScreenshotShelf } from '../screenshots/screenshot-shelf';
 
 /**
- * The overlay's commands as a driver gets them. A capture arrives as its picture, taken in main (3.6), so a driver
- * attaches it, or asks about it at once; looking back through answers never reaches a driver.
+ * A practice interview's commands (the server's 3.3), from the Practice page: start it (a count and a focus, or the
+ * questions chosen), answer the question asked, go on after the feedback, or stop.
+ */
+export type PracticeCommand =
+  | { type: 'mockStart'; count: number; focus: PracticeFocus; questions: string[] | null }
+  | { type: 'mockAnswer'; text: string }
+  | { type: 'mockNext' }
+  | { type: 'mockStop' };
+
+/**
+ * The overlay's commands as a driver gets them, and practice's. A capture arrives as its picture, taken in main (3.6),
+ * so a driver attaches it, or asks about it at once; looking back through answers never reaches a driver.
  */
 export type SessionCommand =
   | Exclude<OverlayCommand, { type: 'view' | 'capture' | 'reattachScreenshot' }>
   | { type: 'attachScreenshot'; id: string; bytes: Uint8Array }
-  | { type: 'screenshotQuery'; id: string; bytes: Uint8Array; hint: string | null };
+  | { type: 'screenshotQuery'; id: string; bytes: Uint8Array; hint: string | null }
+  | PracticeCommand;
 
 export interface SessionDriver {
   /** Starts the session; events come back through `dispatch`. `state` reads the current view (a resume needs LastSeq). */
@@ -136,6 +147,11 @@ export class SessionController {
       default:
         return this.send(command);
     }
+  }
+
+  /** A practice command (the Practice page's), sent as any command is: accepted, it keeps the session in use. */
+  practice(command: PracticeCommand): Promise<CommandResult> {
+    return this.send(command);
   }
 
   /** A frame of the call's sound, for the running session's driver; nothing when no session runs. */

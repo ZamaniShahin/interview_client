@@ -237,6 +237,9 @@ describe('the recorder, widened (3.9)', () => {
 describe('a debrief asked for, widened at the server’s limits (3.9)', () => {
   const interview = (qa: number, lines: number, over: Partial<InterviewView> = {}): InterviewView => ({
     id: 1,
+    kind: 'interview',
+    average: null,
+    practice: null,
     startedAt: nov11,
     endedAt: nov11,
     candidate: '',

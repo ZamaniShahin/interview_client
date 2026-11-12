@@ -357,6 +357,16 @@ function send(hub: LiveHub, command: SessionCommand, CommandId: string): Promise
       return hub.detachScreenshot({ CommandId, Id: command.id });
     case 'screenshotQuery':
       return hub.screenshotQuery({ CommandId, Id: command.id, Bytes: command.bytes, Hint: command.hint });
+    // Practice (the server's 3.3). An answer is typed until the speech coach (3.7) transcribes spoken ones on this
+    // computer: then `Spoken` and its `Metrics`. The server never hears the user.
+    case 'mockStart':
+      return hub.mockStart({ CommandId, Count: command.count, Focus: command.focus, Questions: command.questions });
+    case 'mockAnswer':
+      return hub.mockAnswer({ CommandId, Text: command.text, Spoken: false, Metrics: null });
+    case 'mockNext':
+      return hub.mockNext({ CommandId });
+    case 'mockStop':
+      return hub.mockStop({ CommandId });
   }
 }
 

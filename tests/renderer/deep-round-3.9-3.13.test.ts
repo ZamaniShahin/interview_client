@@ -19,6 +19,8 @@ beforeEach(() => setActivePinia(createPinia()));
 const start = new Date(2026, 10, 11, 9, 0).getTime();
 const summary = (id: number, over: Partial<InterviewSummary> = {}): InterviewSummary => ({
   id,
+  kind: 'interview',
+  average: null,
   startedAt: start - id * 3_600_000,
   endedAt: start - id * 3_600_000 + 25 * 60_000,
   candidate: '',

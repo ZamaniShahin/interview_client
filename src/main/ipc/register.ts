@@ -43,6 +43,7 @@ import {
 import { bankEntryInputSchema, bankIdSchema, instructionsSchema, type BankEntryInput } from '../../shared/answer-bank';
 import { draftIdSchema } from '../../shared/drafts';
 import { interviewIdSchema, type InterviewView } from '../../shared/history';
+import { practiceActionSchema, type PracticeAction } from '../../shared/practice';
 import { selectionSchema } from '../../shared/screenshots';
 import { settingsPatchSchema } from '../../shared/settings';
 import type { OpenSelector } from '../screenshots/region-selector';
@@ -69,6 +70,8 @@ export interface IpcDependencies {
   acknowledgeNotice: (version: number) => CommandResult;
   finishSetup: () => CommandResult;
   soundCheck: (action: SoundCheckAction) => Promise<CommandResult>;
+  /** Practice, from the Practice page: start one, answer, go on, stop, or put its summary away. */
+  practice: (action: PracticeAction) => Promise<CommandResult>;
   hidingTest: (action: HidingTestAction) => CommandResult;
   signInPage: (action: SignInPageAction) => void;
   startTrial: () => Promise<CommandResult>;
@@ -217,6 +220,13 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromApp(event)) return invalid;
     const parsed = soundCheckActionSchema.safeParse(payload);
     return parsed.success ? deps.soundCheck(parsed.data) : invalid;
+  });
+
+  // Practice runs for the Practice page only: the overlay never starts or answers one.
+  ipcMain.handle(IpcChannels.appPractice, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = practiceActionSchema.safeParse(payload);
+    return parsed.success ? deps.practice(parsed.data) : invalid;
   });
 
   ipcMain.handle(IpcChannels.appHidingTest, (event, payload: unknown): CommandResult => {
