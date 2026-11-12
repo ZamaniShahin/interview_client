@@ -8,6 +8,7 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
 - `development` holds the whole of Shahin's unattended run since 2026-11-12 (`ae755b5`), checked there: `npm run check`, the app tests and the end-to-end tests against the local stack; then the screenshot selector's settle time (`263250b`), which those app tests led to;
 - Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9, 3.13 and 4.1 and their deep round, then 4.2's updates. What is left waits on Shahin: 3.12 (Q51) (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
+- then, at Shahin's request, the glass (`f380818`, branch `feature/glass-ui`, not merged yet): each window's background see-through over Windows 11's acrylic at the opacity set in Settings, the text solid, and a more refined look (decisions §23);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
 ## The skeleton
@@ -90,6 +91,11 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
 - [x] **3.13 Settings, kept in the local database; hotkeys remappable** (2026-11-11, `d65b8ca`, branch `feature/settings-hotkeys`, on 3.9's; checked with the unit and renderer tests and the app tests, 30 of 30):
   - the settings were kept since 1.14; each session hotkey is now changed in Settings by pressing the new keys, checked as pressed (Ctrl or Alt; a second modifier with a letter; never one Windows keeps or another action's), kept, and put back one or all;
   - main registers the keys in effect, and the setup and the overlay name them (decisions §20).
+- [x] **The glass: each window's background, its opacity set in Settings** (Shahin's request, 2026-11-12, `f380818`, branch `feature/glass-ui`, on `development`; checked with `npm run check`, 2,002 tests, and the app tests, 32 of 32):
+  - where Windows 11 22H2 or later draws its acrylic, the overlay and the app window each paint their background at the opacity chosen for them (30–100%, a slider each), the screen behind blurred and the text solid; without it, the overlay fades as a whole and the app window stays solid;
+  - the theme tints what Windows draws, and the overlay is never made a layered window, both read from Windows itself in the app tests;
+  - the look refined on the apple-design skill's principles, used and not installed: corners, edges, press feedback, motion (decisions §23, [design.md](design.md));
+  - not seen yet: the acrylic on a real screen, which needs a person to look, and the fallback on Windows 10.
 - [ ] Practice (with the server's 3.3): Claude Design's practice screens redrawn on these tokens, following Q21–Q24 as answered on 2026-11-09 ([design.md](design.md)).
 
 Tests, deep round over 3.6, 3.8 and 3.10 (2026-11-11, `a46422b`, branch `feature/deep-round-3.6-3.8-3.10`): every feature mapped and triggered again, widened with data points, every outcome given a test; 533 tests more (1,380 in all), the app tests 23 of 23, end to end 4 of 4, the server now asked what it holds after a start. Two fixes: a page break or a vertical tab in a file no longer runs the words either side together, and the 📌 card stays when the generated answer is hidden. One question for Shahin: how strict the 📌 match is (Q49). Decisions §18.
