@@ -11,7 +11,7 @@ import { minGapMs, ScreenCapture, type CaptureDependencies } from '../../src/mai
 import { ScreenshotShelf } from '../../src/main/screenshots/screenshot-shelf';
 import { overlayCommandSchema } from '../../src/shared/ipc';
 import { areaOf, captureCode, screenshotIdSchema, selectionSchema, type Selection } from '../../src/shared/screenshots';
-import { dragArea, dragMinPx } from '../../src/renderer/selector/drag';
+import { dragArea, dragMinPx, pressCounts, settleMs } from '../../src/renderer/selector/drag';
 import { FakeImage } from './fake-image';
 
 describe('a screenshot picture (3.6, v1 shot)', () => {
@@ -304,6 +304,24 @@ describe('a press on the selector (3.6)', () => {
     expect(dragArea(null, { x: 1, y: 1 }, screen)).toBeNull();
     expect(dragArea({ x: 1, y: 1 }, null, screen)).toBeNull();
     expect(dragArea({ x: 0, y: 0 }, { x: 50, y: 50 }, { width: 0, height: 0 })).toBeNull();
+  });
+});
+
+describe('a press on the selector as it settles (3.6, found 2026-11-12)', () => {
+  it.each<[number | null, number, boolean]>([
+    [null, 10_000, false],
+    [1_000, 1_000, false],
+    [1_000, 1_000 + settleMs - 1, false],
+    [1_000, 1_000 + settleMs, true],
+    [1_000, 1_000 + 60_000, true],
+    [1_000, 999, false],
+  ])('shown at %j, counts a press at %i: %s', (shownAt, at, counts) => {
+    expect(pressCounts(at, shownAt)).toBe(counts);
+  });
+
+  it('settles for less than anyone reacts, and long enough for a double-click to end', () => {
+    expect(settleMs).toBeGreaterThanOrEqual(250);
+    expect(settleMs).toBeLessThanOrEqual(500);
   });
 });
 

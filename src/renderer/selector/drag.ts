@@ -10,6 +10,17 @@ export interface Point {
 /** Less movement than this either way is a click, not a drag. */
 export const dragMinPx = 6;
 
+/**
+ * For this long after the selector shows, presses and releases don't count: a double-click on the screenshot button,
+ * or a release that started before the window was there, must never take the whole screen. Shorter than anyone reacts.
+ */
+export const settleMs = 400;
+
+/** Whether a press or release at `at` (ms) counts, the selector having shown at `shownAt` (null while it hasn't). */
+export function pressCounts(at: number, shownAt: number | null): boolean {
+  return shownAt !== null && at - shownAt >= settleMs;
+}
+
 export function dragArea(
   anchor: Point | null,
   current: Point | null,

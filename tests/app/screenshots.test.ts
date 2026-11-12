@@ -6,6 +6,7 @@
 //   node scripts/app-tests.mjs      builds the preview into out/, then runs this (SOTTO_APP=1); Windows only
 import type { ElectronApplication, Page } from 'playwright-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { settleMs } from '../../src/renderer/selector/drag';
 import { displayAffinity, excludedFromCapture, launch, page, runAppTests as run } from './windows';
 
 describe.skipIf(!run)('screenshots in the built app, against the preview (3.6)', { timeout: 90_000 }, () => {
@@ -25,9 +26,8 @@ describe.skipIf(!run)('screenshots in the built app, against the preview (3.6)',
   async function shownSelector(): Promise<Page> {
     const selector = await page(app, 'selector/index.html');
     await expect.poll(selectorWindow, { timeout: 10_000 }).toEqual({ visible: true, excluded: true });
-    // Windows sends the window under the real pointer a mouse move when windows change. Let it land before the test's
-    // own press: arriving mid-drag, with no button held, it reads as the button let go where the page didn't see it.
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    // The selector takes no press for a moment after it shows (`settleMs`): the test's own come after it.
+    await new Promise((resolve) => setTimeout(resolve, settleMs + 200));
     return selector;
   }
 
@@ -45,7 +45,13 @@ describe.skipIf(!run)('screenshots in the built app, against the preview (3.6)',
       .getByText(/MANUAL|AUTO/)
       .first()
       .waitFor({ timeout: 20_000 });
-  }, 60_000);
+    // The preview's scripted interview asks its three questions first, each answer taking the screen as it starts:
+    // these tests begin once it is over, so no scripted answer can take the screen from theirs.
+    await overlay
+      .getByRole('heading', { name: 'What happens if the cache goes down completely?' })
+      .waitFor({ timeout: 40_000 });
+    await overlay.getByText('Writing…').waitFor({ state: 'detached', timeout: 30_000 });
+  }, 100_000);
 
   afterAll(async () => {
     await app?.close();
@@ -59,7 +65,9 @@ describe.skipIf(!run)('screenshots in the built app, against the preview (3.6)',
     // Windows may swallow the press on a window that can't take focus: a move with the button held starts the drag.
     await selector.mouse.move(100, 100);
     await selector.mouse.down();
-    await selector.mouse.move(420, 340, { steps: 8 });
+    // One move, so the drag is over in moments: the test's press is Playwright's, the real button stays up, and a real
+    // mouse move Windows sends meanwhile would read as the button let go. A person's drag holds the real button.
+    await selector.mouse.move(420, 340);
     await selector.mouse.up();
 
     await selectorGone();
