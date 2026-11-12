@@ -1,20 +1,23 @@
 // @vitest-environment happy-dom
-// The glass in the pages (Shahin, 2026-11-12): each window paints its background at the opacity chosen for it, and
-// only where main said Windows draws the glass behind it; the slider that chooses it; and Settings, with and without.
+// The glass in the pages (Shahin, 2026-11-12): each window paints its background at the opacity chosen for it, over
+// what main said is behind it, the overlay's clear glass or the app window's frosted one; the slider that chooses it;
+// and Settings, with the app window frosted and without.
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppApi } from '../../src/preload/api';
 import { initialAppState } from '../../src/shared/app-state';
+import type { Glass } from '../../src/shared/glass';
 import { defaultSettings, minOpacity, type Settings } from '../../src/shared/settings';
 import SettingsPage from '../../src/renderer/app/pages/SettingsPage.vue';
 import SSlider from '../../src/renderer/shared/components/SSlider.vue';
-import { applyToDocument, hasGlass, windowKindOf } from '../../src/renderer/shared/use-settings';
+import { applyToDocument, windowGlass, windowKindOf } from '../../src/renderer/shared/use-settings';
 import { fakeAppApi } from './fake-app-api';
 
 enableAutoUnmount(afterEach);
 
 const html = document.documentElement;
 const alpha = (root: HTMLElement = html) => root.style.getPropertyValue('--window-alpha-chosen');
+const classes = () => [...html.classList].sort();
 const steps = Array.from({ length: (100 - minOpacity) / 5 + 1 }, (_, i) => minOpacity + i * 5);
 
 function resetDocument(): void {
@@ -26,7 +29,7 @@ function resetDocument(): void {
 beforeEach(resetDocument);
 afterEach(resetDocument);
 
-describe('which window a page is in, and whether it has the glass', () => {
+describe('which window a page is in, and the glass behind it', () => {
   it.each<[string, 'overlay' | 'app']>([
     ['/overlay/index.html', 'overlay'],
     ['/app/index.html', 'app'],
@@ -36,27 +39,28 @@ describe('which window a page is in, and whether it has the glass', () => {
     expect(windowKindOf({ pathname })).toBe(kind);
   });
 
-  it.each<[string, boolean]>([
-    ['?glass=1', true],
-    ['?x=2&glass=1', true],
-    ['', false],
-    ['?glass=0', false],
-    ['?glass=true', false],
-    ['?glass=', false],
-    ['?glass', false],
-    ['?Glass=1', false],
-    ['#glass=1', false],
-  ])('the address %j has the glass: %s', (search, glass) => {
-    expect(hasGlass({ search })).toBe(glass);
+  it.each<[string, Glass | null]>([
+    ['?glass=clear', 'clear'],
+    ['?glass=frosted', 'frosted'],
+    ['?x=2&glass=frosted', 'frosted'],
+    ['', null],
+    ['?glass=1', null],
+    ['?glass=true', null],
+    ['?glass=', null],
+    ['#glass=clear', null],
+  ])('the address %j has %s glass', (search, glass) => {
+    expect(windowGlass({ search })).toBe(glass);
   });
 
   it("reads this page's own address when given none", () => {
-    history.replaceState(null, '', '/overlay/index.html?glass=1#hiding-test');
+    history.replaceState(null, '', '/overlay/index.html?glass=clear#hiding-test');
     expect(windowKindOf()).toBe('overlay');
-    expect(hasGlass()).toBe(true);
-    history.replaceState(null, '', '/app/index.html');
+    expect(windowGlass()).toBe('clear');
+    history.replaceState(null, '', '/app/index.html?glass=frosted');
     expect(windowKindOf()).toBe('app');
-    expect(hasGlass()).toBe(false);
+    expect(windowGlass()).toBe('frosted');
+    history.replaceState(null, '', '/app/index.html');
+    expect(windowGlass()).toBeNull();
   });
 });
 
@@ -64,37 +68,46 @@ describe('the settings applied to a page', () => {
   const settings = (over: Partial<Settings> = {}): Settings => ({ ...defaultSettings, ...over });
 
   it("paints the overlay at the overlay's opacity and the app window at its own", () => {
-    applyToDocument(settings({ overlayOpacity: 40, appOpacity: 90 }), html, 'overlay', true);
+    applyToDocument(settings({ overlayOpacity: 40, appOpacity: 90 }), html, 'overlay', 'clear');
     expect(alpha()).toBe('0.4');
-    applyToDocument(settings({ overlayOpacity: 40, appOpacity: 90 }), html, 'app', true);
+    applyToDocument(settings({ overlayOpacity: 40, appOpacity: 90 }), html, 'app', 'frosted');
     expect(alpha()).toBe('0.9');
   });
 
   it.each(steps)('gives %i%% as its fraction, for either window', (percent) => {
-    applyToDocument(settings({ overlayOpacity: percent, appOpacity: percent }), html, 'overlay', true);
+    applyToDocument(settings({ overlayOpacity: percent, appOpacity: percent }), html, 'overlay', 'clear');
     expect(Number(alpha())).toBeCloseTo(percent / 100, 10);
-    applyToDocument(settings({ overlayOpacity: percent, appOpacity: percent }), html, 'app', true);
+    applyToDocument(settings({ overlayOpacity: percent, appOpacity: percent }), html, 'app', 'frosted');
     expect(Number(alpha())).toBeCloseTo(percent / 100, 10);
   });
 
-  it('marks the page glassy only when main said so, and unmarks it', () => {
-    applyToDocument(settings(), html, 'app', true);
-    expect(html.classList.contains('glass')).toBe(true);
-    applyToDocument(settings(), html, 'app', false);
-    expect(html.classList.contains('glass')).toBe(false);
+  it.each<[Glass | null, string[]]>([
+    ['clear', ['glass', 'theme-dark']],
+    ['frosted', ['frosted', 'glass', 'theme-dark']],
+    [null, ['theme-dark']],
+  ])('marks the page for %s glass as main said, and only so', (glass, marks) => {
+    applyToDocument(settings(), html, 'overlay', glass);
+    expect(classes()).toEqual(marks);
+  });
+
+  it('unmarks the glass when told there is none any more', () => {
+    applyToDocument(settings(), html, 'app', 'frosted');
+    applyToDocument(settings(), html, 'app', null);
+    expect(classes()).toEqual(['theme-dark']);
   });
 
   it("keeps the theme and the answer's size beside the glass", () => {
-    applyToDocument(settings({ theme: 'light', textSize: 'L' }), html, 'overlay', true);
-    expect([...html.classList].sort()).toEqual(['glass', 'text-l', 'theme-light']);
-    applyToDocument(settings({ theme: 'dark', textSize: 'S' }), html, 'overlay', false);
-    expect([...html.classList].sort()).toEqual(['text-s', 'theme-dark']);
-    applyToDocument(settings({ textSize: 'M' }), html, 'overlay', false);
-    expect([...html.classList].sort()).toEqual(['theme-dark']);
+    applyToDocument(settings({ theme: 'light', textSize: 'L' }), html, 'overlay', 'clear');
+    expect(classes()).toEqual(['glass', 'text-l', 'theme-light']);
+    applyToDocument(settings({ theme: 'dark', textSize: 'S' }), html, 'app', 'frosted');
+    expect(classes()).toEqual(['frosted', 'glass', 'text-s', 'theme-dark']);
+    applyToDocument(settings({ textSize: 'M' }), html, 'app', null);
+    expect(classes()).toEqual(['theme-dark']);
   });
 
   it('follows a change at once: the last opacity is the one painted', () => {
-    for (const percent of [75, 30, 100, 55]) applyToDocument(settings({ appOpacity: percent }), html, 'app', true);
+    for (const percent of [75, 30, 100, 55])
+      applyToDocument(settings({ overlayOpacity: percent }), html, 'overlay', 'clear');
     expect(alpha()).toBe('0.55');
   });
 });
@@ -169,39 +182,45 @@ describe('the background settings in Settings', () => {
     return { wrapper, setSettings, sliders, labels: sliders.map((s) => s.attributes('aria-label')) };
   }
 
-  it('with the glass, gives each window its own background, at the opacity kept', async () => {
-    const { wrapper, sliders, labels } = await settingsPage('/app/index.html?glass=1', {
+  it('with this window frosted, gives each window its own background, at the opacity kept', async () => {
+    const { wrapper, sliders, labels } = await settingsPage('/app/index.html?glass=frosted', {
       overlayOpacity: 55,
       appOpacity: 90,
     });
     expect(labels).toEqual(['Overlay background', 'Window background']);
     expect(sliders.map((s) => (s.element as HTMLInputElement).value)).toEqual(['55', '90']);
     expect(sliders.map((s) => s.attributes('min'))).toEqual(['30', '30']);
-    expect(wrapper.text()).toContain('How much of the screen shows through, blurred, behind the text');
-    // This page is the app window's: it is painted at the app window's opacity.
-    expect(html.classList.contains('glass')).toBe(true);
+    expect(wrapper.text()).toContain('The overlay keeps it sharp, so you can read it; this window blurs it.');
+    // This page is the app window's: it is painted at the app window's opacity, over the frosted glass.
+    expect(classes()).toEqual(['frosted', 'glass', 'theme-dark']);
     expect(alpha()).toBe('0.9');
   });
 
   it('changes only the window whose slider moved', async () => {
-    const { setSettings, sliders } = await settingsPage('/app/index.html?glass=1');
+    const { setSettings, sliders } = await settingsPage('/app/index.html?glass=frosted');
     await sliders[1]!.setValue('65');
     await sliders[0]!.setValue('40');
     expect(setSettings.mock.calls.map(([patch]) => patch)).toEqual([{ appOpacity: 65 }, { overlayOpacity: 40 }]);
   });
 
-  it('without the glass, has only the overlay fade, as a whole, and paints nothing see-through', async () => {
-    const { wrapper, labels } = await settingsPage('/app/index.html', { appOpacity: 50 });
-    expect(labels).toEqual(['Overlay opacity']);
-    expect(wrapper.text()).toContain('Without Windows 11’s glass, the overlay fades as a whole.');
+  it("without Windows' acrylic, still sets the overlay's background, this window staying solid", async () => {
+    const { wrapper, sliders, labels, setSettings } = await settingsPage('/app/index.html', { overlayOpacity: 60 });
+    expect(labels).toEqual(['Overlay background']);
+    expect((sliders[0]!.element as HTMLInputElement).value).toBe('60');
+    expect(wrapper.text()).toContain(
+      'How much of what is behind the overlay shows through, sharp, so you can read it.',
+    );
     expect(wrapper.text()).not.toContain('Window background');
-    expect(html.classList.contains('glass')).toBe(false);
+    expect(classes()).toEqual(['theme-dark']);
+    await sliders[0]!.setValue('35');
+    expect(setSettings).toHaveBeenCalledWith({ overlayOpacity: 35 });
   });
 
-  it('says either way that the opacity is for comfort only: the overlay is out of shares at any', async () => {
-    for (const address of ['/app/index.html?glass=1', '/app/index.html']) {
+  it('says either way that the text stays solid and the overlay is out of shares', async () => {
+    for (const address of ['/app/index.html?glass=frosted', '/app/index.html']) {
       const { wrapper } = await settingsPage(address);
-      expect(wrapper.text()).toMatch(/For your comfort only: (the overlay|it) is left out of shares either way\./);
+      expect(wrapper.text()).toContain('The text stays solid.');
+      expect(wrapper.text()).toContain('The overlay is left out of shares whatever you choose.');
     }
   });
 });

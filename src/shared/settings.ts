@@ -14,9 +14,10 @@ export const settingsSchema = z.object({
   /** The answer's text size: 15, 16 or 18 px. */
   textSize: z.enum(['S', 'M', 'L']),
   /**
-   * How opaque each window's background is, in percent (Shahin, 2026-11-12): behind it, Windows 11 blurs what is on
-   * screen (its acrylic material); the text stays solid. Where there is no glass (Windows 10), the overlay's fades the
-   * whole window instead, and the app window stays solid. For comfort only: the overlay is out of captures at any.
+   * How opaque each window's background is, in percent (Shahin, 2026-11-12), so the user sees what is behind Sotto;
+   * the text stays solid (shared/glass.ts). Behind the overlay, what is on screen shows sharp, to be read through, on
+   * every Windows; behind the app window, Windows 11 blurs it (its acrylic), and where it draws none (Windows 10) the
+   * app window stays solid. The overlay is out of captures at any opacity.
    */
   overlayOpacity: opacityPercent,
   appOpacity: opacityPercent,

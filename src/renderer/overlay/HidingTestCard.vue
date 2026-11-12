@@ -25,7 +25,10 @@ import SIcon from '../shared/components/SIcon.vue';
   justify-content: center;
   height: 100%;
   padding: 24px;
+  /* The overlay window's corners and edge, as the overlay draws them (window.css). */
+  border-radius: var(--radius-window);
   background: var(--surface-0);
+  box-shadow: inset 0 0 0 1px var(--line-2);
 }
 .card {
   max-width: 320px;

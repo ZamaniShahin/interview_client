@@ -1,9 +1,10 @@
 /* Design tokens: the neutral placeholder (backend decisions.md, 2026-11-06), until Sotto has a brand (Q14), made
-   glassy on Shahin's word (2026-11-12): where Windows draws its acrylic behind a window (<html class="glass">), the
-   window is painted at the opacity chosen for it and the layers on it are light tints, so the screen shows through,
-   blurred, while the text stays solid. Without the glass, the solid values below. Dark is the default; Settings
-   switches the <html> class. Contrast is measured against surface-1, where answers and fields sit: text 4.5:1,
-   control edges 3:1. */
+   glassy on Shahin's word (2026-11-12): a window with glass behind it (<html class="glass">) is painted at the
+   opacity chosen for it and the layers on it are light tints, so what is behind shows through while the text stays
+   solid. The overlay's glass is clear, so what is behind it can be read; the app window's is frosted (<html
+   class="glass frosted">), Windows 11's acrylic blurring it. Without glass, the solid values below. Dark is the
+   default; Settings switches the <html> class. Contrast is measured against surface-1, where answers and fields sit:
+   text 4.5:1, control edges 3:1. */
 
 :root,
 :root.theme-dark {
@@ -82,7 +83,8 @@
   /* Windows 11's own fonts: nothing is fetched at runtime, nothing needs bundling. macOS gets its system font. */
   --font-sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono: 'Cascadia Mono', Consolas, ui-monospace, 'SF Mono', monospace;
-  /* Corners: a card, a control, a chip. */
+  /* Corners: the overlay's window (drawn by its page: the canvas's 12 px), a card, a control, a chip. */
+  --radius-window: 12px;
   --radius-card: 14px;
   --radius-control: 8px;
   --radius-chip: 6px;
@@ -104,8 +106,8 @@
   --answer-line: 28px;
 }
 
-/* The glass: the window at the opacity chosen for it, over Windows' acrylic; regions, fields and chips as light tints
-   on it, never stacked into a milky layer; menus nearly solid. */
+/* The glass: the window at the opacity chosen for it, over clear glass (the overlay) or Windows' acrylic (the app
+   window); regions, fields and chips as light tints on it, never stacked into a milky layer; menus nearly solid. */
 :root.glass {
   --window-alpha: var(--window-alpha-chosen, 0.75);
   --window: rgb(17 17 19 / var(--window-alpha));
@@ -130,9 +132,11 @@
   --menu: rgb(250 250 251 / 96%);
 }
 
-/* Transparency turned off in Windows (or reduced): the window is solid again; its tints stay. */
+/* Transparency turned off in Windows (or reduced, as a battery saver may): a frosted window is solid again, as
+   Windows draws its acrylic no more; its tints stay. The overlay's clear glass keeps the opacity chosen in Settings:
+   reading what is behind it is what it is for. */
 @media (prefers-reduced-transparency: reduce) {
-  :root.glass {
+  :root.glass.frosted {
     --window-alpha: 1;
   }
 }

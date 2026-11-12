@@ -37,15 +37,18 @@ Not a brand (backend decisions.md, 2026-11-06). The brand is Q14, and on 2026-11
 - amber for key words, and for nothing else.
 
 The values are in [`src/renderer/shared/styles/tokens.css`](../src/renderer/shared/styles/tokens.css): the canvas's, but for the glass and the refinements that came with it (Shahin, 2026-11-12; [decisions.md](decisions.md) §23). The canvas keeps its own values until it is redrawn.
-- **Theme:** dark is the default, light is in Settings. `<html>` carries `theme-dark` or `theme-light`, and the theme tints what Windows draws too (each window's frame and glass).
+- **Theme:** dark is the default, light is in Settings. `<html>` carries `theme-dark` or `theme-light`, and the theme tints what Windows draws too (the app window's frame and frosted glass).
 - **Answer size:** `text-s` or `text-l` sets it.
-- **The glass:** where Windows 11 (22H2 and later) draws its acrylic behind a window, `<html>` also carries `glass`. Then:
-  - the window's own background, `--window`, is the one layer that fades: it is painted on `<body>` at the opacity chosen for that window in Settings (30–100%), the screen behind showing through it, blurred; text, icons and controls stay solid;
-  - surfaces 1–3, `--selected` and `--code` are light tints over it, and `--surface-0`, what matched the window, is clear. Never paint a surface of its own over the window: layers stacked on the glass turn it milky;
+- **The glass**, so the user sees what is behind Sotto. `<html>` carries `glass` when there is some, and `frosted` too when Windows blurs it:
+  - the **overlay's is clear**, on every Windows: a transparent window, as v1's was, so the call app behind it shows through sharp and can be read;
+  - the **app window's is frosted** where Windows 11 (22H2 and later) draws its acrylic behind it, and is none elsewhere: that window is never over the call;
+  - the window's own background, `--window`, is the one layer that fades: it is painted on `<body>` at the opacity chosen for that window in Settings (30–100%); text, icons and controls stay solid;
+  - surfaces 1–3, `--selected` and `--code` are light tints over it, and `--surface-0`, what matched the window, is clear. Never paint a surface of its own over the window: layers stacked on the glass turn it milky, and over clear glass they hide what was to be read;
   - menus and popovers are `--menu`, nearly solid, blurring what is under them;
-  - with Windows' transparency effects off, the window is solid again;
-  - without the glass, every value is solid, and the overlay's setting fades the whole window instead.
-- **Corners, edges, motion:** `--radius-card` 14 px, `--radius-control` 8, `--radius-chip` 6; `--highlight`, the light on a raised layer's top edge (an inset 1 px shadow), and `--primary-highlight` on the primary button's; `--press` (`scale(0.97)`, 100 ms) as a control is pressed; `--ease-out` for every change of state, over 150 ms.
+  - with Windows' transparency effects off, a frosted window is solid again; the clear overlay keeps its opacity;
+  - Windows draws the clear overlay no corners or edge, so its page does: `--radius-window`, the canvas's 12 px, with the edge along it;
+  - without glass, every value is solid.
+- **Corners, edges, motion:** `--radius-window` 12 px (the overlay), `--radius-card` 14, `--radius-control` 8, `--radius-chip` 6; `--highlight`, the light on a raised layer's top edge (an inset 1 px shadow), and `--primary-highlight` on the primary button's; `--press` (`scale(0.97)`, 100 ms) as a control is pressed; `--ease-out` for every change of state, over 150 ms.
 
 ## Proposals the design makes
 

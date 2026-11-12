@@ -13,15 +13,18 @@ describe('a page’s address (4.1)', () => {
     ['app', undefined, undefined, 'app://sotto/app/index.html'],
     ['overlay', 'hiding-test', undefined, 'app://sotto/overlay/index.html#hiding-test'],
     // What the page is told goes before its mode, as an address has them (the glass, 2026-11-12).
-    ['app', undefined, '?glass=1', 'app://sotto/app/index.html?glass=1'],
-    ['overlay', 'hiding-test', '?glass=1', 'app://sotto/overlay/index.html?glass=1#hiding-test'],
+    ['app', undefined, '?glass=frosted', 'app://sotto/app/index.html?glass=frosted'],
+    ['overlay', 'hiding-test', '?glass=clear', 'app://sotto/overlay/index.html?glass=clear#hiding-test'],
     ['overlay', undefined, '', 'app://sotto/overlay/index.html'],
   ])('names %s (%s, %s) as %s', (page, hash, search, url) => {
     expect(appUrl(page, hash, search)).toBe(url);
   });
 
   it('serves the page it names, whatever it is told', () => {
-    for (const url of ['app://sotto/app/index.html?glass=1', 'app://sotto/overlay/index.html?glass=1#hiding-test']) {
+    for (const url of [
+      'app://sotto/app/index.html?glass=frosted',
+      'app://sotto/overlay/index.html?glass=clear#hiding-test',
+    ]) {
       expect(fileOf(url, root)).toBe(join(root, new URL(url).pathname.slice(1)));
     }
   });

@@ -1,6 +1,6 @@
 // The overlay: the product. Always on top, never in a capture, no system frame, and it never takes focus by itself.
 import { app, BrowserWindow, screen } from 'electron';
-import { glassSupported, glassWindowOptions } from './glass';
+import { clearWindowOptions } from './glass';
 import { keepOnTop, keepOutOfCapture, lockDown } from './stealth';
 import { loadPage, preloadPath } from './load-page';
 
@@ -18,7 +18,6 @@ export const overlaySize = {
 export function createOverlayWindow(options: { compact: boolean; hidingTest?: boolean }): BrowserWindow {
   const area = screen.getPrimaryDisplay().workArea;
   const size = options.compact ? overlaySize.compact : overlaySize.full;
-  const glass = glassSupported();
   const win = new BrowserWindow({
     ...size,
     // First placed top centre, just under the webcam, so reading looks like eye contact.
@@ -26,9 +25,6 @@ export function createOverlayWindow(options: { compact: boolean; hidingTest?: bo
     y: area.y + 24,
     show: false,
     frame: false,
-    // Windows 11 rounds the corners itself (8 px; checked on build 26200, resizable or not). The canvas's 12 px would
-    // need a transparent window, without the system's shadow, for 4 px more. Windows 10 stays square.
-    roundedCorners: true,
     // Stealth rule 5: no OS resize border; the ◢ grip resizes through main.
     resizable: false,
     minimizable: false,
@@ -37,8 +33,9 @@ export function createOverlayWindow(options: { compact: boolean; hidingTest?: bo
     // A full-screen share shows the taskbar, so a session has no taskbar button, and no tray icon either, as in v1
     // (Q16): the hotkeys reach the overlay.
     skipTaskbar: true,
-    // Windows 11's acrylic behind a clear background, or the solid one (glass.ts); left out of captures either way.
-    ...glassWindowOptions(glass),
+    // Clear glass, as v1's overlay was (glass.ts): a transparent window, so what is behind it can be read through it
+    // at the opacity chosen; the page draws its corners, the canvas's 12 px, on Windows 10 too. Out of captures still.
+    ...clearWindowOptions,
     title: 'Sotto',
     webPreferences: {
       preload: preloadPath('overlay'),
@@ -53,6 +50,6 @@ export function createOverlayWindow(options: { compact: boolean; hidingTest?: bo
   keepOutOfCapture(win);
   keepOnTop(win);
   lockDown(win.webContents);
-  void loadPage(win, 'overlay', options.hidingTest ? 'hiding-test' : undefined, { glass });
+  void loadPage(win, 'overlay', options.hidingTest ? 'hiding-test' : undefined, { glass: 'clear' });
   return win;
 }

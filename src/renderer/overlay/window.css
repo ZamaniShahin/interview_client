@@ -1,0 +1,6 @@
+/* The overlay is a transparent window (main/windows/glass.ts): Windows draws it no corners and no edge, so its page
+   does. Outside the corners the window is clear, so it is rounded on every Windows, 10 included. Whatever the window
+   shows (the overlay, or Test hiding's card) draws the edge along the same corners. */
+body {
+  border-radius: var(--radius-window);
+}

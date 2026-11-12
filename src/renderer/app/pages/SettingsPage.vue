@@ -4,12 +4,15 @@ import SSegmented from '../../shared/components/SSegmented.vue';
 import SSlider from '../../shared/components/SSlider.vue';
 import SSwitch from '../../shared/components/SSwitch.vue';
 import { minOpacity } from '../../../shared/settings';
-import { hasGlass, useSettings } from '../../shared/use-settings';
+import { useSettings, windowGlass } from '../../shared/use-settings';
 import HotkeySettings from '../components/HotkeySettings.vue';
 
 const { settings, update } = useSettings(window.appApi);
-/** Whether Windows draws the glass behind the windows: then each background has its own opacity. */
-const glass = hasGlass();
+/**
+ * Whether Windows draws its acrylic behind this window, the app window: then it has a background of its own to set.
+ * The overlay's glass is clear on every Windows, so its background can always be set.
+ */
+const frosted = windowGlass() === 'frosted';
 </script>
 
 <template>
@@ -44,18 +47,18 @@ const glass = hasGlass();
           />
         </div>
         <div class="row">
-          <span>{{ glass ? 'Overlay background' : 'Overlay opacity' }}</span>
+          <span>Overlay background</span>
           <SSlider
             :model-value="settings.overlayOpacity"
             :min="minOpacity"
             :max="100"
             :step="5"
             unit="%"
-            :label="glass ? 'Overlay background' : 'Overlay opacity'"
+            label="Overlay background"
             @update:model-value="(overlayOpacity) => update({ overlayOpacity })"
           />
         </div>
-        <div v-if="glass" class="row">
+        <div v-if="frosted" class="row">
           <span>Window background</span>
           <SSlider
             :model-value="settings.appOpacity"
@@ -69,10 +72,11 @@ const glass = hasGlass();
         </div>
         <p class="small">
           {{
-            glass
-              ? 'How much of the screen shows through, blurred, behind the text; the text stays solid. For your comfort only: the overlay is left out of shares either way.'
-              : 'Without Windows 11’s glass, the overlay fades as a whole. For your comfort only: it is left out of shares either way.'
+            frosted
+              ? 'How much of what is behind each window shows through. The overlay keeps it sharp, so you can read it; this window blurs it. The text stays solid.'
+              : 'How much of what is behind the overlay shows through, sharp, so you can read it. The text stays solid.'
           }}
+          The overlay is left out of shares whatever you choose.
         </p>
 
         <p class="eyebrow section">During a session</p>

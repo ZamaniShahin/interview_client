@@ -255,6 +255,8 @@ function confirm(): void {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  /* The window's own corners, which its page draws (window.css): the edge follows them. */
+  border-radius: var(--radius-window);
   background: var(--surface-0);
   box-shadow: inset 0 0 0 1px var(--line-2);
 }

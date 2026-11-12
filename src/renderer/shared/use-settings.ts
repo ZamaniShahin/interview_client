@@ -1,4 +1,5 @@
 import { onBeforeUnmount, ref } from 'vue';
+import { glassOf, type Glass } from '../../shared/glass';
 import { defaultSettings, type Settings, type SettingsPatch } from '../../shared/settings';
 import type { SettingsApi } from '../../preload/api';
 
@@ -10,27 +11,29 @@ export function windowKindOf(location: { pathname: string } = window.location): 
   return location.pathname.includes('/overlay/') ? 'overlay' : 'app';
 }
 
-/** Whether main gave this window Windows' glass behind it (`?glass=1`, main/windows/glass.ts). */
-export function hasGlass(location: { search: string } = window.location): boolean {
-  return new URLSearchParams(location.search).get('glass') === '1';
+/** The glass main gave this window (`?glass=clear` or `?glass=frosted`, shared/glass.ts), or none. */
+export function windowGlass(location: { search: string } = window.location): Glass | null {
+  return glassOf(location.search);
 }
 
 /**
- * Applies the theme, the answer size and the glass to <html>, where the tokens read them. With the glass, the
- * window's background is painted at the opacity chosen for this window (`--window-alpha-chosen`); the text stays
- * solid. Without it, nothing is see-through.
+ * Applies the theme, the answer size and the glass to <html>, where the tokens read them. With either glass, the
+ * window's background is painted at the opacity chosen for this window (`--window-alpha-chosen`), the text staying
+ * solid: through clear glass what is behind is sharp, through frosted glass (`frosted`) Windows blurs it. Without
+ * glass, nothing is see-through.
  */
 export function applyToDocument(
   settings: Settings,
   root: HTMLElement = document.documentElement,
   kind: WindowKind = windowKindOf(),
-  glass: boolean = hasGlass(),
+  glass: Glass | null = windowGlass(),
 ): void {
   root.classList.toggle('theme-light', settings.theme === 'light');
   root.classList.toggle('theme-dark', settings.theme === 'dark');
   root.classList.toggle('text-s', settings.textSize === 'S');
   root.classList.toggle('text-l', settings.textSize === 'L');
-  root.classList.toggle('glass', glass);
+  root.classList.toggle('glass', glass !== null);
+  root.classList.toggle('frosted', glass === 'frosted');
   const percent = kind === 'overlay' ? settings.overlayOpacity : settings.appOpacity;
   root.style.setProperty('--window-alpha-chosen', String(percent / 100));
 }

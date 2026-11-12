@@ -1,5 +1,5 @@
-// Where each window's page comes from (4.1), and what it is told: that Windows draws its glass behind the window
-// (`?glass=1`, 2026-11-12), before the page's mode after #.
+// Where each window's page comes from (4.1), and what it is told: the glass behind its window (`?glass=clear` for the
+// overlay, `?glass=frosted` for the app window on Windows 11; 2026-11-12), before the page's mode after #.
 import type { BrowserWindow } from 'electron';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,10 +26,10 @@ async function loaded(...args: Parameters<typeof loadPage> extends [unknown, ...
 
 describe('a page in the built app', () => {
   it.each<[Parameters<typeof loaded>, string]>([
-    [['app', undefined, { glass: true }], 'app://sotto/app/index.html?glass=1'],
-    [['overlay', undefined, { glass: true }], 'app://sotto/overlay/index.html?glass=1'],
-    [['overlay', 'hiding-test', { glass: true }], 'app://sotto/overlay/index.html?glass=1#hiding-test'],
-    [['overlay', 'hiding-test', { glass: false }], 'app://sotto/overlay/index.html#hiding-test'],
+    [['app', undefined, { glass: 'frosted' }], 'app://sotto/app/index.html?glass=frosted'],
+    [['overlay', undefined, { glass: 'clear' }], 'app://sotto/overlay/index.html?glass=clear'],
+    [['overlay', 'hiding-test', { glass: 'clear' }], 'app://sotto/overlay/index.html?glass=clear#hiding-test'],
+    [['overlay', 'hiding-test', {}], 'app://sotto/overlay/index.html#hiding-test'],
     [['app', undefined, {}], 'app://sotto/app/index.html'],
     [['selector'], 'app://sotto/selector/index.html'],
     [['capture'], 'app://sotto/capture/index.html'],
@@ -39,14 +39,14 @@ describe('a page in the built app', () => {
 
   it("never loads a page named by its environment, the glass's included", async () => {
     process.env['ELECTRON_RENDERER_URL'] = 'https://evil.example';
-    expect(await loaded('app', undefined, { glass: true })).toBe('app://sotto/app/index.html?glass=1');
+    expect(await loaded('app', undefined, { glass: 'frosted' })).toBe('app://sotto/app/index.html?glass=frosted');
   });
 });
 
 describe('a page in development', () => {
   it.each<[Parameters<typeof loaded>, string]>([
-    [['app', undefined, { glass: true }], `${devServer}/app/index.html?glass=1`],
-    [['overlay', 'hiding-test', { glass: true }], `${devServer}/overlay/index.html?glass=1#hiding-test`],
+    [['app', undefined, { glass: 'frosted' }], `${devServer}/app/index.html?glass=frosted`],
+    [['overlay', 'hiding-test', { glass: 'clear' }], `${devServer}/overlay/index.html?glass=clear#hiding-test`],
     [['overlay', 'hiding-test'], `${devServer}/overlay/index.html#hiding-test`],
     [['app'], `${devServer}/app/index.html`],
   ])('loads %j from the dev server, as %s', async (args, url) => {
@@ -58,6 +58,6 @@ describe('a page in development', () => {
   it('loads the built pages when no dev server runs (the preview build)', async () => {
     electron.app.isPackaged = false;
     delete process.env['ELECTRON_RENDERER_URL'];
-    expect(await loaded('overlay', undefined, { glass: true })).toBe('app://sotto/overlay/index.html?glass=1');
+    expect(await loaded('overlay', undefined, { glass: 'clear' })).toBe('app://sotto/overlay/index.html?glass=clear');
   });
 });

@@ -92,7 +92,6 @@ import { openDocumentsWindow } from './windows/documents-window';
 import { createOverlayWindow, overlaySize } from './windows/overlay-window';
 import { denyPermissions } from './windows/stealth';
 import { registerAppScheme, serveApp } from './windows/app-protocol';
-import { glassSupported } from './windows/glass';
 import { rendererRoot } from './windows/load-page';
 
 const config = loadConfig();
@@ -245,22 +244,14 @@ let hidingTestWindow: BrowserWindow | null = null;
 let signInUrl: string | null = null;
 
 function applySettings(changed: Settings): void {
-  // Windows tints each window's frame and its glass by the window's light or dark mode, which Electron takes from
-  // nativeTheme: the theme chosen here, then, not Windows' own, or a dark Sotto would sit on light glass.
+  // Windows tints each window's frame and its frosted glass by the window's light or dark mode, which Electron takes
+  // from nativeTheme: the theme chosen here, then, not Windows' own, or a light Sotto would sit on dark glass.
   nativeTheme.themeSource = changed.theme;
+  // Each page paints its own background at its window's opacity, the overlay's over clear glass on every Windows
+  // (windows/glass.ts): no window is ever faded as a whole, which would fade its text too.
   for (const win of [appWindow, overlayWindow]) {
     if (alive(win)) win.webContents.send(IpcChannels.settingsChanged, changed);
   }
-  if (alive(overlayWindow)) fadeOverlay(overlayWindow, changed);
-}
-
-/**
- * Without the glass, the overlay's opacity fades the whole window. With it, the page fades only its background, and
- * the window is left alone: on Windows, Electron's setOpacity makes a window layered even at 1 (WS_EX_LAYERED, read
- * from the overlay 2026-11-12), and the glass is drawn on a plain window, as the app window's is.
- */
-function fadeOverlay(win: BrowserWindow, current: Settings): void {
-  if (!glassSupported()) win.setOpacity(current.overlayOpacity / 100);
 }
 
 function setAppState(change: Partial<AppState>): void {
@@ -924,7 +915,6 @@ function openOverlay(): void {
   const current = settings.get();
   if (!alive(overlayWindow)) {
     const win = createOverlayWindow({ compact: current.startCompact });
-    fadeOverlay(win, current);
     // Shown without taking focus: the call app keeps the keyboard (stealth rule 6).
     win.once('ready-to-show', () => win.showInactive());
     win.on('closed', () => {

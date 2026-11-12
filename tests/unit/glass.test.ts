@@ -1,11 +1,19 @@
-// The glass (Shahin, 2026-11-12): which Windows draws it behind a window, what each window is made with, and the
-// opacity each window's background is painted at.
+// The glass (Shahin, 2026-11-12): the overlay's clear, as v1's (a transparent window, so what is behind it can be
+// read), the app window's frosted where Windows draws its acrylic; what each page is told of it; and the opacity each
+// window's background is painted at.
 import { readFileSync } from 'node:fs';
 import { release } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { firstGlassBuild, glassSupported, glassWindowOptions, solidBackground } from '../../src/main/windows/glass';
+import {
+  acrylicSupported,
+  clearWindowOptions,
+  firstAcrylicBuild,
+  frostedWindowOptions,
+  solidBackground,
+} from '../../src/main/windows/glass';
+import { glassOf } from '../../src/shared/glass';
 import {
   defaultSettings,
   minOpacity,
@@ -16,7 +24,7 @@ import {
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
-describe('which computers draw the glass', () => {
+describe("which computers draw the app window's frosted glass", () => {
   it.each<[string, string, boolean, string]>([
     ['win32', '10.0.26200', true, 'Windows 11 25H2'],
     ['win32', '10.0.26100', true, 'Windows 11 24H2'],
@@ -37,26 +45,35 @@ describe('which computers draw the glass', () => {
     ['darwin', '25.1.0', false, 'macOS, whatever its version'],
     ['linux', '6.8.0-45-generic', false, 'Linux'],
     ['linux', '10.0.26200', false, 'a Windows release on another platform'],
-  ])('%s %s: %s (%s)', (platform, osRelease, glass) => {
-    expect(glassSupported(platform, osRelease)).toBe(glass);
+  ])('%s %s: %s (%s)', (platform, osRelease, acrylic) => {
+    expect(acrylicSupported(platform, osRelease)).toBe(acrylic);
   });
 
   it('starts at Windows 11 22H2, the first build Electron draws a system backdrop on', () => {
-    expect(firstGlassBuild).toBe(22621);
+    expect(firstAcrylicBuild).toBe(22621);
   });
 
   it('asks this computer when given nothing', () => {
-    expect(glassSupported()).toBe(glassSupported(process.platform, release()));
+    expect(acrylicSupported()).toBe(acrylicSupported(process.platform, release()));
   });
 });
 
 describe('what each window is made with', () => {
-  it('with the glass: the acrylic, behind a clear background, so the page paints the only layer', () => {
-    expect(glassWindowOptions(true)).toEqual({ backgroundMaterial: 'acrylic', backgroundColor: '#00000000' });
+  it('the overlay: a transparent window with a clear background and no shadow, as v1’s, on every Windows', () => {
+    expect(clearWindowOptions).toEqual({ transparent: true, backgroundColor: '#00000000', hasShadow: false });
   });
 
-  it('without it: the solid background, and no material asked of Windows', () => {
-    const options = glassWindowOptions(false);
+  it('the overlay: nothing that blurs what is behind it, so it can be read through', () => {
+    expect(clearWindowOptions).not.toHaveProperty('backgroundMaterial');
+    expect(clearWindowOptions).not.toHaveProperty('vibrancy');
+  });
+
+  it('the app window with the acrylic: behind a clear background, so its page paints the only layer', () => {
+    expect(frostedWindowOptions(true)).toEqual({ backgroundMaterial: 'acrylic', backgroundColor: '#00000000' });
+  });
+
+  it('the app window without it: the solid background, and no material asked of Windows', () => {
+    const options = frostedWindowOptions(false);
     expect(options).toEqual({ backgroundColor: solidBackground });
     expect(options).not.toHaveProperty('backgroundMaterial');
   });
@@ -66,6 +83,25 @@ describe('what each window is made with', () => {
     const dark = tokens.slice(tokens.indexOf(':root.theme-dark'), tokens.indexOf(':root.theme-light'));
     expect(dark).toContain(`--window: ${solidBackground};`);
     expect(defaultSettings.theme).toBe('dark');
+  });
+});
+
+describe('what a page is told of the glass behind it', () => {
+  it.each<[string, 'clear' | 'frosted' | null]>([
+    ['?glass=clear', 'clear'],
+    ['?glass=frosted', 'frosted'],
+    ['?x=2&glass=clear', 'clear'],
+    ['', null],
+    ['?glass=1', null],
+    ['?glass=', null],
+    ['?glass', null],
+    ['?glass=Clear', null],
+    ['?glass=blur', null],
+    ['?Glass=clear', null],
+    ['#glass=clear', null],
+    ['?glass=clear&glass=frosted', 'clear'],
+  ])('%j names %s', (search, glass) => {
+    expect(glassOf(search)).toBe(glass);
   });
 });
 
