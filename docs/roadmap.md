@@ -4,8 +4,9 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 - What each one gives the user is in [06-scope-and-phases.md](06-scope-and-phases.md).
 - A checkpoint is ticked with its date and its commit.
 
-**Where it stands (2026-11-11):**
+**Where it stands (2026-11-12):**
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
+- `development` holds the whole of Shahin's unattended run since 2026-11-12 (`ae755b5`), checked there: `npm run check`, the app tests and the end-to-end tests against the local stack; then the screenshot selector's settle time (`263250b`), which those app tests led to;
 - Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9, 3.13 and 4.1 and their deep round, then 4.2's updates. What is left waits on Shahin: 3.12 (Q51) (practice waits on Claude Design's export, 3.7 on Q5, 3.11 on 4.8's wording);
 - the contract is synced with the backend's (2026-11-09): the app handles `Usage`, `SessionEnding` and `EntitlementsUpdated`, and offers the takeover (`TakeOver`) on Home.
 
@@ -68,7 +69,8 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
 - [x] **3.6 The screenshot region selector** (2026-11-11, `f3b1838`, branch `feature/screenshot-selector`, on the server's 3.1; checked with the unit and renderer tests, the app tests against the real selector, 4 of 4, and the end-to-end tests against the local stack):
   - v1's selector, ported: the display under the pointer frozen into a window that never takes focus and is left out of captures; a click takes it all, a drag an area, Esc or a right-click nothing; only where Windows leaves protected windows out of captures (build 19041 and later);
   - the screenshot button and Ctrl+Shift+G: in AUTO asked about at once with what was typed as its note, in MANUAL attached for the next answer; the attached ones over the ask bar, and under each answer the ones it read, to attach again;
-  - the images in main's memory only, never on disk, and attached again after the session moves to another server (decisions §15).
+  - the images in main's memory only, never on disk, and attached again after the session moves to another server (decisions §15);
+  - fixed on 2026-11-12 (`263250b`, branch `bugfix/selector-settle`): the selector takes no press for its first 400 ms, so a double-click on the screenshot button, or a stray click as it appears, never takes the whole screen; checked with the app tests, 30 of 30, three runs in a row.
 - [ ] 3.7 The speech coach, on the device (engine: Q5).
 - [x] **3.8 The prepared-answer match 📌, on the device** (2026-11-11, `7dffc62`, branch `feature/answer-bank`, on 3.10's; with the preferences of the server's 3.2; checked with the unit and renderer tests, the app tests, 23 of 23, and the end-to-end tests against the local stack, 4 of 4):
   - Prepare's custom instructions and answer bank, kept on this computer (the `answer_bank` table of docs/07 §5, by migration 2), held to v1's entry rules;
