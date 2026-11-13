@@ -71,9 +71,20 @@ describe('the sign-in key (DPoP, Q44)', () => {
     const pair = await key.cryptoKeyPair();
     const data = new TextEncoder().encode('proof input');
 
-    const signature = await webcrypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, pair.privateKey as webcrypto.CryptoKey, data);
+    const signature = await webcrypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      pair.privateKey as webcrypto.CryptoKey,
+      data,
+    );
 
-    expect(await webcrypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pair.publicKey as webcrypto.CryptoKey, signature, data)).toBe(true);
+    expect(
+      await webcrypto.subtle.verify(
+        { name: 'ECDSA', hash: 'SHA-256' },
+        pair.publicKey as webcrypto.CryptoKey,
+        signature,
+        data,
+      ),
+    ).toBe(true);
     expect(await webcrypto.subtle.exportKey('jwk', pair.publicKey as webcrypto.CryptoKey)).toMatchObject(key.publicJwk);
     expect(pair.privateKey.extractable).toBe(false);
     expect(await key.cryptoKeyPair()).toBe(pair);
@@ -94,7 +105,13 @@ describe('a DPoP proof', () => {
   it('names the request, the moment and the token, once', async () => {
     const key = await new DpopKeys(new MemorySecretStore()).current();
 
-    const proof = signDpopProof({ key, htm: 'POST', htu: 'https://api.sotto.test/api/v1/devices', accessToken: 'the-token', nowMs: 1_700_000_000_999 });
+    const proof = signDpopProof({
+      key,
+      htm: 'POST',
+      htu: 'https://api.sotto.test/api/v1/devices',
+      accessToken: 'the-token',
+      nowMs: 1_700_000_000_999,
+    });
 
     expect(parts(proof).payload).toEqual({
       htm: 'POST',
@@ -120,12 +137,16 @@ describe('a DPoP proof', () => {
   it('has no ath when no access token goes with it (Keycloak’s token endpoint)', async () => {
     const key = await new DpopKeys(new MemorySecretStore()).current();
 
-    expect(parts(signDpopProof({ key, htm: 'POST', htu: 'http://localhost:8080/token' })).payload).not.toHaveProperty('ath');
+    expect(parts(signDpopProof({ key, htm: 'POST', htu: 'http://localhost:8080/token' })).payload).not.toHaveProperty(
+      'ath',
+    );
   });
 
   it('is never the same twice', async () => {
     const key = await new DpopKeys(new MemorySecretStore()).current();
-    const proofs = Array.from({ length: 50 }, () => signDpopProof({ key, htm: 'GET', htu: 'http://api.test/x', accessToken: 't', nowMs: 0 }));
+    const proofs = Array.from({ length: 50 }, () =>
+      signDpopProof({ key, htm: 'GET', htu: 'http://api.test/x', accessToken: 't', nowMs: 0 }),
+    );
 
     expect(new Set(proofs.map((p) => parts(p).payload['jti'])).size).toBe(50);
   });

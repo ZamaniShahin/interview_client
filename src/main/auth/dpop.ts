@@ -3,7 +3,16 @@
 // that key. A token that leaves the app is useless without the key, so the key is kept like the refresh token:
 // encrypted (SecretStore), and gone at sign-out. It is not the device key: replacing the device key (J4) must not end
 // the sign-in.
-import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, randomBytes, sign, webcrypto, type KeyObject } from 'node:crypto';
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  generateKeyPairSync,
+  randomBytes,
+  sign,
+  webcrypto,
+  type KeyObject,
+} from 'node:crypto';
 import { Protocol } from '../../shared/contracts/sotto-contracts';
 import type { SecretStore } from './secret-store';
 
