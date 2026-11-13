@@ -26,6 +26,7 @@ import { DeviceIdentity } from '../../src/main/device/device-identity';
 import { ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
 import { planWords, plansOffered, topUpsOffered, trialOffered } from '../../src/shared/plan-words';
 import { signUpInBrowser } from './keycloak-browser';
+import { DpopKeys } from '../../src/main/auth/dpop';
 
 const issuer = process.env['SOTTO_OIDC_ISSUER'] ?? 'http://localhost:8080/realms/sotto';
 const apiBaseUrl = process.env['SOTTO_API_BASE_URL'] ?? 'http://localhost:5180';
@@ -62,6 +63,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the account and plan screens 
           allowHttp: true,
         }),
         secrets,
+        dpop: new DpopKeys(secrets),
         loopback: () => startLoopback(60_000),
       });
       const email = `client-e2e-billing-${Date.now()}@example.com`;
@@ -72,6 +74,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the account and plan screens 
         baseUrl: apiBaseUrl,
         clientVersion,
         accessToken: (options) => auth.accessToken(options),
+        dpopProof: (method, url, token) => auth.dpopProof(method, url, token),
       });
       /** A computer of this account: its own key and fingerprint (a trial is once per device too). */
       const computer = (name: string) =>
@@ -191,6 +194,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('a licence given by staff, aga
           'Pending',
         );
 
+        const shared2 = new MemorySecretStore();
         const auth = new AuthSession({
           oidc: new OpenIdClient({
             issuer,
@@ -198,7 +202,8 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('a licence given by staff, aga
             scopes: 'openid email profile offline_access',
             allowHttp: true,
           }),
-          secrets: new MemorySecretStore(),
+          secrets: shared2,
+          dpop: new DpopKeys(shared2),
           loopback: () => startLoopback(60_000),
         });
         const password = `E2e-${randomBytes(12).toString('base64url')}9!`;
@@ -207,6 +212,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('a licence given by staff, aga
           baseUrl: apiBaseUrl,
           clientVersion,
           accessToken: (options) => auth.accessToken(options),
+          dpopProof: (method, url, token) => auth.dpopProof(method, url, token),
         });
         const desk = new AccountService({
           rest,
@@ -258,6 +264,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('your data against the local s
     { timeout: 120_000 },
     async () => {
       const email = `client-e2e-delete-${Date.now()}@example.com`;
+      const shared3 = new MemorySecretStore();
       const auth = new AuthSession({
         oidc: new OpenIdClient({
           issuer,
@@ -265,7 +272,8 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('your data against the local s
           scopes: 'openid email profile offline_access',
           allowHttp: true,
         }),
-        secrets: new MemorySecretStore(),
+        secrets: shared3,
+        dpop: new DpopKeys(shared3),
         loopback: () => startLoopback(60_000),
       });
       const password = `E2e-${randomBytes(12).toString('base64url')}9!`;
@@ -274,6 +282,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('your data against the local s
         baseUrl: apiBaseUrl,
         clientVersion,
         accessToken: (options) => auth.accessToken(options),
+        dpopProof: (method, url, token) => auth.dpopProof(method, url, token),
       });
       const desk = new AccountService({
         rest,

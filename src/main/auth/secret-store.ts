@@ -1,7 +1,7 @@
 // Secrets this computer keeps: the refresh token and the device's private key (README, "Token storage"). The Electron
 // store encrypts them with the OS user's key before they touch the disk (electron-secret-store.ts); this file has no
 // Electron in it, so the sign-in and device code can be tested in plain Node.
-export type SecretName = 'refresh-token' | 'device-key' | 'device-id' | 'database-key';
+export type SecretName = 'refresh-token' | 'dpop-key' | 'device-key' | 'device-id' | 'database-key';
 
 export interface SecretStore {
   get(name: SecretName): Promise<string | null>;

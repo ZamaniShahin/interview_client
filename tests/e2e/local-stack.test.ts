@@ -36,6 +36,8 @@ import {
 import { emptyPreferences } from '../../src/shared/answer-bank';
 import { emptyDocuments } from '../../src/shared/documents';
 import { signUpInBrowser } from './keycloak-browser';
+import { DpopKeys } from '../../src/main/auth/dpop';
+import { Protocol } from '../../src/shared/contracts/sotto-contracts';
 
 /** A real PNG, one pixel: the server reads a screenshot's format and size from its header (backend 3.1). */
 const onePixelPng = Uint8Array.from(
@@ -71,6 +73,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
         allowHttp: true,
       }),
       secrets,
+      dpop: new DpopKeys(secrets),
       loopback: () => startLoopback(60_000),
     });
     const email = `client-e2e-${Date.now()}@example.com`;
@@ -86,6 +89,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       baseUrl: apiBaseUrl,
       clientVersion,
       accessToken: (options) => auth.accessToken(options),
+      dpopProof: (method, url, token) => auth.dpopProof(method, url, token),
     });
     const identity = new DeviceIdentity(secrets);
     // A trial is once per device too: a new fingerprint per run.
@@ -128,12 +132,13 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
       preferences = null as HubDriverDependencies['preferences'],
     } = {}) =>
       new HubDriver({
-        connect: (accessToken, deviceProof, events) => {
+        connect: (accessToken, deviceProof, dpopProof, events) => {
           const transport = createLiveTransport({
             apiBaseUrl,
             clientVersion,
             accessToken,
             deviceProof: forgeProof ? 'not-a-proof' : deviceProof,
+            dpopProof,
             events,
           });
           latest = createLiveHub(transport.connection);
@@ -141,6 +146,7 @@ describe.skipIf(process.env['SOTTO_E2E'] !== '1')('the client against the local 
         },
         accessToken: () => auth.accessToken(),
         connectProof: (token) => accounts.connectProof(token),
+        dpopProof: (token) => auth.dpopProof('GET', new URL(Protocol.HubPath, apiBaseUrl), token),
         proof: (method, token) => accounts.hubProof(method, token),
         auto,
         context,

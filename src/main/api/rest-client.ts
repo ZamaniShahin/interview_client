@@ -17,6 +17,8 @@ export interface RestClientOptions {
   baseUrl: string;
   clientVersion: string;
   accessToken: (options?: { force?: boolean }) => Promise<string>;
+  /** A DPoP proof for one request (Q44): the token goes under the DPoP scheme, with a fresh proof each time. */
+  dpopProof: (method: string, url: URL, accessToken: string) => Promise<string>;
   fetch?: typeof fetch;
 }
 
@@ -43,8 +45,10 @@ export class RestClient {
 
   private async send<T>(method: string, path: string, options: RequestOptions = {}, retried = false): Promise<T> {
     const token = await this.options.accessToken({ force: retried });
+    const url = new URL(path, this.options.baseUrl);
     const headers: Record<string, string> = {
-      authorization: `Bearer ${token}`,
+      authorization: `${Protocol.DpopScheme} ${token}`,
+      [Protocol.DpopHeader]: await this.options.dpopProof(method, url, token),
       accept: 'application/json',
       [Protocol.ClientVersionHeader]: this.options.clientVersion,
     };
@@ -53,7 +57,7 @@ export class RestClient {
 
     let response: Response;
     try {
-      response = await (this.options.fetch ?? fetch)(new URL(path, this.options.baseUrl), {
+      response = await (this.options.fetch ?? fetch)(url, {
         method,
         headers,
         body: options.body === undefined ? undefined : JSON.stringify(options.body),

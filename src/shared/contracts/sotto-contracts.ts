@@ -174,6 +174,18 @@ export const Protocol = {
    * token).
    */
   DeviceProofType: "sotto-device-proof+jwt",
+  /**
+   * The authorization scheme of a DPoP-bound access token (RFC 9449): `Authorization: DPoP <token>`. The realm binds
+   * the desktop app's tokens to a key the app holds (Q44), so a token alone is refused.
+   */
+  DpopScheme: "DPoP",
+  /** The header carrying a DPoP proof on every signed-in request, the hub's handshake included (docs/04 §3). */
+  DpopHeader: "DPoP",
+  /**
+   * The `typ` of a DPoP proof: a compact JWS, ES256, with `jwk` = the public key the token is bound to and claims `htm`
+   * (method), `htu` (the request's URL, without query), `iat`, `jti` and `ath` (base64url SHA-256 of the access token).
+   */
+  DpopProofType: "dpop+jwt",
 } as const;
 
 // ---- Enums: numbers on the wire -----------------------------------------------------------------------------------

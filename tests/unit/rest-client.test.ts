@@ -36,6 +36,7 @@ function client(fetch: typeof globalThis.fetch, tokens: string[] = ['token-1', '
   const rest = new RestClient({
     baseUrl: 'http://api.test',
     clientVersion: '0.1.0',
+    dpopProof: async (method, url, token) => `dpop:${method} ${url.href} ${token}`,
     accessToken: async (options) => {
       asked.push(options?.force);
       return tokens[asked.length - 1] ?? 'token-last';
@@ -55,7 +56,8 @@ describe("the REST client in main", () => {
     expect(me).toEqual({ id: 'u1' });
     expect(sent[0]).toMatchObject({ url: 'http://api.test/api/v1/me', method: 'GET', body: undefined });
     expect(sent[0]!.headers).toMatchObject({
-      authorization: 'Bearer token-1',
+      authorization: 'DPoP token-1',
+      [Protocol.DpopHeader]: 'dpop:GET http://api.test/api/v1/me token-1',
       accept: 'application/json',
       [Protocol.ClientVersionHeader]: '0.1.0',
     });
@@ -115,7 +117,11 @@ describe("the REST client in main", () => {
 
     expect(result).toEqual({ ok: 1 });
     expect(asked).toEqual([false, true]);
-    expect(sent.map((s) => s.headers.authorization)).toEqual(['Bearer token-1', 'Bearer token-2']);
+    expect(sent.map((s) => s.headers.authorization)).toEqual(['DPoP token-1', 'DPoP token-2']);
+    expect(sent.map((s) => s.headers[Protocol.DpopHeader])).toEqual([
+      'dpop:GET http://api.test/api/v1/devices/current token-1',
+      'dpop:GET http://api.test/api/v1/devices/current token-2',
+    ]);
     expect(sent.map((s) => s.headers[Protocol.DeviceProofHeader])).toEqual(['proof-for-token-1', 'proof-for-token-2']);
   });
 

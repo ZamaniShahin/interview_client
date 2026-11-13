@@ -26,6 +26,11 @@ export interface LiveTransportOptions {
   accessToken: string;
   /** This computer's proof for the handshake, bound to `accessToken`: the server opens no connection without one. */
   deviceProof: string;
+  /**
+   * The DPoP proof for the handshake (GET on the hub's URL), from the key `accessToken` is bound to (Q44): the
+   * server takes the token only with it.
+   */
+  dpopProof: string;
   events: LiveClient;
 }
 
@@ -35,12 +40,15 @@ export function createLiveTransport(options: LiveTransportOptions): LiveTranspor
 
   const connection = new HubConnectionBuilder()
     .withUrl(url.href, {
-      // The server maps the hub on WebSockets only (backend decisions, 1.2–1.4). Under Node, SignalR sends the token
-      // and these headers on the handshake (it uses its own `ws` dependency, which can set headers).
+      // The server maps the hub on WebSockets only (backend decisions, 1.2–1.4). Under Node, SignalR sends these headers
+      // on the handshake (it uses its own `ws` dependency, which can set headers). The token goes in them under the
+      // DPoP scheme: SignalR's own accessTokenFactory would send it as a Bearer token, which the server refuses for a
+      // token bound to a key.
       transport: HttpTransportType.WebSockets,
       skipNegotiation: true,
-      accessTokenFactory: () => options.accessToken,
       headers: {
+        Authorization: `${Protocol.DpopScheme} ${options.accessToken}`,
+        [Protocol.DpopHeader]: options.dpopProof,
         [Protocol.ClientVersionHeader]: options.clientVersion,
         [Protocol.DeviceProofHeader]: options.deviceProof,
       },

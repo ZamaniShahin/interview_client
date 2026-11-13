@@ -21,6 +21,11 @@ The numbers are the backend's (`docs/decisions.md` §2). Settled there:
   - Q37: v1's source is on GitHub (`ZamaniShahin/interview_app`);
   - Q18: the level meter and the no-audio warning come with audio capture (1.11);
 - on 2026-11-12, Q50: practice is drawn now, from the protocol and v1's mock interview, and redrawn from Claude Design's export once it is at hand ([decisions.md](decisions.md) §24).
+- on 2026-11-13:
+  - Q44: DPoP is on: the tokens are bound to a key made at each sign-in, and every request carries a proof from it ([decisions.md](decisions.md) §26);
+  - Q47: v1 0.3.0 and 0.4.0's answers are ported whole: the interview type switched in the overlay, gap fillers, no auto-scroll;
+  - Q51: recording goes ahead as proposed (3.12);
+  - Q52: the server hears every interviewer, as v1 0.3.0, so a long question is cut in pieces and a trigger pressed while it is still being said waits for its end.
 
 Q27–Q51 are open there too, apart from the ones above. The rows below are the ones that change something in the client.
 
@@ -40,9 +45,7 @@ Q27–Q51 are open there too, apart from the ones above. The rows below are the 
 | Q20 | **Usage history** (sessions and minutes): designed, with no checkpoint | with 2.4, which records the sessions it lists; until then the minutes ledger | the account screen | the account screens (2.13) |
 | Q31 | **`SessionMigrate`**: the server could tell the app to move before an instance stops. Today the connection closes and the app resumes on another instance, as after any drop | not sent | a handler that resumes at once, without waiting for the drop | no deadline |
 | Q36 | **At most 3 hub connections per user** (backend docs/08 §5) | no limit | a fourth connection is refused, and the app says why | before launch |
-| Q44 | **DPoP**: Keycloak supports it; turned on, the tokens are bound to a key the app holds | off | the app sends a DPoP proof when it gets tokens and with every call: a protocol change, made on both sides together | before launch (proposed: with 2.13) |
 | Q49 | **How strict the 📌 match is** (3.8). It is v1's `best_match`, ported unchanged: an F1 of 0.6 over content words, with 60% of the phrasing covered. The deep round found it gives a prepared answer to a different question that shares most of its words: "where do you see the company in five years" gets the answer to "…yourself in five years", and "how did you cut costs by forty percent" the one to "…cut latency by forty percent". Be stricter than v1 (a higher threshold, or every content word of the phrasing required)? | v1's, as built; proposed: keep it until real sessions show how often it misfires | the 📌 card shows less often, and never for a near miss | before launch |
-| Q51 | **Recording (3.12): the go-ahead and its shape.** It opens the microphone and keeps call audio on the disk, both on this repository's "Ask first" list. Go ahead as the README plans (a WAV of the call and the microphone, opt-in in Settings, after the consent box)? How long are recordings kept? | not built | a microphone permission for the capture window; a recordings folder; History linking each interview's recording | 3.12 |
 
 ## Unknowns that aren't decisions
 

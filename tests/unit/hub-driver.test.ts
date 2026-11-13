@@ -110,9 +110,11 @@ function harness(setup: Setup = {}) {
   let clock = 0;
   let tokens = 0;
   let connectProofs = 0;
+  const dpopProofs: string[] = [];
 
   const driver = new HubDriver({
-    connect: (token, deviceProof, events) => {
+    connect: (token, deviceProof, dpopProof, events) => {
+      dpopProofs.push(dpopProof);
       const index = transports.length;
       const failing = setup.failFrom !== undefined && index >= setup.failFrom;
       const transport = new FakeTransport(
@@ -128,6 +130,7 @@ function harness(setup: Setup = {}) {
     },
     accessToken: async () => `token-${++tokens}`,
     connectProof: async (token) => `proof-connect-${token}-${++connectProofs}`,
+    dpopProof: async (token) => `dpop-${token}`,
     proof: async (method, token) => `proof-${method}-${token}`,
     auto: true,
     sleep: async (ms) => {
@@ -146,6 +149,7 @@ function harness(setup: Setup = {}) {
   return {
     driver,
     transports,
+    dpopProofs,
     actions,
     sleeps,
     state: () => state,
@@ -392,6 +396,25 @@ describe('the hub driver', () => {
     const result = await h.driver.command({ type: 'clear' });
 
     expect(result).toMatchObject({ ok: false, code: ErrorCodes.Session.NotInSession });
+  });
+
+  it('opens every connection with a DPoP proof of its own, for its own token (Q44)', async () => {
+    const h = harness({
+      connection: (t, index) => {
+        if (index === 1)
+          t.connection.replies.set('ResumeSession', () => ({
+            Ok: true,
+            Value: { SessionId: 'session-1', Replayed: true, LastSeq: 0 },
+          }));
+      },
+    });
+    await h.start();
+
+    h.transports[0]!.close(new Error('WebSocket closed with status code: 1006.'));
+    await vi.waitFor(() => expect(h.types().at(-1)).toBe('connectionRestored'));
+
+    expect(h.dpopProofs).toEqual(['dpop-token-1', 'dpop-token-2']);
+    expect(h.transports.map((t) => t.token)).toEqual(['token-1', 'token-2']);
   });
 
   it('resumes a dropped session on a new connection, from the last event it saw', async () => {

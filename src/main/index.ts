@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import type { AccountView } from '../shared/account';
 import { initialAppState, type AppState, type Problem } from '../shared/app-state';
 import { preferencesToSend, type BankEntryInput } from '../shared/answer-bank';
-import { ErrorCodes } from '../shared/contracts/sotto-contracts';
+import { ErrorCodes, Protocol } from '../shared/contracts/sotto-contracts';
 import {
   answersOnItsOwn,
   type DocumentField,
@@ -49,6 +49,7 @@ import { AccountService, type LoadedAccount } from './account/account-service';
 import { PaymentWatch } from './account/payment-watch';
 import { ApiError, RestClient } from './api/rest-client';
 import { AuthSession, NotSignedIn, SignInCancelled } from './auth/auth-session';
+import { DpopKeys } from './auth/dpop';
 import { ElectronSecretStore } from './auth/electron-secret-store';
 import { AudioCapture } from './capture/audio-capture';
 import { runCaptureCheck } from './capture/capture-check';
@@ -846,16 +847,18 @@ function hubDriver(
   const signedIn = auth!;
   const service = accounts!;
   return new HubDriver({
-    connect: (accessToken, deviceProof, events) =>
+    connect: (accessToken, deviceProof, dpopProof, events) =>
       createLiveTransport({
         apiBaseUrl: config.apiBaseUrl,
         clientVersion: app.getVersion(),
         accessToken,
         deviceProof,
+        dpopProof,
         events,
       }),
     accessToken: () => signedIn.accessToken(),
     connectProof: (accessToken) => service.connectProof(accessToken),
+    dpopProof: (accessToken) => signedIn.dpopProof('GET', new URL(Protocol.HubPath, config.apiBaseUrl), accessToken),
     proof: (method, accessToken) => service.hubProof(method, accessToken),
     // A session that moves gets the screenshots attached here again, from the copies kept in memory (3.6).
     screenshot: (id) => shelf.get(id)?.bytes ?? null,
@@ -1178,6 +1181,7 @@ async function createServices(): Promise<void> {
       allowHttp: !app.isPackaged && config.oidcIssuer.startsWith('http://localhost'),
     }),
     secrets,
+    dpop: new DpopKeys(secrets),
     loopback: () => startLoopback(),
   });
   signedIn.onChange((view) => setAppState({ auth: view }));
@@ -1186,6 +1190,7 @@ async function createServices(): Promise<void> {
     baseUrl: config.apiBaseUrl,
     clientVersion: app.getVersion(),
     accessToken: (options) => signedIn.accessToken(options),
+    dpopProof: (method, url, accessToken) => signedIn.dpopProof(method, url, accessToken),
   });
   accounts = new AccountService({
     rest,

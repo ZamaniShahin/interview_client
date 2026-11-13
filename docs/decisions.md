@@ -325,3 +325,14 @@ Built in Shahin's unattended run ("anything left before deployment", 2026-11-10 
 | Date | Decision |
 |---|---|
 | 2026-11-13 | **Installs skip install scripts: `npm ci --ignore-scripts`, then `npx install-electron`** (README, "Getting started"; Shahin chose to record it, 2026-11-13). On a computer without Visual Studio's C++ tools, `npm ci` failed: better-sqlite3-multiple-ciphers carries a `binding.gyp`, so npm runs node-gyp for it although its prebuilt binaries ship in the package (§9's row said nothing compiles; nothing needs to, but npm tries). With scripts skipped the prebuilt binary loads, in Node and in Electron. Only two other packages have install scripts, per the lockfile: electron-winstaller (Squirrel; the app builds NSIS) and fsevents (macOS). Electron 45's binary comes from `install-electron`, which `npm run dev` and `npm start` already run first. Not chosen: `ignore-scripts=true` in `.npmrc`, which would also stop `npm run dev` running its `predev` |
+
+## 26. Taken in session on 2026-11-13, DPoP (backend Q44; open to revision)
+
+| Date | Decision |
+|---|---|
+| 2026-11-13 | **The tokens are bound to a key of their own, not the device key** (`src/main/auth/dpop.ts`). A new P-256 key is made at each sign-in, kept encrypted beside the refresh token (`dpop-key`), and forgotten at sign-out or when Keycloak ends the sign-in. With the device key, replacing it after `device_key_revoked` (J4) would also have ended the sign-in |
+| 2026-11-13 | **openid-client signs the proofs to Keycloak** (its DPoP handle on the code exchange and every refresh, from the same key as WebCrypto keys); the app signs those to the API itself (`signDpopProof`): `Authorization: DPoP <token>` and a fresh `DPoP` proof on every request, a retry included, with `htu` the request's URL without its query |
+| 2026-11-13 | **The hub's handshake carries the token in the headers**, under the DPoP scheme, with its DPoP proof (GET on the hub's URL). SignalR's own `accessTokenFactory` is no longer used: under Node it sends the token as a Bearer token, which the server refuses for a bound token |
+| 2026-11-13 | **Revoking at sign-out sends no proof**: openid-client's revocation takes no DPoP handle, and sign-out revokes best effort, as before |
+| 2026-11-13 | **A sign-in from before DPoP** (a stored refresh token, no stored key) is refreshed with a new key. Whether Keycloak then binds the new tokens to it or refuses the old refresh token wasn't checked; if it refuses, the user signs in again, once |
+

@@ -1,8 +1,10 @@
+import { createPublicKey, verify, type JsonWebKey } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AuthSession, NotSignedIn, SignInCancelled } from '../../src/main/auth/auth-session';
 import type { Loopback } from '../../src/main/auth/loopback';
 import { SignInExpired, type OidcPort, type Tokens } from '../../src/main/auth/oidc';
 import { MemorySecretStore } from '../../src/main/auth/secret-store';
+import { DpopKeys, type DpopKey } from '../../src/main/auth/dpop';
 
 let clock = 1_000_000;
 
@@ -21,19 +23,23 @@ class FakeOidc implements OidcPort {
   readonly refreshed: string[] = [];
   readonly revoked: string[] = [];
   readonly exchanged: { callback: URL; verifier: string; state: string }[] = [];
+  /** The DPoP key each exchange and refresh was made with (Q44). */
+  readonly keys: { call: 'exchange' | 'refresh'; key: DpopKey }[] = [];
   answerRefresh: () => Promise<Tokens> = async () => tokens(`r${this.refreshed.length}`);
 
   async authorizationUrl(redirectUri: string) {
     return { url: `http://id.test/auth?redirect_uri=${encodeURIComponent(redirectUri)}`, verifier: 'the-verifier', state: 'the-state' };
   }
 
-  async exchange(callback: URL, verifier: string, state: string): Promise<Tokens> {
+  async exchange(callback: URL, verifier: string, state: string, key: DpopKey): Promise<Tokens> {
     this.exchanged.push({ callback, verifier, state });
+    this.keys.push({ call: 'exchange', key });
     return tokens('signed-in');
   }
 
-  refresh(refreshToken: string): Promise<Tokens> {
+  refresh(refreshToken: string, key: DpopKey): Promise<Tokens> {
     this.refreshed.push(refreshToken);
+    this.keys.push({ call: 'refresh', key });
     return this.answerRefresh();
   }
 
@@ -97,7 +103,7 @@ describe('the sign-in on this computer', () => {
     secrets = new MemorySecretStore();
     loopback = new FakeLoopback();
     opened = [];
-    auth = new AuthSession({ oidc, secrets, loopback: async () => loopback, now: () => clock });
+    auth = new AuthSession({ oidc, secrets, dpop: new DpopKeys(secrets), loopback: async () => loopback, now: () => clock });
   });
 
   it('starts signed out when nothing is stored', async () => {
@@ -255,5 +261,88 @@ describe('the sign-in on this computer', () => {
     expect(auth.current).toEqual({ status: 'signed-out' });
     expect(await secrets.get('refresh-token')).toBeNull();
     expect(oidc.revoked).toEqual(['refresh-stored', 'refresh-late']);
+  });
+  describe('the key the tokens are bound to (DPoP, Q44)', () => {
+    const thumb = (key: DpopKey) => `${key.publicJwk.x}.${key.publicJwk.y}`;
+
+    async function signInOnce(): Promise<void> {
+      const signingIn = auth.signIn(openBrowser);
+      await flush();
+      loopback.comeBack('code=the-code&state=the-state');
+      await signingIn;
+    }
+
+    it('makes a key of its own for each sign-in, keeps it, and exchanges the code with it', async () => {
+      await signInOnce();
+
+      expect(oidc.keys.map((k) => k.call)).toEqual(['exchange']);
+      expect(await secrets.get('dpop-key')).toContain('PRIVATE KEY');
+      const stored = await new DpopKeys(secrets).current();
+      expect(thumb(stored)).toBe(thumb(oidc.keys[0]!.key));
+    });
+
+    it('signs in again with a new key, never the last one', async () => {
+      await signInOnce();
+      const first = oidc.keys[0]!.key;
+      await auth.signOut();
+      loopback = new FakeLoopback();
+
+      await signInOnce();
+
+      expect(thumb(oidc.keys[1]!.key)).not.toBe(thumb(first));
+    });
+
+    it('renews the tokens with the key they were bound to', async () => {
+      await signInOnce();
+
+      await auth.accessToken({ force: true });
+      await auth.accessToken({ force: true });
+
+      expect(oidc.keys.map((k) => k.call)).toEqual(['exchange', 'refresh', 'refresh']);
+      expect(new Set(oidc.keys.map((k) => thumb(k.key))).size).toBe(1);
+    });
+
+    it('comes back at startup with the stored key, from a new session over the same store', async () => {
+      await signInOnce();
+      const bound = thumb(oidc.keys[0]!.key);
+      const later = new AuthSession({ oidc, secrets, dpop: new DpopKeys(secrets), loopback: async () => loopback, now: () => clock });
+
+      await later.restore();
+
+      expect(oidc.keys.at(-1)!.call).toBe('refresh');
+      expect(thumb(oidc.keys.at(-1)!.key)).toBe(bound);
+    });
+
+    it('forgets the key at sign-out', async () => {
+      await signInOnce();
+
+      await auth.signOut();
+
+      expect(await secrets.get('dpop-key')).toBeNull();
+    });
+
+    it('forgets the key when Keycloak ends the sign-in', async () => {
+      await signInOnce();
+      oidc.answerRefresh = () => Promise.reject(new SignInExpired());
+
+      await expect(auth.accessToken({ force: true })).rejects.toBeInstanceOf(SignInExpired);
+
+      expect(await secrets.get('dpop-key')).toBeNull();
+    });
+
+    it("signs a request's proof with the key the tokens are bound to", async () => {
+      await signInOnce();
+      const token = await auth.accessToken();
+
+      const proof = await auth.dpopProof('GET', 'http://api.test/api/v1/me?x=1', token);
+
+      const [header, payload, signature] = proof.split('.');
+      const head = JSON.parse(Buffer.from(header!, 'base64url').toString()) as { jwk: DpopKey['publicJwk'] };
+      const claims = JSON.parse(Buffer.from(payload!, 'base64url').toString()) as { htm: string; htu: string; iat: number };
+      expect(head.jwk).toEqual(oidc.keys[0]!.key.publicJwk);
+      expect(claims).toMatchObject({ htm: 'GET', htu: 'http://api.test/api/v1/me', iat: Math.floor(clock / 1000) });
+      const publicKey = createPublicKey({ key: { ...head.jwk } as JsonWebKey, format: 'jwk' });
+      expect(verify('sha256', Buffer.from(`${header}.${payload}`), { key: publicKey, dsaEncoding: 'ieee-p1363' }, Buffer.from(signature!, 'base64url'))).toBe(true);
+    });
   });
 });

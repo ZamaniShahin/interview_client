@@ -24,11 +24,13 @@ import type { LiveTransport } from '../connection/live-connection';
 import type { SessionCommand, SessionDriver } from './session-controller';
 
 export interface HubDriverDependencies {
-  /** Opens a connection carrying this access token and device proof, and calling `events`; not started yet. */
-  connect: (accessToken: string, deviceProof: string, events: LiveClient) => LiveTransport;
+  /** Opens a connection carrying this access token and its two proofs, and calling `events`; not started yet. */
+  connect: (accessToken: string, deviceProof: string, dpopProof: string, events: LiveClient) => LiveTransport;
   accessToken: () => Promise<string>;
   /** The device proof a connection opens with, bound to its token: one per connection (backend docs/04 §6). */
   connectProof: (accessToken: string) => Promise<string>;
+  /** The DPoP proof of the connection's handshake, from the key its token is bound to (Q44): one per connection. */
+  dpopProof: (accessToken: string) => Promise<string>;
   /** A device proof for the hub method, bound to the connection's token. */
   proof: (method: 'StartSession' | 'ResumeSession', accessToken: string) => Promise<string>;
   /** Start in AUTO (the default); MANUAL when the user chose it. */
@@ -239,7 +241,7 @@ export class HubDriver implements SessionDriver {
   private async open(): Promise<Opened> {
     const token = await this.deps.accessToken();
     // A fresh proof each time: the server takes each one once, and only with the token it was made for.
-    const transport = this.deps.connect(token, await this.deps.connectProof(token), this.events);
+    const transport = this.deps.connect(token, await this.deps.connectProof(token), await this.deps.dpopProof(token), this.events);
     let closeError: Error | null = null;
     transport.onClose((error) => {
       // The first reason counts: stopping a closed connection reports no error.

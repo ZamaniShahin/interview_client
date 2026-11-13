@@ -2,6 +2,7 @@
 // refresh token is kept encrypted (SecretStore). Keycloak rotates refresh tokens and ends the sign-in when an old one
 // is used again (backend docs/04 §10), so refreshes run one at a time and each new refresh token is stored before use.
 import type { AuthView } from '../../shared/app-state';
+import { signDpopProof, type DpopKeys } from './dpop';
 import type { Loopback } from './loopback';
 import { SignInExpired, type OidcPort, type Tokens } from './oidc';
 import type { SecretStore } from './secret-store';
@@ -22,6 +23,8 @@ export class SignInCancelled extends Error {
 export interface AuthSessionDependencies {
   oidc: OidcPort;
   secrets: SecretStore;
+  /** The key the tokens are bound to (DPoP, Q44): a new one at each sign-in, forgotten at sign-out. */
+  dpop: DpopKeys;
   loopback: () => Promise<Loopback>;
   now?: () => number;
 }
@@ -90,12 +93,21 @@ export class AuthSession {
     return (await this.refreshWith(refreshToken)).accessToken;
   }
 
+  /**
+   * A DPoP proof for one request carrying `accessToken`, signed by the key the tokens are bound to (RFC 9449, Q44): every
+   * call to Sotto's API needs one, the hub's handshake included.
+   */
+  async dpopProof(htm: string, htu: string | URL, accessToken: string): Promise<string> {
+    return signDpopProof({ key: await this.deps.dpop.current(), htm, htu, accessToken, nowMs: this.deps.now?.() });
+  }
+
   async signOut(): Promise<void> {
     this.epoch += 1;
     this.cancelSignIn();
     const refreshToken = this.tokens?.refreshToken ?? (await this.deps.secrets.get('refresh-token'));
     this.tokens = null;
     await this.deps.secrets.delete('refresh-token');
+    await this.deps.dpop.forget();
     this.set({ status: 'signed-out' });
     // Best effort: signed out here even if Keycloak can't be told.
     if (refreshToken) await this.deps.oidc.revoke(refreshToken).catch(() => {});
@@ -116,7 +128,9 @@ export class AuthSession {
       const error = callback.searchParams.get('error');
       if (error === 'access_denied') throw new SignInCancelled();
       if (error) throw new Error(`Sign-in failed: ${error}.`);
-      await this.accept(await this.deps.oidc.exchange(callback, verifier, state), epoch);
+      // A key of its own for this sign-in: tokens bound to an earlier one are done with.
+      const key = await this.deps.dpop.renew();
+      await this.accept(await this.deps.oidc.exchange(callback, verifier, state, key), epoch);
     } catch (error) {
       if (this.view.status === 'signing-in') this.set(before);
       throw this.cancelled ? new SignInCancelled() : error;
@@ -130,13 +144,14 @@ export class AuthSession {
     const epoch = this.epoch;
     this.refreshing ??= (async () => {
       try {
-        const tokens = await this.deps.oidc.refresh(refreshToken);
+        const tokens = await this.deps.oidc.refresh(refreshToken, await this.deps.dpop.current());
         await this.accept(tokens, epoch);
         return tokens;
       } catch (error) {
         if (error instanceof SignInExpired && epoch === this.epoch) {
           this.tokens = null;
           await this.deps.secrets.delete('refresh-token');
+          await this.deps.dpop.forget();
           this.set({ status: 'expired' });
         }
         throw error;
