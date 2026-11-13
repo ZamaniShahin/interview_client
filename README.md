@@ -15,14 +15,17 @@ All the intelligence (prompts, AI keys, question detection, licensing) is on the
 ## Getting started
 
 ```bash
-npm install
-npm run dev           # against the backend's local stack; the first run downloads Electron's binary (about 100 MB)
+npm ci --ignore-scripts   # the packages, exactly as package-lock.json has them, with no install script run
+npx install-electron      # Electron's binary (about 100 MB); npm run dev and npm start also fetch it if missing
+npm run dev           # against the backend's local stack
 npm run dev:preview   # no server: a scripted interview and a sample account, for work on the UI
 npm run check         # type-check, lint, test
 node scripts/app-tests.mjs   # the built app's windows under Playwright, against the preview (Windows)
 ```
 
 Node 24 runs everything. Node 24.15 or later also avoids an engine warning from a build tool (`nopt`, via electron-builder).
+
+**Why `--ignore-scripts`:** the local database's package (better-sqlite3-multiple-ciphers) ships a prebuilt binary for every platform, but it also carries a `binding.gyp`, so a plain `npm install` compiles it with node-gyp, which fails on a computer without Visual Studio's C++ tools (it did on 2026-11-13). Skipping install scripts leaves the prebuilt binary in place; it loads in Node, for the tests, and in Electron. The only other packages with install scripts are electron-winstaller (Squirrel installers, which this app doesn't build) and fsevents (macOS only). Electron's binary comes from `install-electron` instead of a script.
 
 `npm run dev` talks to the backend's local stack ([below](#talking-to-a-local-backend)):
 - **Sign in** on Home: the browser opens Keycloak's page, and the app carries on when you're done;

@@ -52,9 +52,11 @@ docs/            The product docs (01–08), the design handoff, design.md (and 
 ## Commands
 
 ```bash
-npm install
-npm run dev              # the app against the backend's local stack, with hot reload; the first run downloads
-                         # Electron's binary (about 100 MB)
+npm ci --ignore-scripts  # the packages as package-lock.json has them; a plain npm install compiles the database's
+                         # package with node-gyp, which needs Visual Studio's C++ tools (README, "Why --ignore-scripts")
+npx install-electron     # Electron's binary (about 100 MB), for the scripts that launch the built app
+npm run dev              # the app against the backend's local stack, with hot reload; fetches Electron's binary
+                         # first if it is missing
 npm run dev:preview      # the app with no server: a scripted interview and a sample account
 npm run check            # type-check main and renderer, lint, test: run it before saying anything works
 SOTTO_E2E=1 npx vitest run tests/e2e   # sign-in, the device, the account, a live session and buying, against the local stack
