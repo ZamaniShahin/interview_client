@@ -2,7 +2,15 @@
 // UI can be built and checked without a server. Only `npm run dev:preview` uses it: a packaged build never does
 // (index.ts). The real driver is hub-driver.ts.
 import { randomUUID } from 'node:crypto';
-import { AnswerKind, AskMode, SessionEndReasons, SpeechStates, ErrorCodes } from '../../shared/contracts/sotto-contracts';
+import {
+  AnswerKind,
+  AskMode,
+  ErrorCodes,
+  InterviewTypes,
+  SessionEndReasons,
+  SpeechStates,
+  type InterviewType,
+} from '../../shared/contracts/sotto-contracts';
 import type { CommandResult } from '../../shared/ipc';
 import type { LiveAction, LiveEvent } from '../../shared/live/reducer';
 import { PreviewPractice } from './preview-practice';
@@ -61,7 +69,7 @@ const cannedByMode: Record<AskMode, string> = {
   [AskMode.Tip]: 'Sure. Here is the same answer, ***shorter***, the way the tip asked.',
   [AskMode.Study]:
     '**What it is.** A study explainer arrives here, longer than an answer.\n\n' +
-    '- **The point.** Lists and short bold lead-ins.\n- **Where it goes.** Never into the interview\'s memory.',
+    "- **The point.** Lists and short bold lead-ins.\n- **Where it goes.** Never into the interview's memory.",
   [AskMode.Result]:
     'That means the interpreter is older than ***Python 3.10***. Swap the hint for ***Optional***:\n\n' +
     '```python\nfrom typing import Optional\n\ndef first_unique(s: str) -> Optional[str]:\n```\n\nThen run it again.',
@@ -76,6 +84,7 @@ export class PreviewDriver implements SessionDriver {
   private dispatch: (action: LiveAction) => void = () => {};
   private auto = true;
   private paused = false;
+  private interviewType: InterviewType = InterviewTypes.Technical;
   private ended = false;
   private heard = '';
   private lastQuestion = '';
@@ -107,19 +116,35 @@ export class PreviewDriver implements SessionDriver {
       ['Okay, great. Next one.', true],
       ["Okay, great. Next one. Can you walk me through how you'd design", false],
       ["Okay, great. Next one. Can you walk me through how you'd design a URL shortener, like, for", false],
-      ["Okay, great. Next one. Can you walk me through how you'd design a URL shortener, like, for millions of users a day?", true],
+      [
+        "Okay, great. Next one. Can you walk me through how you'd design a URL shortener, like, for millions of users a day?",
+        true,
+      ],
     ]);
-    t = this.answer(t + 1500, { question: 'Design a URL shortener for millions of users a day.', kind: AnswerKind.Spoken, text: urlShortener });
+    t = this.answer(t + 1500, {
+      question: 'Design a URL shortener for millions of users a day.',
+      kind: AnswerKind.Spoken,
+      text: urlShortener,
+    });
     t = this.speak(t + 3500, [
       ['Sorry, before that:', false],
       ['Sorry, before that: how would you handle hot keys in the cache?', true],
     ]);
-    t = this.answer(t + 1500, { question: 'How would you handle hot keys in the cache?', kind: AnswerKind.Spoken, text: hotKeys, cutAt: 0.45 });
+    t = this.answer(t + 1500, {
+      question: 'How would you handle hot keys in the cache?',
+      kind: AnswerKind.Spoken,
+      text: hotKeys,
+      cutAt: 0.45,
+    });
     t = this.speak(t + 300, [
       ['And if the cache goes down', false],
       ['And if the cache goes down completely?', true],
     ]);
-    this.answer(t + 1200, { question: 'What happens if the cache goes down completely?', kind: AnswerKind.Spoken, text: cacheDown });
+    this.answer(t + 1200, {
+      question: 'What happens if the cache goes down completely?',
+      kind: AnswerKind.Spoken,
+      text: cacheDown,
+    });
     return { ok: true };
   }
 
@@ -173,7 +198,11 @@ export class PreviewDriver implements SessionDriver {
       case 'attachScreenshot':
         if (!this.attached.includes(command.id)) {
           if (this.attached.length >= previewMaxAttachments) {
-            return { ok: false, code: ErrorCodes.Request.TooLarge, message: 'This question has all the screenshots it can take.' };
+            return {
+              ok: false,
+              code: ErrorCodes.Request.TooLarge,
+              message: 'This question has all the screenshots it can take.',
+            };
           }
           this.attached = [...this.attached, command.id];
         }
@@ -196,6 +225,11 @@ export class PreviewDriver implements SessionDriver {
       case 'setMode':
         this.auto = command.auto ?? this.auto;
         this.paused = command.paused ?? this.paused;
+        this.status();
+        return { ok: true };
+      case 'setInterviewType':
+        // The server's echo (Q47): the strip flips on it.
+        this.interviewType = command.interviewType;
         this.status();
         return { ok: true };
       case 'clear':
@@ -287,7 +321,16 @@ export class PreviewDriver implements SessionDriver {
   }
 
   private status(): void {
-    this.emit({ name: 'status', e: { ...this.stamp(), Auto: this.auto, Paused: this.paused, Stt: SpeechStates.Ok } });
+    this.emit({
+      name: 'status',
+      e: {
+        ...this.stamp(),
+        Auto: this.auto,
+        Paused: this.paused,
+        Stt: SpeechStates.Ok,
+        InterviewType: this.interviewType,
+      },
+    });
   }
 
   private transcript(text: string, final: boolean): void {

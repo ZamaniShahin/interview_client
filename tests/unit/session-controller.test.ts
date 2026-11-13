@@ -142,7 +142,7 @@ describe('screenshots through the session controller (3.6)', () => {
   let driver: FakeDriver;
 
   const status = (auto: boolean, seq = 1) =>
-    driver.dispatch({ type: 'event', event: { name: 'status', e: { Seq: seq, AtMs: seq, Auto: auto, Paused: false, Stt: 'ok' } } });
+    driver.dispatch({ type: 'event', event: { name: 'status', e: { Seq: seq, AtMs: seq, Auto: auto, Paused: false, Stt: 'ok', InterviewType: 'technical' } } });
   const attached = (ids: string[], seq: number, max = 5) =>
     driver.dispatch({ type: 'event', event: { name: 'attachments', e: { Seq: seq, AtMs: seq, Items: ids.map((Id) => ({ Id })), Max: max } } });
 
@@ -192,7 +192,7 @@ describe('screenshots through the session controller (3.6)', () => {
       type: 'snapshot',
       snapshot: {
         SessionId: 's', Phase: 1, Auto: true, Paused: false, ContextReady: false, Heard: '', LastSeq: 1,
-        Attachments: [], MaxAttachments: 5, PrepDoc: null, CustomInstructionsChars: 0, PreparedInPrompt: [], Practice: null,
+        Attachments: [], MaxAttachments: 5, PrepDoc: null, CustomInstructionsChars: 0, PreparedInPrompt: [], Practice: null, InterviewType: 'technical',
       },
     });
 

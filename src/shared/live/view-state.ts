@@ -1,5 +1,5 @@
 // What the overlay shows of a live session. Main owns it (it holds the connection); the overlay gets a copy.
-import type { AnswerKind, Guid } from '../contracts/sotto-contracts';
+import { InterviewTypes, type AnswerKind, type Guid, type InterviewType } from '../contracts/sotto-contracts';
 import { idlePracticeSlice, type PracticeSlice } from '../practice';
 
 /** How listening is going, as the overlay words it. The server's `degraded` reads as "down": typing still works. */
@@ -24,6 +24,17 @@ export const idleCapture: CaptureStatus = { level: null, noSound: false, down: f
 export type AnswerEnding = 'writing' | 'done' | 'stopped' | 'failed' | 'hidden';
 
 export type Tier = 'fast' | 'smart';
+
+/** The interview's type (Q47): `intro` or `technical`, as the contract spells them. */
+export type { InterviewType };
+
+/** The two types, in the order the strip shows them. */
+export const interviewTypes: readonly InterviewType[] = [InterviewTypes.Technical, InterviewTypes.Intro];
+
+/** A spelling the protocol has, or null: what a newer server might send is never shown as one of these. */
+export function interviewTypeOf(value: unknown): InterviewType | null {
+  return value === InterviewTypes.Intro || value === InterviewTypes.Technical ? value : null;
+}
 
 export interface AnswerView {
   id: Guid;
@@ -83,6 +94,11 @@ export interface LiveViewState {
   minutesLeft: number | null;
   tier: Tier | null;
   /**
+   * The interview's type as the server last said (`Status`, the snapshot): how long and how technical the answers are
+   * (Q47). The strip's TECH / INTRO switch shows this, so it flips on the server's word, as v1's header did.
+   */
+  interviewType: InterviewType;
+  /**
    * The practice interview, when the session runs one (the server's 3.3): where it is, its questions with their
    * answers and feedback, and its summary once it ends. The Practice page draws it; the overlay never runs one.
    */
@@ -108,6 +124,8 @@ export const initialLiveState: LiveViewState = {
   endReason: null,
   minutesLeft: null,
   tier: null,
+  // v1's default, and the server's until the client says otherwise.
+  interviewType: InterviewTypes.Technical,
   practice: idlePracticeSlice,
   lastSeq: 0,
 };

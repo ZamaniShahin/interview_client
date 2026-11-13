@@ -11,6 +11,7 @@ import {
   type Ack,
   type AudioFrame,
   type LiveClient,
+  type InterviewType,
   type LiveHub,
   type SetContextRequest,
   type SetPreferencesRequest,
@@ -44,6 +45,11 @@ export interface HubDriverDependencies {
   prepDoc?: Omit<SetPrepDocRequest, 'CommandId'> | null;
   /** The custom instructions and the bank's enabled entries, sent last (`SetPreferences`, 3.8). */
   preferences?: Omit<SetPreferencesRequest, 'CommandId'> | null;
+  /**
+   * The interview's type the user chose (Q47), sent first (`SetInterviewType`): the server starts technical, v1's
+   * default. Null or left out sends none.
+   */
+  interviewType?: InterviewType | null;
   /**
    * End the account's live session on another device and start here. Only after the user said yes to it, never by
    * default (the contract's `TakeOver`).
@@ -191,6 +197,9 @@ export class HubDriver implements SessionDriver {
    * then says.
    */
   private async sendContext(hub: LiveHub): Promise<void> {
+    const interviewType = this.deps.interviewType;
+    if (interviewType)
+      await hub.setInterviewType({ CommandId: randomUUID(), Type: interviewType }).catch(() => undefined);
     const context = this.deps.context;
     if (context) await hub.setContext({ CommandId: randomUUID(), ...context }).catch(() => undefined);
     const prepDoc = this.deps.prepDoc;
@@ -241,7 +250,12 @@ export class HubDriver implements SessionDriver {
   private async open(): Promise<Opened> {
     const token = await this.deps.accessToken();
     // A fresh proof each time: the server takes each one once, and only with the token it was made for.
-    const transport = this.deps.connect(token, await this.deps.connectProof(token), await this.deps.dpopProof(token), this.events);
+    const transport = this.deps.connect(
+      token,
+      await this.deps.connectProof(token),
+      await this.deps.dpopProof(token),
+      this.events,
+    );
     let closeError: Error | null = null;
     transport.onClose((error) => {
       // The first reason counts: stopping a closed connection reports no error.
@@ -347,6 +361,8 @@ function send(hub: LiveHub, command: SessionCommand, CommandId: string): Promise
       return hub.trigger({ CommandId, Text: command.text });
     case 'setMode':
       return hub.setMode({ CommandId, Auto: command.auto, Paused: command.paused });
+    case 'setInterviewType':
+      return hub.setInterviewType({ CommandId, Type: command.interviewType });
     case 'clear':
       return hub.clear({ CommandId });
     case 'clearHeard':

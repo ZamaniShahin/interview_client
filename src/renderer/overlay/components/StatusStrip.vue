@@ -1,20 +1,23 @@
 <script setup lang="ts">
-// What can be changed during a session: AUTO or MANUAL, pause; and the minutes left and the tier. Controls that can't
-// work right now are disabled, not hidden, so the strip never jumps.
+// What can be changed during a session: AUTO or MANUAL, pause, the interview's type (TECH or INTRO, Q47); and the
+// minutes left and the tier. Controls that can't work right now are disabled, not hidden, so the strip never jumps.
+// The type shows what the server last said: a click asks for the other one, and the switch flips on its echo.
 import SButton from '../../shared/components/SButton.vue';
 import SIcon from '../../shared/components/SIcon.vue';
 import SSegmented from '../../shared/components/SSegmented.vue';
-import type { Tier } from '../../../shared/live/view-state';
+import { InterviewTypes } from '../../../shared/contracts/sotto-contracts';
+import type { InterviewType, Tier } from '../../../shared/live/view-state';
 
 defineProps<{
   auto: boolean;
   autoAvailable: boolean;
   paused: boolean;
+  interviewType: InterviewType;
   disabled: boolean;
   minutesLeft: number | null;
   tier: Tier | null;
 }>();
-const emit = defineEmits<{ setAuto: [auto: boolean]; togglePause: [] }>();
+const emit = defineEmits<{ setAuto: [auto: boolean]; togglePause: []; setInterviewType: [type: InterviewType] }>();
 </script>
 
 <template>
@@ -30,15 +33,44 @@ const emit = defineEmits<{ setAuto: [auto: boolean]; togglePause: [] }>();
       :disabled="disabled"
       @update:model-value="(v) => emit('setAuto', v === 'auto')"
     />
-    <SButton v-if="paused" variant="secondary" size="sm" icon="play" :disabled="disabled" @click="emit('togglePause')">Resume</SButton>
-    <SButton v-else variant="ghost" size="sm" icon="pause" :disabled="disabled" @click="emit('togglePause')">Pause</SButton>
+    <SButton
+      v-if="paused"
+      variant="secondary"
+      size="sm"
+      icon="play"
+      aria-label="Resume"
+      :disabled="disabled"
+      @click="emit('togglePause')"
+      ><span class="word">Resume</span></SButton
+    >
+    <SButton
+      v-else
+      variant="ghost"
+      size="sm"
+      icon="pause"
+      aria-label="Pause"
+      :disabled="disabled"
+      @click="emit('togglePause')"
+      ><span class="word">Pause</span></SButton
+    >
+    <SSegmented
+      :model-value="interviewType"
+      :options="[
+        { value: InterviewTypes.Technical, label: 'TECH' },
+        { value: InterviewTypes.Intro, label: 'INTRO' },
+      ]"
+      label="Interview type"
+      size="sm"
+      :disabled="disabled"
+      @update:model-value="(v) => v !== interviewType && emit('setInterviewType', v)"
+    />
     <span class="spacer" />
     <template v-if="minutesLeft !== null">
       <span class="stat num" :class="{ on: minutesLeft <= 10 }">{{ minutesLeft }} min</span>
       <span class="sep" />
     </template>
-    <span v-if="tier === 'fast'" class="stat"><SIcon name="bolt" :size="14" />Fast</span>
-    <span v-else-if="tier === 'smart'" class="stat">Smart</span>
+    <span v-if="tier === 'fast'" class="stat tier"><SIcon name="bolt" :size="14" />Fast</span>
+    <span v-else-if="tier === 'smart'" class="stat tier">Smart</span>
   </div>
 </template>
 
@@ -51,6 +83,15 @@ const emit = defineEmits<{ setAuto: [auto: boolean]; togglePause: [] }>();
   padding: 0 8px 0 10px;
   flex: none;
   border-bottom: 1px solid var(--line);
+  container-type: inline-size;
+}
+/* At the overlay's narrowest (360 px) every control still fits: Pause and Resume show their icon only, and the tier,
+   which nothing on the strip changes, goes. */
+@container (max-width: 440px) {
+  .word,
+  .tier {
+    display: none;
+  }
 }
 .stat {
   display: inline-flex;

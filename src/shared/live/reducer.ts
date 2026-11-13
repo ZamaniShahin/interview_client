@@ -23,6 +23,7 @@ import {
 } from '../practice';
 import {
   initialLiveState,
+  interviewTypeOf,
   type AnswerView,
   type CaptureStatus,
   type Listening,
@@ -121,6 +122,7 @@ function applySnapshot(state: LiveViewState, s: SessionSnapshot): LiveViewState 
     auto: s.Auto,
     paused: s.Paused,
     autoAvailable: s.ContextReady,
+    interviewType: interviewTypeOf(s.InterviewType) ?? state.interviewType,
     // The snapshot carries the question so far; the phrase in progress comes back with the next partial.
     heard: { finished: s.Heard, live: '' },
     // A session that moved has none: the driver attaches the kept copies again, and their events follow.
@@ -153,7 +155,10 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
   if (event.e.Seq <= state.lastSeq) return state;
   const seen = { ...state, lastSeq: event.e.Seq };
   // Inactivity is the one ending that can go away: anything heard or asked keeps the session (SessionEnding).
-  const next = seen.ending?.reason === SessionEndReasons.Inactive && keepsSessionAlive(event.name) ? { ...seen, ending: null } : seen;
+  const next =
+    seen.ending?.reason === SessionEndReasons.Inactive && keepsSessionAlive(event.name)
+      ? { ...seen, ending: null }
+      : seen;
 
   switch (event.name) {
     case 'status':
@@ -163,6 +168,8 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
         auto: event.e.Auto,
         paused: event.e.Paused,
         listening: listeningFrom(event.e.Stt),
+        // A spelling this build doesn't know (a newer server's) leaves the switch as it was.
+        interviewType: interviewTypeOf(event.e.InterviewType) ?? next.interviewType,
       };
 
     case 'transcriptPartial':
@@ -190,7 +197,10 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
       return {
         ...next,
         // A newer question always wins; the server says so with AnswerCancelled, and this holds even if it didn't.
-        answers: [...next.answers.map((a) => (a.ending === 'writing' ? { ...a, ending: 'stopped' as const } : a)), answer],
+        answers: [
+          ...next.answers.map((a) => (a.ending === 'writing' ? { ...a, ending: 'stopped' as const } : a)),
+          answer,
+        ],
         // When an answer starts, Heard starts over: the question moved into the answer.
         heard: { finished: '', live: '' },
         // Someone looking back stays where they are (§7.1, History).
@@ -198,7 +208,9 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
     }
 
     case 'answerDelta':
-      return updateAnswer(next, event.e.AnswerId, (a) => (a.ending === 'writing' ? { ...a, text: a.text + event.e.Text } : a));
+      return updateAnswer(next, event.e.AnswerId, (a) =>
+        a.ending === 'writing' ? { ...a, text: a.text + event.e.Text } : a,
+      );
 
     case 'answerDone':
       return updateAnswer(next, event.e.AnswerId, (a) => (a.ending === 'writing' ? { ...a, ending: 'done' } : a));
@@ -274,7 +286,9 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
 
 /** The events that show the session is in use: something heard, or an answer asked for. */
 function keepsSessionAlive(name: SessionEventName): boolean {
-  return name === 'transcriptPartial' || name === 'transcriptFinal' || name === 'speechStarted' || name === 'answerStart';
+  return (
+    name === 'transcriptPartial' || name === 'transcriptFinal' || name === 'speechStarted' || name === 'answerStart'
+  );
 }
 
 /**
@@ -285,7 +299,10 @@ function keepsSessionAlive(name: SessionEventName): boolean {
 function applyUsage(state: LiveViewState, minutesLeft: number | null, warning: string | null): LiveViewState {
   const next = { ...state, minutesLeft };
   if (warning === UsageWarnings.LowCredit && minutesLeft !== null) {
-    return { ...next, notice: { code: warning, text: `${minutesLeft} ${minutesLeft === 1 ? 'minute' : 'minutes'} left.` } };
+    return {
+      ...next,
+      notice: { code: warning, text: `${minutesLeft} ${minutesLeft === 1 ? 'minute' : 'minutes'} left.` },
+    };
   }
   if (warning === UsageWarnings.CostTierDown) return { ...next, tier: 'fast' };
   return next;

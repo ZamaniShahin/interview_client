@@ -8,7 +8,7 @@ One small window floats over the call, always on top. It never takes focus from 
 
 | Part | Shows |
 |---|---|
-| **Status** | the session's state, AUTO or MANUAL, paused, how listening is going, minutes left on a minutes plan, the quality tier |
+| **Status** | the session's state, AUTO or MANUAL, paused, the interview's type (TECH or INTRO, since 2026-11-13), how listening is going, minutes left on a minutes plan, the quality tier |
 | **Heard** | what the interviewer has said towards the next question: the finished pieces, then the phrase still being spoken, updated many times a second |
 | **Answer** | the question being answered, with how it was asked, then the answer as it streams in |
 | **History ‹ ›** | the earlier answers of this interview, to step back and forth |
@@ -46,6 +46,7 @@ One small window floats over the call, always on top. It never takes focus from 
   - with nothing new heard, it answers the same question again;
   - with nothing heard at all, it does nothing;
   - with text typed in the ask bar, it answers that text instead.
+- **The interview's type** (TECH or INTRO, backend Q47, v1 0.4.0's switch in the header): TECH asks for answers with depth (the approach, how it works, the caveats, the result), INTRO for brief, plain ones with no jargon, for a recruiter or a screening call. One click on the strip flips it, mid-interview too, from the next answer on; the interview and what it remembers go on. The switch shows what the server last said, so it flips when the server agrees. The choice is kept and sent as the next session starts; technical until the user chooses.
 - **The newest question wins.** A new question cancels the answer still being written. The cancelled answer keeps what it showed, and is marked as superseded.
 - **Clear** starts over: it forgets what was heard, the answer being written, and the interview's memory.
 - **Clear heard** forgets only the question being assembled. The wizard's sound check uses it.

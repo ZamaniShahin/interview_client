@@ -24,7 +24,7 @@ class FakeDriver implements SessionDriver {
     if (!this.answer.ok) return this.answer;
     dispatch({
       type: 'event',
-      event: { name: 'status', e: { ...stamp(), Auto: false, Paused: false, Stt: SpeechStates.Ok } },
+      event: { name: 'status', e: { ...stamp(), Auto: false, Paused: false, Stt: SpeechStates.Ok, InterviewType: 'technical' } },
     });
     return { ok: true };
   }

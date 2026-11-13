@@ -540,6 +540,7 @@ describe('the 📌 card through a session, widened (3.8)', () => {
         CustomInstructionsChars: 0,
         PreparedInPrompt: ['intro'],
         Practice: null,
+        InterviewType: 'technical',
       },
     });
     // The resume replays the start: nothing doubles, the card stays.

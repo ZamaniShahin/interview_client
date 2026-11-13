@@ -175,6 +175,7 @@ const snapshotOf = (heard: string, lastSeq: number): SessionSnapshot => ({
   CustomInstructionsChars: 0,
   PreparedInPrompt: [],
   Practice: null,
+  InterviewType: 'technical',
 });
 
 describe('the hub driver', () => {
@@ -612,9 +613,9 @@ describe("the hub driver's audio upload (1.12)", () => {
     const events = h.transports[0]!.events;
     h.driver.audio(pcm(1), 1);
 
-    events.status({ Seq: 1, AtMs: 1, Auto: true, Paused: true, Stt: 'ok' });
+    events.status({ Seq: 1, AtMs: 1, Auto: true, Paused: true, Stt: 'ok', InterviewType: 'technical' });
     h.driver.audio(pcm(2), 2);
-    events.status({ Seq: 2, AtMs: 2, Auto: true, Paused: false, Stt: 'ok' });
+    events.status({ Seq: 2, AtMs: 2, Auto: true, Paused: false, Stt: 'ok', InterviewType: 'technical' });
     h.driver.audio(pcm(3), 3);
 
     expect(seqs(h.transports[0]!.connection.streams[0]!.items)).toEqual([0, 1]);

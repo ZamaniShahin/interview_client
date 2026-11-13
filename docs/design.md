@@ -58,7 +58,7 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 - **Expanded size:** 560 × 760.
 - **A window outside sessions:** 960 × 640, with a sidebar (Q15, decided by Shahin on 2026-11-09).
 - ~~The tray only during a session~~: Shahin chose otherwise on 2026-11-09 (Q16). During a session there is neither a taskbar button nor a tray icon, as in v1, so the app is reached only by its hotkeys.
-- **The status strip** has two rows: the bar (state, listening, More) and the strip (AUTO/MANUAL, pause, minutes, tier).
+- **The status strip** has two rows: the bar (state, listening, More) and the strip (AUTO/MANUAL, pause, TECH/INTRO since 2026-11-13, minutes, tier).
 - **Hotkeys:** Ctrl+Enter (settled), plus Ctrl+Shift with Space, A, P, ←/→, M and H.
 - **A long answer** follows the newest line only while you are at the bottom; otherwise "New text below" is offered.
 - **The listening meter** sits beside "Listening" (Q18).
@@ -69,7 +69,7 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 |---|---|
 | The overlay, its layout and states | `src/renderer/overlay/OverlayApp.vue` |
 | Bar (drag area, state, listening) | `overlay/components/OverlayBar.vue`, `ListeningMeter.vue` |
-| Strip (AUTO/MANUAL, pause, minutes, tier) | `overlay/components/StatusStrip.vue` |
+| Strip (AUTO/MANUAL, pause, TECH/INTRO, minutes, tier) | `overlay/components/StatusStrip.vue` |
 | The banner under the strip, and its words | `overlay/components/OverlayBanner.vue`; `src/shared/live/copy.ts` |
 | Heard | `overlay/components/HeardPanel.vue` |
 | The answer card and its endings, and "New text below" | `overlay/components/AnswerCard.vue`, `AnswerBody.vue`, `KindBadge.vue`, `HistoryPager.vue` |

@@ -1,7 +1,7 @@
 // What may cross between the windows and main. Main checks every payload against these schemas and checks the
 // sender (src/main/ipc/register.ts): a renderer is untrusted input. The channel names are in ipc-channels.ts.
 import { z } from 'zod';
-import { AskMode } from './contracts/sotto-contracts';
+import { AskMode, InterviewTypes } from './contracts/sotto-contracts';
 import { screenshotHintMaxChars, screenshotIdSchema } from './screenshots';
 import { askLimits } from './text-limits';
 
@@ -23,6 +23,11 @@ export const overlayCommandSchema = z
     /** Answer now: the text if there is one, otherwise what was heard (or the same question again). */
     z.object({ type: z.literal('trigger'), text: z.string().max(askLimits[AskMode.Question]).nullable() }),
     z.object({ type: z.literal('setMode'), auto: z.boolean().nullable(), paused: z.boolean().nullable() }),
+    /** The interview's type (Q47): TECH or INTRO, from the next answer on. The strip flips when the server echoes it. */
+    z.object({
+      type: z.literal('setInterviewType'),
+      interviewType: z.enum([InterviewTypes.Technical, InterviewTypes.Intro]),
+    }),
     z.object({ type: z.literal('clear') }),
     z.object({ type: z.literal('clearHeard') }),
     z.object({ type: z.literal('endSession') }),

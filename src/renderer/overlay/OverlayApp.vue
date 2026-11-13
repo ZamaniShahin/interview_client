@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { AskMode } from '../../shared/contracts/sotto-contracts';
 import type { CommandResult, OverlayHotkey } from '../../shared/ipc';
 import { endedText, overlayBanner } from '../../shared/live/copy';
+import type { InterviewType } from '../../shared/live/view-state';
 import SButton from '../shared/components/SButton.vue';
 import SConfirm from '../shared/components/SConfirm.vue';
 import SIcon from '../shared/components/SIcon.vue';
@@ -104,6 +105,15 @@ function view(index: number | null): void {
   void live.command({ type: 'view', index });
 }
 
+/**
+ * TECH or INTRO (Q47): asks the session for it, and keeps it as the user's choice for the next session. The strip
+ * flips when the server says so (`Status`), not here.
+ */
+function setInterviewType(interviewType: InterviewType): void {
+  void live.command({ type: 'setInterviewType', interviewType });
+  void updateSettings({ interviewType });
+}
+
 const hide = () => window.overlayApi.window({ type: 'hide' });
 const resize = (size: { width: number; height: number }) => window.overlayApi.window({ type: 'resize', ...size });
 
@@ -142,11 +152,13 @@ function confirm(): void {
       :auto="s.auto"
       :auto-available="s.autoAvailable"
       :paused="s.paused"
+      :interview-type="s.interviewType"
       :disabled="controlsDisabled"
       :minutes-left="s.minutesLeft"
       :tier="s.tier"
       @set-auto="(auto) => live.command({ type: 'setMode', auto, paused: null })"
       @toggle-pause="live.command({ type: 'setMode', auto: null, paused: !s.paused })"
+      @set-interview-type="setInterviewType"
     />
 
     <MoreMenu
@@ -160,10 +172,14 @@ function confirm(): void {
 
     <div v-if="ended" class="ended" role="status">
       <SIcon name="stop" />
-      <span><b>{{ endedText(s.endReason) }}</b> Listening and answering have stopped.</span>
+      <span
+        ><b>{{ endedText(s.endReason) }}</b> Listening and answering have stopped.</span
+      >
     </div>
     <OverlayBanner v-else-if="banner && !compact" :banner="banner">
-      <SButton v-if="s.paused" size="sm" @click="live.command({ type: 'setMode', auto: null, paused: false })">Resume</SButton>
+      <SButton v-if="s.paused" size="sm" @click="live.command({ type: 'setMode', auto: null, paused: false })"
+        >Resume</SButton
+      >
     </OverlayBanner>
 
     <HeardPanel
@@ -171,7 +187,13 @@ function confirm(): void {
       :finished="s.heard.finished"
       :live="s.heard.live"
       :pile="!s.auto || !s.autoAvailable"
-      :placeholder="s.paused ? 'Not listening while paused.' : s.listening === 'down' ? 'Not hearing the call right now.' : 'Listening for the interviewer…'"
+      :placeholder="
+        s.paused
+          ? 'Not listening while paused.'
+          : s.listening === 'down'
+            ? 'Not hearing the call right now.'
+            : 'Listening for the interviewer…'
+      "
       :can-clear="!!(s.heard.finished || s.heard.live)"
       @clear="live.command({ type: 'clearHeard' })"
     />
@@ -195,7 +217,11 @@ function confirm(): void {
     />
     <p v-else-if="!ended" class="empty">
       <b>{{ s.phase === 'starting' ? 'Starting your session…' : 'Ready.' }}</b>
-      {{ s.phase === 'starting' ? 'A moment. There is nothing to do.' : `An answer appears here when a question ends. ${triggerKey} answers at any time.` }}
+      {{
+        s.phase === 'starting'
+          ? 'A moment. There is nothing to do.'
+          : `An answer appears here when a question ends. ${triggerKey} answers at any time.`
+      }}
     </p>
 
     <template v-if="!compact">

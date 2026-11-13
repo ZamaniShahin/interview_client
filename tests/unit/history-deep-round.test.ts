@@ -115,6 +115,7 @@ describe('what a session keeps, widened (3.9)', () => {
           CustomInstructionsChars: 0,
           PreparedInPrompt: [],
           Practice: null,
+          InterviewType: 'technical',
         },
       },
     ]);

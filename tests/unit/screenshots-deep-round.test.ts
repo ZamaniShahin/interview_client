@@ -581,6 +581,7 @@ describe('screenshots through the session controller, widened (3.6)', () => {
         CustomInstructionsChars: 0,
         PreparedInPrompt: [],
         Practice: null,
+        InterviewType: 'technical',
       },
     });
   const answer = (screenshotIds: string[]) =>

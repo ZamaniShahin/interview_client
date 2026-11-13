@@ -115,6 +115,20 @@ export const ErrorCodes = {
   },
 } as const;
 
+/**
+ * The kinds of interview (`SetInterviewTypeRequest.Type`, Q47, v1 0.3.0's `INTERVIEW_TYPES`). Published: spellings
+ * never change.
+ */
+export const InterviewTypes = {
+  /** An intro or screening call, the interviewer most likely not technical: brief, plain answers, no jargon. */
+  Intro: "intro",
+  /**
+   * The interviewer is technical: answers with depth, the approach, the caveats and the result. The default, as in v1.
+   */
+  Technical: "technical",
+} as const;
+export type InterviewType = (typeof InterviewTypes)[keyof typeof InterviewTypes];
+
 /** Why a `NoticeEvent` was sent. Published: spellings never change. */
 export const NoticeCodes = {
   /** A screenshot query found the question's screenshots attached already: it answered with those, not the new one. */
@@ -574,7 +588,7 @@ export interface SessionResumed {
  * are never saved, so the client attaches them again. `PrepDoc` is the prep doc it holds, or null;
  * `CustomInstructionsChars` how long its custom instructions are; `PreparedInPrompt` the ids of the prepared answers
  * that fit the prompt's budget (v1's 12,000 characters, in the bank's order), the others matched on the client only.
- * `Practice` is where a practice interview is, or null when none runs.
+ * `Practice` is where a practice interview is, or null when none runs. `InterviewType` is one of `InterviewTypes`.
  */
 export interface SessionSnapshot {
   SessionId: Guid;
@@ -590,6 +604,7 @@ export interface SessionSnapshot {
   CustomInstructionsChars: number;
   PreparedInPrompt: Array<string>;
   Practice: PracticeStatus | null;
+  InterviewType: string;
 }
 
 export interface SessionStarted {
@@ -603,6 +618,15 @@ export interface SetContextRequest {
   Resume: string | null;
   JobDescription: string | null;
   Notes: string | null;
+}
+
+/**
+ * What kind of interview this is (Q47, v1 0.3.0): one of `InterviewTypes`. It shapes how long and how technical the
+ * answers are, from the next one on; the interview and what it remembers go on. `StatusEvent` echoes it.
+ */
+export interface SetInterviewTypeRequest {
+  CommandId: Guid;
+  Type: string | null;
 }
 
 /** Omitted values stay as they are. */
@@ -651,12 +675,17 @@ export interface StartSessionRequest {
   TakeOver: boolean;
 }
 
+/**
+ * The session's settings and health: AUTO or MANUAL, paused, speech-to-text's state, and the interview's type
+ * (`InterviewTypes`).
+ */
 export interface StatusEvent {
   Seq: number;
   AtMs: number;
   Auto: boolean;
   Paused: boolean;
   Stt: string;
+  InterviewType: string;
 }
 
 export interface TranscriptUpdate {
@@ -708,6 +737,11 @@ export interface LiveHub {
    */
   setPreferences(request: SetPreferencesRequest): Promise<Ack>;
   setMode(request: SetModeRequest): Promise<Ack>;
+  /**
+   * The interview's type (Q47): intro or technical, from the next answer on. The same interview: what it remembers
+   * stays. `Status` echoes it, so the client's switch flips on the server's word.
+   */
+  setInterviewType(request: SetInterviewTypeRequest): Promise<Ack>;
   /** Answer now: the given text, or the question heard so far. */
   trigger(request: TriggerRequest): Promise<Ack>;
   ask(request: AskRequest): Promise<Ack>;
@@ -793,6 +827,7 @@ export const LiveHubMethods = {
   setPrepDoc: "SetPrepDoc",
   setPreferences: "SetPreferences",
   setMode: "SetMode",
+  setInterviewType: "SetInterviewType",
   trigger: "Trigger",
   ask: "Ask",
   attachScreenshot: "AttachScreenshot",
@@ -862,6 +897,7 @@ export function createLiveHub(connection: HubConnectionLike): LiveHub {
     setPrepDoc: (request) => connection.invoke<Ack>(LiveHubMethods.setPrepDoc, request),
     setPreferences: (request) => connection.invoke<Ack>(LiveHubMethods.setPreferences, request),
     setMode: (request) => connection.invoke<Ack>(LiveHubMethods.setMode, request),
+    setInterviewType: (request) => connection.invoke<Ack>(LiveHubMethods.setInterviewType, request),
     trigger: (request) => connection.invoke<Ack>(LiveHubMethods.trigger, request),
     ask: (request) => connection.invoke<Ack>(LiveHubMethods.ask, request),
     attachScreenshot: (request) => connection.invoke<Ack>(LiveHubMethods.attachScreenshot, request),

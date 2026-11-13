@@ -326,6 +326,14 @@ Built in Shahin's unattended run ("anything left before deployment", 2026-11-10 
 |---|---|
 | 2026-11-13 | **Installs skip install scripts: `npm ci --ignore-scripts`, then `npx install-electron`** (README, "Getting started"; Shahin chose to record it, 2026-11-13). On a computer without Visual Studio's C++ tools, `npm ci` failed: better-sqlite3-multiple-ciphers carries a `binding.gyp`, so npm runs node-gyp for it although its prebuilt binaries ship in the package (§9's row said nothing compiles; nothing needs to, but npm tries). With scripts skipped the prebuilt binary loads, in Node and in Electron. Only two other packages have install scripts, per the lockfile: electron-winstaller (Squirrel; the app builds NSIS) and fsevents (macOS). Electron 45's binary comes from `install-electron`, which `npm run dev` and `npm start` already run first. Not chosen: `ignore-scripts=true` in `.npmrc`, which would also stop `npm run dev` running its `predev` |
 
+## 27. Taken in session on 2026-11-13, the interview's type (backend Q47; open to revision)
+
+| Date | Decision |
+|---|---|
+| 2026-11-13 | **TECH / INTRO is a switch on the overlay's strip**, after Pause, as v1 0.4.0 moved it into its header (Shahin answered Q47: port all of it). It shows the server's word (`Status.InterviewType`, the snapshot's), so a click asks and the echo flips it, as v1's `context` reply did; a spelling this build doesn't know leaves it as it was |
+| 2026-11-13 | **The choice is a setting** (`interviewType`, technical by default): a click keeps it, and the next session sends it first of all, before the documents (`SetInterviewType`), as v1 kept the type across a restart and a new interview. Settings has no control of its own for it: v1 moved it out of its settings |
+| 2026-11-13 | **At the overlay's narrowest the strip still fits**: under 440 px Pause and Resume show their icon only (their names stay for screen readers) and the tier goes. No tooltip: a tooltip is a window a share can see (stealth rule 2) |
+
 ## 26. Taken in session on 2026-11-13, DPoP (backend Q44; open to revision)
 
 | Date | Decision |

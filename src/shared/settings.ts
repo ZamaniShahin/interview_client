@@ -25,6 +25,11 @@ export const settingsSchema = z.object({
   startCompact: z.boolean(),
   keepTranscripts: z.boolean(),
   keepRecordings: z.boolean(),
+  /**
+   * The interview's type the user last chose (Q47, v1 0.4.0's TECH / INTRO switch in the overlay's strip): sent as a
+   * session starts, kept for the next one, as v1 kept it across a restart and a new interview.
+   */
+  interviewType: z.enum(['technical', 'intro']),
   /** The hotkeys the user changed (3.13): only those, over the defaults. A set where two clash, or one can't stand, isn't one. */
   hotkeys: hotkeyOverridesSchema.refine(
     (changed) => Object.keys(hotkeyProblems(effectiveHotkeys(changed))).length === 0,
@@ -45,5 +50,6 @@ export const defaultSettings: Settings = {
   startCompact: false,
   keepTranscripts: false,
   keepRecordings: false,
+  interviewType: 'technical',
   hotkeys: {},
 };

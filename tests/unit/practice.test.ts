@@ -339,6 +339,7 @@ describe('the practice drawn from the hub’s events', () => {
         CustomInstructionsChars: 0,
         PreparedInPrompt: [],
         Practice: status({ State: PracticeState.Scoring }),
+        InterviewType: 'technical',
       },
     });
     expect(snapshot.practice.status?.state).toBe(PracticeState.Scoring);
@@ -367,7 +368,7 @@ class FakeDriver implements SessionDriver {
     this.dispatch = dispatch;
     dispatch({ type: 'starting' });
     if (this.startResult.ok)
-      this.raise({ name: 'status', e: { Seq: 0, AtMs: 0, Auto: false, Paused: false, Stt: 'ok' } });
+      this.raise({ name: 'status', e: { Seq: 0, AtMs: 0, Auto: false, Paused: false, Stt: 'ok', InterviewType: 'technical' } });
     return this.startResult;
   }
 

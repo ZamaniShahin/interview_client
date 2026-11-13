@@ -29,7 +29,7 @@ const failed = (id: string, code: string, message: string) =>
 const partial = (text: string) => ev({ name: 'transcriptPartial', e: { ...stamp(), Text: text } });
 const final = (text: string) => ev({ name: 'transcriptFinal', e: { ...stamp(), Text: text } });
 const status = (auto: boolean, paused: boolean, stt: string) =>
-  ev({ name: 'status', e: { ...stamp(), Auto: auto, Paused: paused, Stt: stt } });
+  ev({ name: 'status', e: { ...stamp(), Auto: auto, Paused: paused, Stt: stt, InterviewType: 'technical' } });
 
 describe('the live view state', () => {
   it('streams an answer in and ends it done', () => {
@@ -137,6 +137,7 @@ describe('the live view state', () => {
           CustomInstructionsChars: 0,
           PreparedInPrompt: [],
           Practice: null,
+          InterviewType: 'technical',
         },
       },
     );

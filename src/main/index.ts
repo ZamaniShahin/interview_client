@@ -841,7 +841,7 @@ async function openStore(): Promise<LocalStore> {
 function hubDriver(
   options: Pick<
     HubDriverDependencies,
-    'auto' | 'context' | 'prepDoc' | 'preferences' | 'takeOver' | 'onEntitlementsUpdated'
+    'auto' | 'context' | 'prepDoc' | 'preferences' | 'interviewType' | 'takeOver' | 'onEntitlementsUpdated'
   >,
 ): HubDriver {
   const signedIn = auth!;
@@ -971,6 +971,8 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
         : null,
       // Then the custom instructions and the bank's enabled entries (3.8).
       preferences: store ? preferencesToSend(store.preferences()) : null,
+      // First of all, TECH or INTRO as the user last chose it (Q47): the server starts technical.
+      interviewType: settings.get().interviewType,
       // Only after the user chose "Start here" on Home, once the server said the session is open elsewhere.
       takeOver: request.takeOver === true,
       // A purchase, a renewal or a refund while the session runs: the account's minutes and plan, read again.
