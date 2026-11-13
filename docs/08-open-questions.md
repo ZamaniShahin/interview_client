@@ -24,7 +24,7 @@ The numbers are the backend's (`docs/decisions.md` §2). Settled there:
 - on 2026-11-13:
   - Q44: DPoP is on: the tokens are bound to a key made at each sign-in, and every request carries a proof from it ([decisions.md](decisions.md) §26);
   - Q47: v1 0.3.0 and 0.4.0's answers are ported whole: the interview type switched in the overlay, gap fillers, no auto-scroll;
-  - Q51: recording goes ahead as proposed (3.12);
+  - Q51: recording goes ahead as proposed (3.12); built the same day, kept encrypted and saved as a WAV from History ([decisions.md](decisions.md) §30);
   - Q52: the server hears every interviewer, as v1 0.3.0, so a long question is cut in pieces and a trigger pressed while it is still being said waits for its end.
 
 Q27–Q51 are open there too, apart from the ones above. The rows below are the ones that change something in the client.

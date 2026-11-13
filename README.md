@@ -99,7 +99,9 @@ A packaged build never runs the preview.
 
 **Practice, 2026-11-12** ([docs/decisions.md](docs/decisions.md) §24): the Practice page, v1's mock interview answered by typing, in a session of its own that hears nothing; practice kept in History with each answer's feedback.
 
-**Not yet:** the microphone, with spoken practice answers and the coach (3.7, Q5) and recording (3.12, Q51); the consent box's final words (3.11, with the legal texts); signing (4.2) and Sentry (4.1); practice redrawn from Claude Design's export (Q50); history's HTML report (v1's history.py).
+**Recording, 2026-11-13** (3.12; [docs/decisions.md](docs/decisions.md) §30): opt-in in Settings, a live session recorded after its consent box, the call on the left and the microphone on the right; kept encrypted with its interview, saved as a WAV from History; the microphone opened only while recording; REC in the overlay's strip.
+
+**Not yet:** spoken practice answers and the coach (3.7, Q5); the consent box's final words (3.11, with the legal texts); signing (4.2) and Sentry (4.1); practice redrawn from Claude Design's export (Q50); history's HTML report (v1's history.py).
 
 ## Tech decisions
 

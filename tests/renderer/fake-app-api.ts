@@ -31,6 +31,7 @@ export function fakeAppApi(state: AppState, overrides: Partial<AppApi> = {}) {
     deleteInterview: vi.fn<AppApi['deleteInterview']>(async () => ({ ok: true })),
     clearHistory: vi.fn<AppApi['clearHistory']>(async () => ({ ok: true })),
     debrief: vi.fn<AppApi['debrief']>(async () => ({ ok: true })),
+    saveRecording: vi.fn<AppApi['saveRecording']>(async () => ({ ok: true })),
     copy: vi.fn<AppApi['copy']>(),
     writeDrafts: vi.fn<AppApi['writeDrafts']>(async () => ({ ok: true })),
     keepDraft: vi.fn<AppApi['keepDraft']>(async () => ({ ok: true })),

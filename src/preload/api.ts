@@ -88,6 +88,8 @@ export interface AppApi extends SettingsApi {
   clearHistory(): Promise<CommandResult>;
   /** Asks the server for an interview's debrief, and keeps it; answers once it is kept, or why not (3.9). */
   debrief(id: number): Promise<CommandResult>;
+  /** Saves an interview's recording as a WAV where the user chooses; ok when saved or when they cancelled (3.12). */
+  saveRecording(id: number): Promise<CommandResult>;
   /** Puts text on the clipboard, through main (a debrief's thank-you email, 3.9). */
   copy(text: string): void;
   /** Asks the server for prep drafts from the documents; answers once they are here, or why not (3.9). */

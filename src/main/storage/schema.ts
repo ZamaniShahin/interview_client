@@ -112,4 +112,20 @@ export const migrations: readonly Migration[] = [
         CREATE INDEX practice_turns_interview ON practice_turns (interview_id);
       `),
   },
+  {
+    version: 5,
+    name: 'recordings (3.12)',
+    // Q51: an interview's recording, kept as an encrypted file of its own in userData/recordings (recording-file.ts);
+    // the row names the file and how long it is, null while it is being written. It goes with its interview. Additive
+    // only: every interview kept so far stays as it was, with no recording.
+    up: (db) =>
+      db.exec(`
+        CREATE TABLE recordings (
+          interview_id INTEGER PRIMARY KEY REFERENCES interviews (id) ON DELETE CASCADE,
+          file TEXT NOT NULL UNIQUE,
+          started_at TEXT NOT NULL,
+          seconds REAL CHECK (seconds IS NULL OR seconds >= 0)
+        );
+      `),
+  },
 ];

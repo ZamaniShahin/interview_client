@@ -106,6 +106,8 @@ export interface IpcDependencies {
   clearHistory: () => CommandResult;
   /** Asks the server for an interview's debrief, and keeps it (3.9). */
   debrief: (id: number) => Promise<CommandResult>;
+  /** Saves an interview's recording as a WAV, where the user chooses (3.12). */
+  saveRecording: (id: number) => Promise<CommandResult>;
   /** Asks the server for prep drafts (3.9). */
   writeDrafts: () => Promise<CommandResult>;
   /** Keeps a draft in the answer bank (3.9). */
@@ -383,6 +385,12 @@ export function registerIpc(deps: IpcDependencies): void {
     if (!fromApp(event)) return invalid;
     const parsed = interviewIdSchema.safeParse(payload);
     return parsed.success ? deps.debrief(parsed.data) : invalid;
+  });
+
+  ipcMain.handle(IpcChannels.appSaveRecording, async (event, payload: unknown): Promise<CommandResult> => {
+    if (!fromApp(event)) return invalid;
+    const parsed = interviewIdSchema.safeParse(payload);
+    return parsed.success ? deps.saveRecording(parsed.data) : invalid;
   });
 
   ipcMain.handle(IpcChannels.settingsGet, (event) =>

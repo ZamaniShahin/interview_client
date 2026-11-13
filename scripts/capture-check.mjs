@@ -1,7 +1,10 @@
 // Checks this computer's audio capture (1.11) for real, with nothing shown: the built app runs with
 // `--capture-check`, opens only its hidden capture window, and prints what arrived in six seconds, as one JSON line.
 //
-//   npm run build && node scripts/capture-check.mjs
+//   npm run build && node scripts/capture-check.mjs [--record]
+//
+// `--record` checks the recording's path too (3.12): it opens the microphone, as a recorded session does, and counts
+// the stereo frames (9,600 bytes, ten a second); nothing is written.
 //
 // Frames come about ten a second, 4,800 bytes each, even in silence; `loudest` stays at 0 unless something plays.
 // Nothing is uploaded, kept or played. Exit code 0 when frames came.
@@ -15,5 +18,6 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 
-const run = spawnSync(electron, ['.', '--capture-check'], { cwd: root, env, stdio: 'inherit' });
+const record = process.argv.includes('--record') ? ['--record'] : [];
+const run = spawnSync(electron, ['.', '--capture-check', ...record], { cwd: root, env, stdio: 'inherit' });
 process.exit(run.status ?? 1);

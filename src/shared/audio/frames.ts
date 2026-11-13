@@ -39,6 +39,33 @@ export class PcmFramer {
   }
 }
 
+/** A recording's frame (3.12): 100 ms of stereo PCM16, the call on the left and the microphone on the right. */
+export const stereoFrameBytes = frameSamples * 4;
+
+/**
+ * The recording's framer: two channels in, interleaved PCM16 frames of 100 ms out, left first. A channel that brings no
+ * data (no microphone, a loopback with nothing playing) is silence on its side.
+ */
+export class StereoFramer {
+  private frame = new Int16Array(frameSamples * 2);
+  private filled = 0;
+
+  push(left: Float32Array | null, right: Float32Array | null): Int16Array[] {
+    const frames: Int16Array[] = [];
+    const length = Math.max(left?.length ?? 0, right?.length ?? 0);
+    for (let i = 0; i < length; i++) {
+      this.frame[2 * this.filled] = toPcm16(left?.[i] ?? 0);
+      this.frame[2 * this.filled + 1] = toPcm16(right?.[i] ?? 0);
+      if (++this.filled === frameSamples) {
+        frames.push(this.frame);
+        this.frame = new Int16Array(frameSamples * 2);
+        this.filled = 0;
+      }
+    }
+    return frames;
+  }
+}
+
 /** A frame's loudness as RMS, 0…1 of full scale. */
 export function rms(frame: Int16Array): number {
   if (frame.length === 0) return 0;

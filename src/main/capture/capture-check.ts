@@ -1,17 +1,21 @@
 // `--capture-check`, in an unpackaged build only (scripts/capture-check.mjs): the real capture path on this computer,
 // with nothing shown. It opens only the hidden capture window, through the same code a session uses, counts what
 // arrives for a few seconds, prints the numbers as one JSON line and quits: 0 when frames came, 1 when none did.
-// Nothing is uploaded, kept or played.
+// Nothing is uploaded, kept or played. With `--record`, the recording's path too (3.12): the microphone is opened as a
+// recorded session opens it, and the recording's stereo frames are counted, never written.
 import { app } from 'electron';
-import { frameBytes } from '../../shared/audio/frames';
+import { frameBytes, stereoFrameBytes } from '../../shared/audio/frames';
 import { openCaptureWindow } from '../windows/capture-window';
 import { AudioCapture } from './audio-capture';
 
-export function runCaptureCheck(seconds = 6): void {
+export function runCaptureCheck(seconds = 6, record = false): void {
   void app.whenReady().then(() => {
     let started = false;
     let frames = 0;
     let wrongSize = 0;
+    let recordFrames = 0;
+    let recordWrongSize = 0;
+    const mic: string[] = [];
     let loudest = 0;
     const failures: string[] = [];
     // Before main's checks: how many frame messages came, and what their audio arrived as.
@@ -24,7 +28,8 @@ export function runCaptureCheck(seconds = 6): void {
         channel.onMessage((message) => {
           const m = message as { type?: unknown; reason?: unknown; pcm?: unknown } | null;
           if (m?.type === 'started') started = true;
-          if (m?.type === 'failed' || m?.type === 'lost') failures.push(`${String(m.type)}: ${String(m.reason)}`);
+          if (m?.type === 'failed' || m?.type === 'lost' || m?.type === 'mic-failed' || m?.type === 'mic-lost')
+            failures.push(`${String(m.type)}: ${String(m.reason)}`);
           if (m?.type === 'frame') {
             rawFrames++;
             arrivedAs.add(Object.prototype.toString.call(m.pcm));
@@ -39,8 +44,14 @@ export function runCaptureCheck(seconds = 6): void {
       onStatus: (status) => {
         if (status.level !== null) loudest = Math.max(loudest, status.level);
       },
+      onRecord: (pcm) => {
+        recordFrames++;
+        if (pcm.byteLength !== stereoFrameBytes) recordWrongSize++;
+      },
+      onMic: (state) => mic.push(state),
     });
 
+    if (record) capture.startRecording();
     capture.start();
     setTimeout(() => {
       capture.stop();
@@ -53,9 +64,18 @@ export function runCaptureCheck(seconds = 6): void {
         failures,
         rawFrames,
         arrivedAs: [...arrivedAs],
+        ...(record
+          ? {
+              recordFrames,
+              recordFramesPerSecond: Number((recordFrames / seconds).toFixed(1)),
+              recordWrongSize,
+              mic,
+            }
+          : {}),
       };
       console.log(JSON.stringify(result));
-      app.exit(started && frames > 0 && wrongSize === 0 ? 0 : 1);
+      const recorded = !record || (recordFrames > 0 && recordWrongSize === 0);
+      app.exit(started && frames > 0 && wrongSize === 0 && recorded ? 0 : 1);
     }, seconds * 1000);
   });
 }

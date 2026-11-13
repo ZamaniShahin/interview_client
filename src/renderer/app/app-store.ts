@@ -266,6 +266,11 @@ export const useAppStore = defineStore('app', () => {
     return window.appApi.debrief(id);
   }
 
+  /** An interview's recording, saved as a WAV where the user chooses (3.12). */
+  function saveRecording(id: number): Promise<CommandResult> {
+    return window.appApi.saveRecording(id);
+  }
+
   // Prep drafts (3.9): held in main until each is kept or skipped.
   const drafts = computed(() => state.value.drafts);
 
@@ -330,6 +335,7 @@ export const useAppStore = defineStore('app', () => {
     debriefing,
     openInterview,
     deleteInterview,
+    saveRecording,
     clearHistory,
     debrief,
     drafts,

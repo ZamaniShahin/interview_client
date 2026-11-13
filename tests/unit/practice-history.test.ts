@@ -107,6 +107,7 @@ describe('a practice kept in history', () => {
         lines: 0,
         hasDebrief: false,
         average: 6.5,
+        recordingSeconds: null,
       },
     ]);
   });
@@ -243,7 +244,7 @@ describe('the database, migrated to keep practices (migration 4)', () => {
 
       const db = openDatabase(file, key, migrations);
       const after = new LocalStore(db, () => nov12);
-      expect(db.pragma('user_version', { simple: true })).toBe(4);
+      expect(db.pragma('user_version', { simple: true })).toBe(migrations.at(-1)!.version);
       expect(after.history.list()).toEqual([
         expect.objectContaining({ id, kind: 'interview', answers: 1, average: null, role: 'Payments' }),
       ]);

@@ -57,6 +57,8 @@ export const IpcChannels = {
   appClearHistory: 'app:clear-history',
   /** app window → main (invoke): ask the server for an interview's debrief, kept with it; answers once kept (3.9). */
   appDebrief: 'app:debrief',
+  /** app window → main (invoke): save an interview's recording as a WAV, where the user chooses (3.12). */
+  appSaveRecording: 'app:save-recording',
   /** app window → main (send): text for the clipboard, main's to write, as the overlay's Copy is (3.9). */
   appCopy: 'app:copy',
   /** app window → main (invoke): ask the server for prep drafts from the documents (3.9). */

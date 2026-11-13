@@ -3,7 +3,8 @@
 // whole: its debrief, its questions with the answers given, and the interviewer's words when transcripts are kept.
 // A debrief is asked of the server here, and only here: it is the one time an interview leaves this computer.
 // Practice sessions are kept here too, with their scores (Q24): one opens with each answer's feedback, and its two
-// lowest can be practised again; any question an interviewer asked can be practised on its own (Q22).
+// lowest can be practised again; any question an interviewer asked can be practised on its own (Q22). An interview
+// recorded (3.12) keeps its recording here, encrypted: saved as a WAV only when the user asks, where they choose.
 import { computed, ref, watch } from 'vue';
 import {
   AnswerKind,
@@ -11,7 +12,7 @@ import {
   PracticeTurnKind,
   SessionEndReasons,
 } from '../../../shared/contracts/sotto-contracts';
-import type { InterviewSummary, InterviewView } from '../../../shared/history';
+import { recordingLength, type InterviewSummary, type InterviewView } from '../../../shared/history';
 import { difficultyLabels, focusLabels, lowestQuestions, practiceLimits, sourceLabels } from '../../../shared/practice';
 import SButton from '../../shared/components/SButton.vue';
 import SConfirm from '../../shared/components/SConfirm.vue';
@@ -24,10 +25,14 @@ const store = useAppStore();
 const open = ref<InterviewView | null>(null);
 const confirming = ref<'one' | 'all' | null>(null);
 const failure = ref<string | null>(null);
+/** The recording is being written out, or was: "Saved" until the user moves on. */
+const saving = ref(false);
+const saved = ref(false);
 
 async function show(id: number): Promise<void> {
   failure.value = null;
   confirming.value = null;
+  saved.value = false;
   open.value = await store.openInterview(id);
 }
 
@@ -35,6 +40,7 @@ function back(): void {
   open.value = null;
   failure.value = null;
   confirming.value = null;
+  saved.value = false;
 }
 
 // Another page sent the user here to open one (Practice's "See it in History").
@@ -64,6 +70,24 @@ async function debrief(): Promise<void> {
   const result = await store.debrief(open.value.id);
   if (!result.ok) failure.value = result.message;
 }
+
+async function saveRecording(): Promise<void> {
+  if (!open.value || saving.value) return;
+  failure.value = null;
+  saved.value = false;
+  saving.value = true;
+  try {
+    const result = await store.saveRecording(open.value.id);
+    // Cancelled in the save dialog: nothing to say.
+    if (result.ok) saved.value = true;
+    else if (result.code !== 'cancelled') failure.value = result.message;
+  } finally {
+    saving.value = false;
+  }
+}
+
+/** Some interviews kept recordings: deleting them all says so. */
+const anyRecording = computed(() => store.history.some((i) => (i.recordingSeconds ?? 0) > 0));
 
 async function remove(): Promise<void> {
   if (!open.value) return;
@@ -205,6 +229,7 @@ const kinds: Record<number, string> = {
             <span v-if="interview.kind === 'practice'" class="tag">Practice</span>
             <span v-if="store.debriefing.includes(interview.id)" class="tag">Writing debrief…</span>
             <span v-else-if="interview.hasDebrief" class="tag">Debrief</span>
+            <span v-if="(interview.recordingSeconds ?? 0) > 0" class="tag">Recording</span>
           </button>
         </li>
       </ul>
@@ -213,7 +238,7 @@ const kinds: Record<number, string> = {
         <SConfirm
           v-if="confirming === 'all'"
           question="Delete all history?"
-          :detail="`All ${store.history.length} interviews go from this computer, with their debriefs.`"
+          :detail="`All ${store.history.length} interviews go from this computer, with their debriefs${anyRecording ? ' and recordings' : ''}.`"
           confirm-label="Delete all"
           destructive
           @confirm="clear"
@@ -237,8 +262,21 @@ const kinds: Record<number, string> = {
           {{ open.debrief ? 'Write the debrief again' : 'Get a debrief' }}
         </SButton>
         <SButton v-if="lowest.length === 2" variant="secondary" @click="retryLowest">Retry the 2 lowest</SButton>
+        <SButton
+          v-if="(open.recordingSeconds ?? 0) > 0"
+          variant="secondary"
+          icon="arrowDown"
+          :disabled="saving"
+          @click="saveRecording"
+          >{{ saving ? 'Saving the recording…' : 'Save the recording…' }}</SButton
+        >
         <SButton variant="ghost" @click="confirming = 'one'">Delete</SButton>
       </div>
+      <p v-if="(open.recordingSeconds ?? 0) > 0" class="small">
+        Recorded, {{ recordingLength(open.recordingSeconds ?? 0) }}: the call on the left, your microphone on the right.
+        It stays on this computer, encrypted; saving writes a WAV file where you choose.
+        <template v-if="saved"> Saved.</template>
+      </p>
       <p v-if="!open.debrief && !writing" class="small">
         The server reads its questions, answers and transcript once to write it, and keeps none of them. Your plan
         counts it as one debrief.
@@ -246,7 +284,11 @@ const kinds: Record<number, string> = {
       <SConfirm
         v-if="confirming === 'one'"
         question="Delete this interview?"
-        detail="Its answers, transcript and debrief go from this computer."
+        :detail="
+          (open.recordingSeconds ?? 0) > 0
+            ? 'Its answers, transcript, debrief and recording go from this computer.'
+            : 'Its answers, transcript and debrief go from this computer.'
+        "
         confirm-label="Delete"
         destructive
         @confirm="remove"

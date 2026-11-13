@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { AudioCapture, parse, type CaptureChannel } from '../../src/main/capture/audio-capture';
-import { frameBytes, frameSamples } from '../../src/shared/audio/frames';
+import { AudioCapture, parse, type CaptureChannel, type MicState } from '../../src/main/capture/audio-capture';
+import { frameBytes, frameSamples, stereoFrameBytes } from '../../src/shared/audio/frames';
 import { idleCapture, type CaptureStatus } from '../../src/shared/live/view-state';
 
 /** Plays the hidden capture window: the test sends what the page would send. */
 class FakeWindow implements CaptureChannel {
   starts = 0;
   stops = 0;
+  recordingStarts = 0;
+  recordingStops = 0;
   closed = false;
   private listener: ((message: unknown) => void) | null = null;
 
@@ -16,6 +18,14 @@ class FakeWindow implements CaptureChannel {
 
   stop(): void {
     this.stops++;
+  }
+
+  startRecording(): void {
+    this.recordingStarts++;
+  }
+
+  stopRecording(): void {
+    this.recordingStops++;
   }
 
   onMessage(listener: (message: unknown) => void): void {
@@ -45,6 +55,8 @@ function harness() {
   const windows: FakeWindow[] = [];
   const frames: { bytes: number; at: number }[] = [];
   const statuses: CaptureStatus[] = [];
+  const records: Uint8Array[] = [];
+  const mics: MicState[] = [];
 
   const capture = new AudioCapture({
     open: () => {
@@ -54,6 +66,8 @@ function harness() {
     },
     onFrame: (pcm, at) => frames.push({ bytes: pcm.byteLength, at }),
     onStatus: (status) => statuses.push(status),
+    onRecord: (pcm) => records.push(pcm),
+    onMic: (state) => mics.push(state),
     now: () => now,
     setTimer: (callback, ms) => {
       const timer = { at: now + ms, callback, id: nextId++ };
@@ -77,7 +91,17 @@ function harness() {
     now = until;
   };
 
-  return { capture, windows, frames, statuses, advance, last: () => statuses.at(-1) ?? idleCapture };
+  return {
+    capture,
+    windows,
+    frames,
+    statuses,
+    records,
+    mics,
+    advance,
+    last: () => statuses.at(-1) ?? idleCapture,
+    timers: () => timers.length,
+  };
 }
 
 describe("capturing the call's sound in main (1.11)", () => {
@@ -266,4 +290,121 @@ describe('what main accepts from the capture window', () => {
       expect(parse(message)).toBeNull();
     },
   );
+});
+
+/** A stereo frame of the recording, as the page sends it: `fill` in every byte. */
+function stereo(fill = 7, bytes = stereoFrameBytes): { type: 'record'; pcm: ArrayBuffer } {
+  return { type: 'record', pcm: new Uint8Array(bytes).fill(fill).buffer };
+}
+
+describe('the recording in main (3.12)', () => {
+  it('asks the window for the microphone only once recording is on, and from the start when it was on before', () => {
+    const h = harness();
+    h.capture.start();
+    expect(h.windows[0]!.recordingStarts).toBe(0);
+
+    h.capture.startRecording();
+    h.capture.startRecording();
+    expect(h.windows[0]!.recordingStarts).toBe(1);
+    expect(h.capture.recordingOn).toBe(true);
+
+    h.capture.stop();
+    // A stopped capture records nothing more: the next session decides anew.
+    expect(h.capture.recordingOn).toBe(false);
+    h.capture.startRecording();
+    h.capture.start();
+    expect(h.windows[1]!.recordingStarts).toBe(1);
+  });
+
+  it('hands only whole stereo frames to the recorder, and only while recording', () => {
+    const h = harness();
+    h.capture.start();
+    h.windows[0]!.send(stereo());
+    expect(h.records).toHaveLength(0);
+
+    h.capture.startRecording();
+    h.windows[0]!.send(stereo(1));
+    h.windows[0]!.send(stereo(2, stereoFrameBytes - 4));
+    h.windows[0]!.send(stereo(3, frameBytes));
+    h.windows[0]!.send(stereo(4));
+    expect(h.records.map((r) => [r.byteLength, r[0]])).toEqual([
+      [stereoFrameBytes, 1],
+      [stereoFrameBytes, 4],
+    ]);
+    // Recording frames never reach the session's upload.
+    expect(h.frames).toHaveLength(0);
+
+    h.capture.stopRecording();
+    h.windows[0]!.send(stereo(5));
+    expect(h.records).toHaveLength(2);
+    expect(h.windows[0]!.recordingStops).toBe(1);
+  });
+
+  it('says when the microphone is in, and asks again 1.5 s after it is lost, 10 s after it is refused', () => {
+    const h = harness();
+    h.capture.start();
+    h.capture.startRecording();
+    const win = h.windows[0]!;
+
+    win.send({ type: 'mic-started' });
+    win.send({ type: 'mic-lost', reason: 'ended' });
+    expect(h.mics).toEqual(['on', 'down']);
+    h.advance(1_499);
+    expect(win.recordingStarts).toBe(1);
+    h.advance(1);
+    expect(win.recordingStarts).toBe(2);
+
+    win.send({ type: 'mic-failed', reason: 'NotAllowedError' });
+    h.advance(9_999);
+    expect(win.recordingStarts).toBe(2);
+    h.advance(1);
+    expect(win.recordingStarts).toBe(3);
+    expect(h.mics).toEqual(['on', 'down', 'down']);
+  });
+
+  it('asks only once at a time, and not at all once recording stops or the capture ends', () => {
+    const h = harness();
+    h.capture.start();
+    h.capture.startRecording();
+    const win = h.windows[0]!;
+
+    win.send({ type: 'mic-failed', reason: 'NotFoundError' });
+    win.send({ type: 'mic-lost', reason: 'ended' });
+    h.advance(10_000);
+    expect(win.recordingStarts).toBe(2);
+
+    win.send({ type: 'mic-lost', reason: 'ended' });
+    h.capture.stopRecording();
+    h.advance(10_000);
+    expect(win.recordingStarts).toBe(2);
+
+    h.capture.startRecording();
+    win.send({ type: 'mic-lost', reason: 'ended' });
+    h.capture.stop();
+    h.advance(10_000);
+    expect(win.recordingStarts).toBe(3);
+  });
+
+  it('ignores what the microphone says while nothing is recorded', () => {
+    const h = harness();
+    h.capture.start();
+
+    h.windows[0]!.send({ type: 'mic-started' });
+    h.windows[0]!.send({ type: 'mic-failed', reason: 'NotAllowedError' });
+    h.advance(20_000);
+
+    expect(h.mics).toEqual([]);
+    expect(h.windows[0]!.recordingStarts).toBe(0);
+  });
+
+  it.each([
+    [{ type: 'record', pcm: new ArrayBuffer(8) }, { type: 'record', pcm: new ArrayBuffer(8) }],
+    [{ type: 'mic-started', extra: 1 }, { type: 'mic-started' }],
+    [{ type: 'mic-lost', reason: 'x'.repeat(100) }, { type: 'mic-lost', reason: 'x'.repeat(64) }],
+    [{ type: 'mic-failed' }, { type: 'mic-failed', reason: 'unknown' }],
+    [{ type: 'record', pcm: [1, 2] }, null],
+    [{ type: 'record' }, null],
+  ])('reads %j from the window as %j', (message, read) => {
+    expect(parse(message)).toEqual(read);
+  });
 });

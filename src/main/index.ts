@@ -52,6 +52,8 @@ import { AuthSession, NotSignedIn, SignInCancelled } from './auth/auth-session';
 import { DpopKeys } from './auth/dpop';
 import { ElectronSecretStore } from './auth/electron-secret-store';
 import { AudioCapture } from './capture/audio-capture';
+import { CallRecorder } from './recording/call-recorder';
+import { recordingKey, Recordings } from './recording/recordings';
 import { runCaptureCheck } from './capture/capture-check';
 import { startLoopback } from './auth/loopback';
 import { OpenIdClient, SignInExpired } from './auth/oidc';
@@ -87,7 +89,7 @@ import { Updates } from './updates/updates';
 import { HistoryRecorder } from './history/history-recorder';
 import { HistoryService } from './history/history-service';
 import { runJob } from './jobs/run-job';
-import { roleOf } from '../shared/history';
+import { recordingFileName, roleOf } from '../shared/history';
 import type { PracticeAction } from '../shared/practice';
 import { createAppWindow } from './windows/app-window';
 import { openCaptureWindow } from './windows/capture-window';
@@ -146,6 +148,7 @@ const session = new SessionController(
     if (alive(overlayWindow)) overlayWindow.webContents.send(IpcChannels.overlayState, state);
     if (state.phase === 'ended') {
       stopHotkeys();
+      endRecording();
       capture.stop();
       selector.cancel();
       // Why it ended stays for the window, which offers minutes after a session they ran out in (F8 · a).
@@ -162,6 +165,7 @@ session.recordTo((event) => recorder?.record(event));
 const history = new HistoryService({
   store: () => store?.history ?? null,
   running: () => recorder?.interviewId ?? null,
+  forgetRecording: (file) => recordings.delete(file),
   job: serverJob,
   changed: (view) => setAppState(view),
 });
@@ -214,15 +218,96 @@ const payments = new PaymentWatch({
   },
 });
 
+// Recordings (3.12, Q51): opt-in, encrypted in userData/recordings under a key of their own, kept with their interview
+// in history. Where this computer can't keep secrets encrypted, there is no key, and no session is recorded.
+const recordings = new Recordings({
+  dir: () => join(app.getPath('userData'), 'recordings'),
+  key: async () => ((await ElectronSecretStore.available()) ? recordingKey(new ElectronSecretStore()) : null),
+});
+const callRecorder = new CallRecorder({
+  place: recordings,
+  history: () => store?.history ?? null,
+  keeping: () => recorder?.interviewId ?? null,
+  failed: () =>
+    showProblem({
+      code: ErrorCodes.Request.Internal,
+      message: "The session's recording stopped early: it couldn't be written. What was recorded is kept in History.",
+    }),
+});
+
 // The call's sound while a session runs (1.11): each frame to the session, which uploads it (1.12), and how capture
-// is going to the overlay (the meter, Q18's warning, a device being reopened).
+// is going to the overlay (the meter, Q18's warning, a device being reopened). While the session is recorded, the
+// recording's frames (the call and the microphone, stereo) go to the recorder, and the overlay's REC says whether the
+// microphone is in it.
 const capture = new AudioCapture({
   open: openCaptureWindow,
   onFrame: (pcm, capturedAtMs) =>
     soundCheck.running ? soundCheck.audio(pcm, capturedAtMs) : session.audio(pcm, capturedAtMs),
   onStatus: (status) =>
     soundCheck.running ? soundCheck.capture(status) : session.dispatch({ type: 'capture', status }),
+  onRecord: (pcm) => callRecorder.write(pcm),
+  onMic: (mic) => {
+    if (callRecorder.running) session.dispatch({ type: 'recording', state: mic === 'on' ? 'on' : 'call-only' });
+  },
 });
+
+/**
+ * Records a live session (3.12, Q51), when Settings says so: only after the consent box this session started behind,
+ * never practice or the sound check, and never the preview. The microphone is asked for now, and only for this.
+ */
+async function startRecording(interviewId: number): Promise<void> {
+  if (await callRecorder.start(interviewId)) {
+    capture.startRecording();
+    // The call alone until the microphone says it is open.
+    session.dispatch({ type: 'recording', state: 'call-only' });
+    return;
+  }
+  showProblem({
+    code: ErrorCodes.Request.Unavailable,
+    message: "This session isn't being recorded: recordings can't be kept encrypted on this computer.",
+  });
+}
+
+/** The recording ends with its session: kept with its interview, or gone if it is under two seconds. */
+function endRecording(): void {
+  capture.stopRecording();
+  if (callRecorder.stop() === null) return;
+  session.dispatch({ type: 'recording', state: 'off' });
+  setAppState({ history: history.list() });
+}
+
+/**
+ * Saves an interview's recording as a stereo WAV where the user chooses (3.12). Never during a session: a save dialog
+ * shows in a share (stealth rule 7). The copy kept here stays encrypted.
+ */
+async function saveRecording(id: number): Promise<CommandResult> {
+  if (session.running) return refusedDuringSession;
+  const interview = store?.history.get(id) ?? null;
+  const kept = store?.history.recordingOf(id) ?? null;
+  if (!interview || !kept || kept.seconds === null) {
+    return { ok: false, code: ErrorCodes.Request.NotFound, message: 'This interview has no recording.' };
+  }
+  const options = {
+    title: 'Save the recording',
+    defaultPath: join(app.getPath('documents'), recordingFileName(interview)),
+    filters: [{ name: 'WAV audio', extensions: ['wav'] }],
+  };
+  const target = alive(appWindow)
+    ? await dialog.showSaveDialog(appWindow, options)
+    : await dialog.showSaveDialog(options);
+  // The client's own code: the window says nothing for it.
+  if (target.canceled || !target.filePath) return { ok: false, code: 'cancelled', message: 'Not saved.' };
+  try {
+    await recordings.saveAs(kept.file, target.filePath);
+    return { ok: true };
+  } catch {
+    return {
+      ok: false,
+      code: ErrorCodes.Request.Internal,
+      message: "The recording couldn't be saved there. Try another folder.",
+    };
+  }
+}
 
 // The first run's sound check (F1 · 4): a short session of its own, heard in the app window, never in the overlay.
 const soundCheck: SoundCheck = new SoundCheck({
@@ -1012,6 +1097,9 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
     return result;
   }
   startHotkeys();
+  // Recording (3.12) starts with listening, after the consent box this session was started behind.
+  const keeping = recorder?.interviewId ?? null;
+  if (!preview && settings.get().keepRecordings && keeping !== null) await startRecording(keeping);
   // Listening starts once the session does: no sound is captured before the server took it on.
   capture.start();
   return result;
@@ -1037,6 +1125,7 @@ function openOverlay(): void {
 /** After an ended session's overlay is closed, or a start that failed: back to the window. */
 function closeSession(): void {
   stopHotkeys();
+  endRecording();
   capture.stop();
   selector.cancel();
   session.reset();
@@ -1220,7 +1309,7 @@ registerAppScheme();
 
 // Development only: the capture path on this computer, checked with nothing shown (scripts/capture-check.mjs).
 if (!app.isPackaged && process.argv.includes('--capture-check')) {
-  runCaptureCheck();
+  runCaptureCheck(undefined, process.argv.includes('--record'));
 } else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -1239,7 +1328,9 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     if (!preview) await createServices();
     store = await openStore();
     settings.restore(store.settings(), (kept) => store?.saveSettings(kept));
-    // An app that quit mid-session may have left an interview that kept nothing.
+    // An app that quit mid-session may have left a recording open, a file no interview holds, or an interview that
+    // kept nothing: recordings are measured or swept first, so an interview that kept only a too-short one goes too.
+    if (!preview) recordings.sweep(store.history);
     store.history.dropEmpty();
     recorder = new HistoryRecorder(store.history, {
       keepTranscripts: () => settings.get().keepTranscripts,
@@ -1289,6 +1380,7 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
       removeBankEntry,
       openInterview: (id) => history.open(id),
       deleteInterview: (id) => history.delete(id),
+      saveRecording,
       clearHistory: () => history.clear(),
       debrief: (id) => history.debrief(id),
       writeDrafts: () => drafts.write(),
@@ -1319,6 +1411,8 @@ if (!app.isPackaged && process.argv.includes('--capture-check')) {
     stopHotkeys();
     void soundCheck.stop();
     void practice.quit();
+    // A recording is sealed and kept before the app goes.
+    endRecording();
     capture.stop();
     if (alive(hidingTestWindow)) hidingTestWindow.destroy();
   });

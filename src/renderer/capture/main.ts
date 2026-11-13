@@ -1,6 +1,8 @@
 // The hidden capture window (1.11), never shown, with no UI and no network. It turns this computer's sound (the
 // output's loopback: the call, as the user hears it) into 24 kHz PCM16 frames of 100 ms, made by the AudioWorklet, and
 // sends them to main through the port main handed over. Main starts and stops it, through `window.sottoCapture`.
+// While a session is recorded (3.12, Q51), it also opens the microphone, and only then: the call and the microphone go
+// through one channel merger in the same graph, on one clock, and come out as stereo frames for the recording.
 import { sampleRate } from '../../shared/audio/frames';
 import { IpcChannels } from '../../shared/ipc-channels';
 import workletUrl from './pcm-worklet.ts?worker&url';
@@ -10,11 +12,23 @@ type ToMain =
   | { type: 'started' }
   | { type: 'frame'; pcm: ArrayBuffer }
   | { type: 'lost'; reason: string }
-  | { type: 'failed'; reason: string };
+  | { type: 'failed'; reason: string }
+  | { type: 'record'; pcm: ArrayBuffer }
+  | { type: 'mic-started' }
+  | { type: 'mic-lost'; reason: string }
+  | { type: 'mic-failed'; reason: string };
 
 let port: MessagePort | null = null;
-let running: { context: AudioContext; stream: MediaStream } | null = null;
+let running: { context: AudioContext; stream: MediaStream; source: MediaStreamAudioSourceNode } | null = null;
 let starting = false;
+
+/** Whether main wants the session recorded; the microphone is open only while it does. */
+let recordingWanted = false;
+let micStream: MediaStream | null = null;
+let micStarting = false;
+/** The recording's part of the graph, on the running context. */
+let recording: { merger: ChannelMergerNode; framer: AudioWorkletNode; mic: MediaStreamAudioSourceNode | null } | null =
+  null;
 
 window.addEventListener('message', (event) => {
   // Only the preload's message, from this page's own window, carries the port.
@@ -65,7 +79,8 @@ async function start(): Promise<void> {
       channelInterpretation: 'speakers',
     });
     framer.port.onmessage = (event: MessageEvent<ArrayBuffer>) => send({ type: 'frame', pcm: event.data });
-    context.createMediaStreamSource(stream).connect(framer);
+    const source = context.createMediaStreamSource(stream);
+    source.connect(framer);
     // Connected so the graph keeps pulling it; it outputs only silence.
     framer.connect(context.destination);
     await context.resume();
@@ -77,8 +92,10 @@ async function start(): Promise<void> {
       stop();
       send({ type: 'lost', reason: 'ended' });
     });
-    running = { context, stream };
+    running = { context, stream, source };
     send({ type: 'started' });
+    // A device reopened while the session is recorded: the recording goes on in the new graph.
+    connectRecording();
   } catch (error) {
     for (const track of stream?.getTracks() ?? []) track.stop();
     stop();
@@ -91,16 +108,110 @@ async function start(): Promise<void> {
 
 function stop(): void {
   if (!running) return;
+  // The microphone stays open across a reopen of the call's device: only the graph goes.
+  recording = null;
   for (const track of running.stream.getTracks()) track.stop();
   void running.context.close();
   running = null;
 }
 
-declare global {
-  interface Window {
-    /** Main's handle, called with a user gesture (`executeJavaScript(…, true)`), which display media asks for. */
-    sottoCapture?: { start(): Promise<void>; stop(): void };
+/**
+ * Records the session (3.12): opens the microphone (the one time it is asked for), then joins the call and it in the
+ * running graph. A microphone that can't be had leaves the call recorded alone, its side silent; main asks again later.
+ */
+async function startRecording(): Promise<void> {
+  recordingWanted = true;
+  if (!micStream && !micStarting) {
+    micStarting = true;
+    try {
+      // As it is, as the call's sound is taken: the recording keeps the voice as it was said.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        video: false,
+      });
+      if (!recordingWanted) {
+        // Stopped while the device opened.
+        for (const track of stream.getTracks()) track.stop();
+      } else {
+        micStream = stream;
+        stream.getAudioTracks()[0]?.addEventListener('ended', () => {
+          if (micStream !== stream) return;
+          dropMic();
+          send({ type: 'mic-lost', reason: 'ended' });
+        });
+        send({ type: 'mic-started' });
+      }
+    } catch (error) {
+      send({ type: 'mic-failed', reason: error instanceof DOMException ? error.name : 'Error' });
+    } finally {
+      micStarting = false;
+    }
+  }
+  connectRecording();
+}
+
+function stopRecording(): void {
+  recordingWanted = false;
+  disconnectRecording();
+  dropMic();
+}
+
+/** Builds the recording's part of the graph on the running context, or adds the microphone to it once it is open. */
+function connectRecording(): void {
+  if (!running || !recordingWanted) return;
+  const { context, source } = running;
+  if (!recording) {
+    // Two mono inputs (each downmixed by the speaker rules, as the server's frames are): the call, the microphone.
+    const merger = context.createChannelMerger(2);
+    const framer = new AudioWorkletNode(context, 'sotto-stereo-framer', {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      channelCount: 2,
+      channelCountMode: 'explicit',
+      channelInterpretation: 'discrete',
+    });
+    framer.port.onmessage = (event: MessageEvent<ArrayBuffer>) => send({ type: 'record', pcm: event.data });
+    source.connect(merger, 0, 0);
+    merger.connect(framer);
+    framer.connect(context.destination);
+    recording = { merger, framer, mic: null };
+  }
+  if (micStream && !recording.mic) {
+    recording.mic = context.createMediaStreamSource(micStream);
+    recording.mic.connect(recording.merger, 0, 1);
   }
 }
 
-window.sottoCapture = { start, stop };
+function disconnectRecording(): void {
+  if (!recording) return;
+  recording.mic?.disconnect();
+  running?.source.disconnect(recording.merger);
+  recording.merger.disconnect();
+  recording.framer.port.onmessage = null;
+  recording.framer.disconnect();
+  recording = null;
+}
+
+function dropMic(): void {
+  if (recording?.mic) {
+    recording.mic.disconnect();
+    recording.mic = null;
+  }
+  for (const track of micStream?.getTracks() ?? []) track.stop();
+  micStream = null;
+}
+
+declare global {
+  interface Window {
+    /** Main's handle, called with a user gesture (`executeJavaScript(…, true)`), which display media asks for. */
+    sottoCapture?: {
+      start(): Promise<void>;
+      stop(): void;
+      startRecording(): Promise<void>;
+      stopRecording(): void;
+    };
+  }
+}
+
+window.sottoCapture = { start, stop, startRecording, stopRecording };

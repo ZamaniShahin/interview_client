@@ -236,6 +236,7 @@ describe('history, as kept on this computer (3.9, backend docs/07 §5)', () => {
       lines: 1,
       hasDebrief: false,
       average: null,
+      recordingSeconds: null,
       practice: null,
       qa: [
         {

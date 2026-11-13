@@ -21,7 +21,7 @@ Kept in an encrypted local database, whose key the operating system protects. It
 | The answer bank (prepared answers, each with its phrasings and whether it's enabled) | always |
 | The documents: résumé, job description, prep doc | always |
 | Settings: name, notes, custom instructions, coach on or off, save transcripts or not… | always |
-| Recordings, as audio files | **only if the user turns recording on** (off by default, [Consent](#consent)) |
+| Recordings, as audio files: the call on the left, the microphone on the right | **only if the user turns recording on** (off by default, [Consent](#consent)); each kept encrypted with its interview, written out as a WAV only when the user saves it, where they choose |
 
 The user can delete one interview or all of them, and export an interview as an HTML report.
 
@@ -81,7 +81,7 @@ How it works:
   - It is asked **every time**, and never remembered.
   - It is **skipped for practice**: no one else is on the call.
   - The wording waits for legal review, like the notice.
-- **Recording is off by default.** When the user turns it on (after the checkbox), the app records the call, both sides, to audio files on the device. Nothing recorded leaves the device.
+- **Recording is off by default.** When the user turns it on (after the checkbox), the app records the call, both sides, to audio files on the device. Nothing recorded leaves the device. The microphone is opened for it only while a session is recorded, and the overlay shows REC meanwhile.
 - **The microphone never leaves the device.** It feeds only:
   - the on-device coach;
   - the echo gate, which keeps the interviewer's voice out of the coach;

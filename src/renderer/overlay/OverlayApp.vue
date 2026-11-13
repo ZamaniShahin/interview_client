@@ -157,6 +157,7 @@ function confirm(): void {
       :disabled="controlsDisabled"
       :minutes-left="s.minutesLeft"
       :tier="s.tier"
+      :recording="s.recording"
       @set-auto="(auto) => live.command({ type: 'setMode', auto, paused: null })"
       @toggle-pause="live.command({ type: 'setMode', auto: null, paused: !s.paused })"
       @set-interview-type="setInterviewType"

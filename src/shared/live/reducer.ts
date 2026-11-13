@@ -28,6 +28,7 @@ import {
   type CaptureStatus,
   type Listening,
   type LiveViewState,
+  type RecordingState,
   type Tier,
 } from './view-state';
 
@@ -64,7 +65,9 @@ export type LiveAction =
   /** The question an answer started for matched one of the user's prepared answers, on this computer (3.8). */
   | { type: 'prepared'; answerId: string; phrasing: string; answer: string }
   /** The session ended without a `SessionEnded` event: it couldn't be resumed in time, or the server said it expired. */
-  | { type: 'ended'; reason: string };
+  | { type: 'ended'; reason: string }
+  /** This computer records the session, or stopped (3.12): main's word, never the server's. */
+  | { type: 'recording'; state: RecordingState };
 
 export function reduceLive(state: LiveViewState, action: LiveAction): LiveViewState {
   switch (action.type) {
@@ -95,6 +98,8 @@ export function reduceLive(state: LiveViewState, action: LiveAction): LiveViewSt
       }));
     case 'ended':
       return state.phase === 'ended' ? state : endSession(state, action.reason);
+    case 'recording':
+      return { ...state, recording: action.state };
   }
 }
 

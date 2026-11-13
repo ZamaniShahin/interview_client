@@ -108,7 +108,11 @@ const frosted = windowGlass() === 'frosted';
           label="Keep recordings"
           @update:model-value="(keepRecordings) => update({ keepRecordings })"
         />
-        <p class="small">Both off by default, encrypted, never sent anywhere.</p>
+        <p class="small">
+          Both off by default, encrypted, never sent anywhere. A recording keeps the call on the left and your
+          microphone on the right, which is used only while a session is recorded; each is saved as a WAV from History
+          when you ask. It starts with your next session.
+        </p>
 
         <p class="eyebrow section">Hotkeys</p>
         <HotkeySettings :changed="settings.hotkeys" @save="(hotkeys) => update({ hotkeys })" />

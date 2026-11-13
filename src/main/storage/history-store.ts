@@ -36,6 +36,7 @@ interface SummaryRow {
   lines: number;
   has_debrief: number;
   average: number | null;
+  recording_seconds: number | null;
 }
 
 interface TurnRow {
@@ -67,6 +68,7 @@ function summaryOf(row: SummaryRow): InterviewSummary {
     lines: row.lines,
     hasDebrief: row.has_debrief === 1,
     average: row.average,
+    recordingSeconds: row.recording_seconds,
   };
 }
 
@@ -96,15 +98,20 @@ const summaryQuery = `
          END AS answers,
          (SELECT COUNT(*) FROM transcript t WHERE t.interview_id = i.id) AS lines,
          EXISTS (SELECT 1 FROM debriefs d WHERE d.interview_id = i.id) AS has_debrief,
-         (SELECT pr.average FROM practices pr WHERE pr.interview_id = i.id) AS average
+         (SELECT pr.average FROM practices pr WHERE pr.interview_id = i.id) AS average,
+         (SELECT r.seconds FROM recordings r WHERE r.interview_id = i.id) AS recording_seconds
   FROM interviews i`;
 
-/** What makes an interview or a practice worth keeping: an answer, a line, a debrief, or a practice's question. */
+/**
+ * What makes an interview or a practice worth keeping: an answer, a line, a debrief, a practice's question, or a
+ * recording (one being written included: it is measured when it ends, and dropped then if it is too short).
+ */
 const keepsSomething = `
   (EXISTS (SELECT 1 FROM qa WHERE interview_id = interviews.id)
    OR EXISTS (SELECT 1 FROM transcript WHERE interview_id = interviews.id)
    OR EXISTS (SELECT 1 FROM debriefs WHERE interview_id = interviews.id)
-   OR EXISTS (SELECT 1 FROM practice_turns WHERE interview_id = interviews.id))`;
+   OR EXISTS (SELECT 1 FROM practice_turns WHERE interview_id = interviews.id)
+   OR EXISTS (SELECT 1 FROM recordings WHERE interview_id = interviews.id))`;
 
 export class HistoryStore {
   constructor(private readonly db: LocalDatabase) {}
@@ -261,6 +268,42 @@ export class HistoryStore {
       )
       .run(id, iso(createdAt), JSON.stringify(debrief));
     return true;
+  }
+
+  /** A recording starts for an interview (3.12): its file, noted before any audio is written. */
+  startRecording(id: number, file: string, startedAt: number): void {
+    this.db
+      .prepare('INSERT INTO recordings (interview_id, file, started_at) VALUES (?, ?, ?)')
+      .run(id, file, iso(startedAt));
+  }
+
+  /** The recording ended: how long it is. */
+  finishRecording(id: number, seconds: number): void {
+    this.db.prepare('UPDATE recordings SET seconds = ? WHERE interview_id = ?').run(seconds, id);
+  }
+
+  /** The recording goes from history (its file is the caller's to delete). */
+  dropRecording(id: number): void {
+    this.db.prepare('DELETE FROM recordings WHERE interview_id = ?').run(id);
+  }
+
+  /** An interview's recording: its file and length (null while it is written), or null for none. */
+  recordingOf(id: number): { file: string; seconds: number | null } | null {
+    const row = this.db.prepare('SELECT file, seconds FROM recordings WHERE interview_id = ?').get(id) as
+      | { file: string; seconds: number | null }
+      | undefined;
+    return row ?? null;
+  }
+
+  /** Every recording history holds, for the sweep at start. */
+  recordingFiles(): { interviewId: number; file: string; seconds: number | null }[] {
+    return (
+      this.db.prepare('SELECT interview_id, file, seconds FROM recordings ORDER BY interview_id').all() as {
+        interview_id: number;
+        file: string;
+        seconds: number | null;
+      }[]
+    ).map((row) => ({ interviewId: row.interview_id, file: row.file, seconds: row.seconds }));
   }
 
   /** Deletes an interview and all it holds. */

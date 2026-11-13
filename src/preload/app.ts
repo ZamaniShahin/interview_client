@@ -29,6 +29,7 @@ const api: AppApi = {
   deleteInterview: (id) => ipcRenderer.invoke(IpcChannels.appDeleteInterview, id),
   clearHistory: () => ipcRenderer.invoke(IpcChannels.appClearHistory),
   debrief: (id) => ipcRenderer.invoke(IpcChannels.appDebrief, id),
+  saveRecording: (id) => ipcRenderer.invoke(IpcChannels.appSaveRecording, id),
   copy: (text) => ipcRenderer.send(IpcChannels.appCopy, text),
   writeDrafts: () => ipcRenderer.invoke(IpcChannels.appWriteDrafts),
   keepDraft: (id) => ipcRenderer.invoke(IpcChannels.appKeepDraft, id),

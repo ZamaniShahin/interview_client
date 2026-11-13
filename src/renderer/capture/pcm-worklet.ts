@@ -1,7 +1,7 @@
 // Runs on the audio thread (1.11): the call's sound in, already at 24 kHz (the AudioContext's rate), 100 ms PCM16
 // frames out to the capture page. Each frame's buffer is transferred, not copied. It writes nothing to its output, so
 // the graph plays silence: no sound during a live session (CLAUDE.md, rule 9).
-import { PcmFramer } from '../../shared/audio/frames';
+import { PcmFramer, StereoFramer } from '../../shared/audio/frames';
 
 /** One render quantum of silence: Chromium's blocks are 128 samples. */
 const quiet = new Float32Array(128);
@@ -20,3 +20,20 @@ class PcmFramerProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('sotto-pcm-framer', PcmFramerProcessor);
+
+/**
+ * The recording's frames (3.12, Q51): the call on the left and the microphone on the right, from a channel merger in
+ * the same graph, so the two keep one clock and line up to the sample. It too writes nothing to its output.
+ */
+class StereoFramerProcessor extends AudioWorkletProcessor {
+  private readonly framer = new StereoFramer();
+
+  override process(inputs: Float32Array[][]): boolean {
+    const input = inputs[0];
+    for (const frame of this.framer.push(input?.[0] ?? quiet, input?.[1] ?? quiet))
+      this.port.postMessage(frame.buffer, [frame.buffer]);
+    return true;
+  }
+}
+
+registerProcessor('sotto-stereo-framer', StereoFramerProcessor);

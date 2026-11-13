@@ -17,6 +17,8 @@ export interface HistoryServiceDependencies {
   job: (path: string, body: unknown) => Promise<unknown>;
   /** The list, or the debriefs being written, changed. */
   changed: (view: { history: InterviewSummary[]; debriefing: number[] }) => void;
+  /** Deletes a recording's file (3.12): it goes with its interview. */
+  forgetRecording?: (file: string) => void;
   now?: () => number;
 }
 
@@ -55,7 +57,7 @@ export class HistoryService {
     if (this.deps.running() === id) {
       return { ok: false, code: ErrorCodes.Session.AlreadyInSession, message: 'This interview is still running.' };
     }
-    store.delete(id);
+    this.remove(store, id);
     this.announce();
     return { ok: true };
   }
@@ -65,9 +67,16 @@ export class HistoryService {
     const store = this.deps.store();
     if (!store) return noHistory;
     const running = this.deps.running();
-    for (const interview of store.list()) if (interview.id !== running) store.delete(interview.id);
+    for (const interview of store.list()) if (interview.id !== running) this.remove(store, interview.id);
     this.announce();
     return { ok: true };
+  }
+
+  /** An interview and all it holds, its recording's file too. */
+  private remove(store: HistoryStore, id: number): void {
+    const recording = store.recordingOf(id);
+    store.delete(id);
+    if (recording) this.deps.forgetRecording?.(recording.file);
   }
 
   /** Asks the server for the interview's debrief, and keeps it with the interview. Answers once it is kept. */

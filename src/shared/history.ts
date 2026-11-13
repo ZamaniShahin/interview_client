@@ -28,6 +28,11 @@ export interface InterviewSummary {
   hasDebrief: boolean;
   /** A practice's average score, as its summary gave it; null for an interview, or a practice that had none. */
   average: number | null;
+  /**
+   * The interview's recording (3.12), in seconds, kept encrypted on this computer; null or absent for none, and while
+   * it is still being recorded.
+   */
+  recordingSeconds?: number | null;
 }
 
 /** One question and the answer it got, as the overlay showed it. */
@@ -225,4 +230,29 @@ export function debriefRequestOf(interview: InterviewView): DebriefRequest | nul
 export function roleOf(jobDescription: string): string {
   const first = jobDescription.split('\n').find((line) => line.trim() !== '') ?? '';
   return cut(first.trim(), 120);
+}
+
+/** A recording's length as a clock reads it: 0:07, 12:34, or 1:02:03 past an hour. */
+export function recordingLength(seconds: number): string {
+  const whole = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
+  const h = Math.floor(whole / 3600);
+  const m = Math.floor((whole % 3600) / 60);
+  const s = String(whole % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+/** Characters a file name can't hold on Windows (or macOS), and control characters. */
+// eslint-disable-next-line no-control-regex
+const unsafeInName = /[<>:"/\\|?*\u0000-\u001f\u007f]/g;
+
+/**
+ * The name a saved recording is offered under (3.12): "Sotto – <role> – <date> <time>.wav", in the computer's own time,
+ * with what a file name can't hold taken out, and never more than 120 characters.
+ */
+export function recordingFileName(interview: Pick<InterviewSummary, 'role' | 'startedAt'>): string {
+  const at = new Date(interview.startedAt);
+  const two = (n: number) => String(n).padStart(2, '0');
+  const when = `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())} ${two(at.getHours())}.${two(at.getMinutes())}`;
+  const role = cut(interview.role.replace(unsafeInName, ' ').replace(/\s+/g, ' ').trim(), 80).replace(/[. ]+$/, '');
+  return `${['Sotto', role || 'Interview', when].join(' – ')}.wav`;
 }

@@ -74,6 +74,12 @@ export interface Attachments {
   max: number;
 }
 
+/**
+ * Whether this computer records the session (3.12, Q51): off; on, the call and the microphone; or the call alone while
+ * the microphone can't be had. Main says so: the recording is this computer's, never the server's.
+ */
+export type RecordingState = 'off' | 'on' | 'call-only';
+
 export interface LiveViewState {
   phase: Phase;
   auto: boolean;
@@ -110,6 +116,8 @@ export interface LiveViewState {
   interviewType: InterviewType;
   /** The line to say while the answer loads, or null (Q47's gap fillers). */
   gapFiller: GapFillerView | null;
+  /** This computer's recording of the session (3.12): the strip's REC mark. */
+  recording: RecordingState;
   /**
    * The practice interview, when the session runs one (the server's 3.3): where it is, its questions with their
    * answers and feedback, and its summary once it ends. The Practice page draws it; the overlay never runs one.
@@ -139,6 +147,7 @@ export const initialLiveState: LiveViewState = {
   // v1's default, and the server's until the client says otherwise.
   interviewType: InterviewTypes.Technical,
   gapFiller: null,
+  recording: 'off',
   practice: idlePracticeSlice,
   lastSeq: 0,
 };

@@ -261,6 +261,7 @@ describe('history, for the app window only (3.9)', () => {
     [IpcChannels.appOpenInterview, 'openInterview'],
     [IpcChannels.appDeleteInterview, 'deleteInterview'],
     [IpcChannels.appDebrief, 'debrief'],
+    [IpcChannels.appSaveRecording, 'saveRecording'],
   ])('passes %s an interview named by its id', async (channel, dep) => {
     await invoke(channel, appId, 42);
     expect(calls[dep]).toEqual([[42]]);
@@ -272,7 +273,8 @@ describe('history, for the app window only (3.9)', () => {
       expect(await invoke(IpcChannels.appOpenInterview, appId, id)).toBeNull();
       expect(await invoke(IpcChannels.appDeleteInterview, appId, id)).toEqual(invalid);
       expect(await invoke(IpcChannels.appDebrief, appId, id)).toEqual(invalid);
-      expect(calls.openInterview ?? calls.deleteInterview ?? calls.debrief).toBeUndefined();
+      expect(await invoke(IpcChannels.appSaveRecording, appId, id)).toEqual(invalid);
+      expect(calls.openInterview ?? calls.deleteInterview ?? calls.debrief ?? calls.saveRecording).toBeUndefined();
     },
   );
 
@@ -281,6 +283,8 @@ describe('history, for the app window only (3.9)', () => {
     expect(await invoke(IpcChannels.appDeleteInterview, overlayId, 1)).toEqual(invalid);
     expect(await invoke(IpcChannels.appClearHistory, overlayId)).toEqual(invalid);
     expect(await invoke(IpcChannels.appDebrief, overlayId, 1)).toEqual(invalid);
+    // A recording is saved from History only: never from the overlay, which runs during a call.
+    expect(await invoke(IpcChannels.appSaveRecording, overlayId, 1)).toEqual(invalid);
     expect(Object.keys(calls)).toEqual([]);
   });
 

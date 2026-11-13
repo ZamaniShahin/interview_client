@@ -77,7 +77,7 @@ export function openCaptureWindow(): CaptureChannel {
   });
 
   // Display media asks for a user gesture; `executeJavaScript(…, true)` gives the call one.
-  const call = (what: 'start' | 'stop') =>
+  const call = (what: 'start' | 'stop' | 'startRecording' | 'stopRecording') =>
     void ready
       .then(() =>
         win.isDestroyed() ? undefined : win.webContents.executeJavaScript(`void window.sottoCapture?.${what}()`, true),
@@ -87,6 +87,9 @@ export function openCaptureWindow(): CaptureChannel {
   return {
     start: () => call('start'),
     stop: () => call('stop'),
+    // The microphone, for a recorded session only (3.12): the window's session allows `media`, which covers it.
+    startRecording: () => call('startRecording'),
+    stopRecording: () => call('stopRecording'),
     onMessage: (listener) => listeners.push(listener),
     close: () => {
       port2.close();
