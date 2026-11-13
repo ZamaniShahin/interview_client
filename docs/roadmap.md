@@ -111,6 +111,8 @@ Tests, deep round over 3.6, 3.8 and 3.10 (2026-11-11, `a46422b`, branch `feature
 
 Tests, deep round over 3.9, 3.13 and 4.1 (2026-11-11, `cb3befb`, branch `feature/deep-round-3.9-3.13-4.1`): every feature mapped and triggered again, widened with data points at and past each limit, every outcome given a test; 226 tests more (1,867 in all). No defect found, no product code changed. The screenshot selector's flaky app test (decisions §21) stays recorded.
 
+Tests, deep round over DPoP, the interview type, gap fillers and no auto-scroll (2026-11-13, `c7c9f07`, branch `feature/deep-round-q47-q52`, on `feature/no-auto-scroll`): 80 random streams of events through the overlay's state against a model of the rules, every outcome of the line and the type shown to occur, the strip in all 480 of its states, 30 random scroll runs on an answer, 40 random DPoP requests; 631 tests more (2,930 in all). No defect found, no product code changed.
+
 ## Phase 4: ready for launch
 
 - [x] **4.1 Hardening** (2026-11-11, `9f47f02`, branch `feature/hardening`, on 3.13's; checked with the unit tests, the app tests, the capture check, and a packaged build checked by `scripts/package-check.mjs` and `scripts/asar-pages-check.mjs`):
