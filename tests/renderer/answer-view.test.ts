@@ -188,13 +188,23 @@ describe('a long answer (1.13)', () => {
     return { wrapper, body, scrollTo };
   };
 
-  it('follows the newest line while the reader is at the bottom', async () => {
+  // v1 0.4.0 (backend Q47): the answer never follows the stream; it stays where the reader is.
+  it.each([0, 100, 400, 790])('stays where the reader is (%i) as the answer grows', async (top) => {
     const { wrapper, body, scrollTo } = card();
+    await scrollTo(top);
+
+    await wrapper.setProps({ answer: answer('First. Then more.') });
+    await wrapper.setProps({ answer: answer('First. Then more. And more.') });
+
+    expect(body.scrollTop).toBe(top);
+  });
+
+  it('says nothing of new text while the reader is at the bottom: it is in view', async () => {
+    const { wrapper, scrollTo } = card();
     await scrollTo(800);
 
     await wrapper.setProps({ answer: answer('First. Then more.') });
 
-    expect(body.scrollTop).toBe(1000);
     expect(wrapper.find('.below').exists()).toBe(false);
   });
 
@@ -208,16 +218,20 @@ describe('a long answer (1.13)', () => {
     expect(wrapper.find('.below').text()).toBe('New text below');
   });
 
-  it('takes the reader down to the new text, and follows again', async () => {
+  it('takes the reader down to the new text once, and never follows from there', async () => {
     const { wrapper, body, scrollTo } = card();
     await scrollTo(100);
     await wrapper.setProps({ answer: answer('First. Then more.') });
 
     await wrapper.find('.below').trigger('click');
-    await wrapper.setProps({ answer: answer('First. Then more. And more.') });
-
     expect(body.scrollTop).toBe(1000);
     expect(wrapper.find('.below').exists()).toBe(false);
+
+    // The reader was taken down by hand, once; as they read on up there, the answer stays put.
+    await scrollTo(500);
+    await wrapper.setProps({ answer: answer('First. Then more. And more.') });
+    expect(body.scrollTop).toBe(500);
+    expect(wrapper.find('.below').exists()).toBe(true);
   });
 
   it('lets the offer go once the reader scrolls back down', async () => {
@@ -230,7 +244,7 @@ describe('a long answer (1.13)', () => {
     expect(wrapper.find('.below').exists()).toBe(false);
   });
 
-  it('starts another answer at its top, followed', async () => {
+  it('starts another answer at its top', async () => {
     const { wrapper, body, scrollTo } = card();
     await scrollTo(100);
     await wrapper.setProps({ answer: answer('First. Then more.') });

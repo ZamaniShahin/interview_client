@@ -60,7 +60,7 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 - ~~The tray only during a session~~: Shahin chose otherwise on 2026-11-09 (Q16). During a session there is neither a taskbar button nor a tray icon, as in v1, so the app is reached only by its hotkeys.
 - **The status strip** has two rows: the bar (state, listening, More) and the strip (AUTO/MANUAL, pause, TECH/INTRO since 2026-11-13, minutes, tier).
 - **Hotkeys:** Ctrl+Enter (settled), plus Ctrl+Shift with Space, A, P, ←/→, M and H.
-- **A long answer** follows the newest line only while you are at the bottom; otherwise "New text below" is offered.
+- **A long answer** never follows the stream (since 2026-11-13, v1 0.4.0): it opens at its top and stays where you are; text arriving out of view below is offered with "New text below".
 - **The listening meter** sits beside "Listening" (Q18).
 
 ## Where each part is drawn

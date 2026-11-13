@@ -3,8 +3,9 @@
 // hidden. What it showed stays, except a hidden answer, whose text is already gone from the state. The user's own
 // prepared answer (📌) stays even then: it is theirs, matched on this computer, never the model's.
 //
-// A long answer follows its newest line only while the reader is at the bottom (design.md). Scrolled up, they keep
-// their place, and "New text below" offers the way back down.
+// An answer never follows the stream down (v1 0.4.0, backend Q47): it opens at its top and stays where the reader
+// is while they read it out, and a scroll made by hand is kept. Text that arrives out of view below is offered with
+// "New text below", which takes the reader there once.
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { AnswerView } from '../../../shared/live/view-state';
 import SButton from '../../shared/components/SButton.vue';
@@ -33,41 +34,34 @@ const props = defineProps<{
 const emit = defineEmits<{ previous: []; next: []; live: []; retry: []; attach: [id: string] }>();
 
 const body = ref<HTMLElement | null>(null);
-/** At the bottom: what arrives scrolls into view. */
-const following = ref(true);
-/** Scrolled up while the answer grew below. */
+/** The answer grew out of view below the reader. */
 const newBelow = ref(false);
 
 /** Within a line of the bottom counts as at the bottom. */
 const atBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < 24;
 
 function onScroll(): void {
-  if (!body.value) return;
-  following.value = atBottom(body.value);
-  if (following.value) newBelow.value = false;
+  if (body.value && atBottom(body.value)) newBelow.value = false;
 }
 
-/** The answer grew: by its text, or by a diagram that finished drawing. */
+/** The answer grew, by its text or by a diagram that finished drawing: it never moves, it says so if out of view. */
 function grew(): void {
   const el = body.value;
-  if (!el) return;
-  if (following.value) el.scrollTop = el.scrollHeight;
-  else if (!atBottom(el)) newBelow.value = true;
+  if (el && !atBottom(el)) newBelow.value = true;
 }
 
+/** Down to the newest text, once: the answer doesn't follow from there. */
 function showNewText(): void {
   if (body.value) body.value.scrollTop = body.value.scrollHeight;
-  following.value = true;
   newBelow.value = false;
 }
 
 watch(() => props.answer.text, grew, { flush: 'post' });
 
-// Another answer on screen (looking back, or a new question): it starts at its top, followed.
+// Another answer on screen (looking back, or a new question): it starts at its top.
 watch(
   () => props.answer.id,
   () => {
-    following.value = true;
     newBelow.value = false;
     if (body.value) body.value.scrollTop = 0;
   },

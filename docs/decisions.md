@@ -120,7 +120,7 @@ The packages are Shahin's call (§1, 2026-11-09): highlight.js 11.12.0, Mermaid 
 | 2026-11-09 | **Tighter flowcharts than Mermaid's own** (node spacing 22, rank spacing 26, padding 8) at 14 px: a drawing wider than the overlay is scaled down to fit, and five boxes left to right came out at half size, too small to read during a call |
 | 2026-11-09 | **Mermaid's SVG is sanitized again**: no `<title>` (a tooltip, stealth rule 2), no links, no `foreignObject`, no scripts or images, no `title` or `href` attributes. The preview's diagram names an `accTitle`, so the app tests see a real `<title>` dropped |
 | 2026-11-09 | **Sanitizing leads with an invisible character** (U+2063), taken off after: under happy-dom, DOMPurify unwraps a fragment's first element, which Chromium never does, and the renderer tests should see what the app sees. happy-dom's DOMPurify also skips inside SVG, so the SVG is checked in the app tests |
-| 2026-11-09 | **A long answer follows its newest line while the reader is within 24 px of the bottom**, a diagram finishing included. Scrolled up, the reader keeps their place and "New text below" offers the way down; taking it follows again. Another answer on screen starts at its top |
+| 2026-11-09 | ~~**A long answer follows its newest line while the reader is within 24 px of the bottom**, a diagram finishing included. Scrolled up, the reader keeps their place and "New text below" offers the way down; taking it follows again. Another answer on screen starts at its top~~ Superseded on 2026-11-13 (§29): an answer never follows the stream |
 | 2026-11-09 | **The rounded corners: Windows 11's own**, 8 px. Checked on build 26200: Electron 45 rounds frameless windows, resizable or not (`roundedCorners`, now set explicitly). The canvas's 12 px would need a transparent window, without the system's shadow, for 4 px more. Windows 10 shows square corners. The 2026-11-06 row (§2), which took them for square, was wrong on Windows 11 |
 | 2026-11-09 | **The `trayOnly` setting is gone** (Q16 settled it): during a session there is neither a taskbar button nor a tray icon, so there was nothing to choose. The overlay always skips the taskbar, and a source test holds it |
 | 2026-11-09 | **The app tests** (`tests/app`, `node scripts/app-tests.mjs`) drive the built app's own windows with Playwright against the preview, the stand-in for the hub. They cover Mermaid under the app's Content Security Policy, the sanitized SVG, code colors and the clipboard (borrowed and given back), the stealth rules at run time, and the display affinity. Windows only. They leave a preview build in `out/` |
@@ -325,6 +325,12 @@ Built in Shahin's unattended run ("anything left before deployment", 2026-11-10 
 | Date | Decision |
 |---|---|
 | 2026-11-13 | **Installs skip install scripts: `npm ci --ignore-scripts`, then `npx install-electron`** (README, "Getting started"; Shahin chose to record it, 2026-11-13). On a computer without Visual Studio's C++ tools, `npm ci` failed: better-sqlite3-multiple-ciphers carries a `binding.gyp`, so npm runs node-gyp for it although its prebuilt binaries ship in the package (§9's row said nothing compiles; nothing needs to, but npm tries). With scripts skipped the prebuilt binary loads, in Node and in Electron. Only two other packages have install scripts, per the lockfile: electron-winstaller (Squirrel; the app builds NSIS) and fsevents (macOS). Electron 45's binary comes from `install-electron`, which `npm run dev` and `npm start` already run first. Not chosen: `ignore-scripts=true` in `.npmrc`, which would also stop `npm run dev` running its `predev` |
+
+## 29. Taken in session on 2026-11-13, no auto-scroll (backend Q47; open to revision)
+
+| Date | Decision |
+|---|---|
+| 2026-11-13 | **An answer never follows the stream down** (v1 0.4.0, Shahin's Q47 answer: port all of it). It opens at its top and stays where the reader is while they read it out; a scroll made by hand is kept. Text arriving out of view below still shows "New text below", which takes the reader there once, and the answer doesn't follow from there. Another answer on screen starts at its top. This supersedes the 2026-11-09 row above |
 
 ## 28. Taken in session on 2026-11-13, gap fillers (backend Q47; open to revision)
 
