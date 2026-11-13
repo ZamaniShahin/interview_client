@@ -113,6 +113,8 @@ Tests, deep round over 3.9, 3.13 and 4.1 (2026-11-11, `cb3befb`, branch `feature
 
 Tests, deep round over DPoP, the interview type, gap fillers and no auto-scroll (2026-11-13, `c7c9f07`, branch `feature/deep-round-q47-q52`, on `feature/no-auto-scroll`): 80 random streams of events through the overlay's state against a model of the rules, every outcome of the line and the type shown to occur, the strip in all 480 of its states, 30 random scroll runs on an answer, 40 random DPoP requests; 631 tests more (2,930 in all). No defect found, no product code changed.
 
+Tests, deep round over recording (2026-11-13, branch `feature/deep-round-recording`, on `feature/recording`): 40 random lives of recordings against a model of the rules, on a real history and a real folder (sessions of random lengths, under two seconds and over answered interviews, frames of the wrong size, the session's end in either order, a new start over a running one, deletes one at a time and all at once, restarts, saves as WAVs), the folder, history and the model agreeing after every step and every kept recording read back frame for frame; 40 random interleavings of capture and recording; every outcome of each shown to occur; 83 tests more (3,178 in all). One fix: a recording asked for before a capture that never started survived the capture's stop, so the next capture (the sound check's, say) would have opened the microphone; the stop now always ends it.
+
 ## Phase 4: ready for launch
 
 - [x] **4.1 Hardening** (2026-11-11, `9f47f02`, branch `feature/hardening`, on 3.13's; checked with the unit tests, the app tests, the capture check, and a packaged build checked by `scripts/package-check.mjs` and `scripts/asar-pages-check.mjs`):

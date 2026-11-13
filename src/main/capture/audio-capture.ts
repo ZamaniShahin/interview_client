@@ -106,13 +106,14 @@ export class AudioCapture {
   }
 
   stop(): void {
+    // The recording ends with the capture, one asked for before a capture that never started too: the next capture
+    // (a session's, or the sound check's) decides anew, so the microphone never opens for one that isn't recorded.
+    this.recording = false;
+    this.clear('mic');
     // Already stopped: nothing to report, or a caller reacting to the idle status would loop.
     if (!this.channel && this.status === idleCapture) return;
     this.clear('reopen');
     this.clear('tick');
-    this.clear('mic');
-    // The recording ends with the capture: a next session decides anew.
-    this.recording = false;
     const channel = this.channel;
     this.channel = null;
     channel?.stop();

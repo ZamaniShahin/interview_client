@@ -316,6 +316,19 @@ describe('the recording in main (3.12)', () => {
     expect(h.windows[1]!.recordingStarts).toBe(1);
   });
 
+  it('forgets a recording asked for before a capture that never started, so the next one opens no microphone', () => {
+    // Found by the deep round: stop() returned early when nothing ran, and kept the recording for the next capture,
+    // which may be the sound check's.
+    const h = harness();
+    h.capture.startRecording();
+
+    h.capture.stop();
+    h.capture.start();
+
+    expect(h.capture.recordingOn).toBe(false);
+    expect(h.windows[0]!.recordingStarts).toBe(0);
+  });
+
   it('hands only whole stereo frames to the recorder, and only while recording', () => {
     const h = harness();
     h.capture.start();
