@@ -25,6 +25,16 @@ export type AnswerEnding = 'writing' | 'done' | 'stopped' | 'failed' | 'hidden';
 
 export type Tier = 'fast' | 'smart';
 
+/**
+ * A line to say while the answer loads (backend Q47, v1's gap filler): up the moment a question is sent. `answerId` is
+ * the answer that claimed it (the next to start): that answer's first text, or its end, takes it down; an older
+ * answer's text never does.
+ */
+export interface GapFillerView {
+  text: string;
+  answerId: Guid | null;
+}
+
 /** The interview's type (Q47): `intro` or `technical`, as the contract spells them. */
 export type { InterviewType };
 
@@ -98,6 +108,8 @@ export interface LiveViewState {
    * (Q47). The strip's TECH / INTRO switch shows this, so it flips on the server's word, as v1's header did.
    */
   interviewType: InterviewType;
+  /** The line to say while the answer loads, or null (Q47's gap fillers). */
+  gapFiller: GapFillerView | null;
   /**
    * The practice interview, when the session runs one (the server's 3.3): where it is, its questions with their
    * answers and feedback, and its summary once it ends. The Practice page draws it; the overlay never runs one.
@@ -126,6 +138,7 @@ export const initialLiveState: LiveViewState = {
   tier: null,
   // v1's default, and the server's until the client says otherwise.
   interviewType: InterviewTypes.Technical,
+  gapFiller: null,
   practice: idlePracticeSlice,
   lastSeq: 0,
 };

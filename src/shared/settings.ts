@@ -30,6 +30,8 @@ export const settingsSchema = z.object({
    * session starts, kept for the next one, as v1 kept it across a restart and a new interview.
    */
   interviewType: z.enum(['technical', 'intro']),
+  /** A line to say while the answer loads (Q47, v1's gap fillers, on by default): sent with each session. */
+  gapFillers: z.boolean(),
   /** The hotkeys the user changed (3.13): only those, over the defaults. A set where two clash, or one can't stand, isn't one. */
   hotkeys: hotkeyOverridesSchema.refine(
     (changed) => Object.keys(hotkeyProblems(effectiveHotkeys(changed))).length === 0,
@@ -51,5 +53,6 @@ export const defaultSettings: Settings = {
   keepTranscripts: false,
   keepRecordings: false,
   interviewType: 'technical',
+  gapFillers: true,
   hotkeys: {},
 };

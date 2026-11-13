@@ -80,13 +80,34 @@ const frosted = windowGlass() === 'frosted';
         </p>
 
         <p class="eyebrow section">During a session</p>
-        <SSwitch :model-value="settings.startCompact" label="Start in compact view" @update:model-value="(startCompact) => update({ startCompact })" />
+        <SSwitch
+          :model-value="settings.startCompact"
+          label="Start in compact view"
+          @update:model-value="(startCompact) => update({ startCompact })"
+        />
+        <SSwitch
+          :model-value="settings.gapFillers"
+          label="Gap fillers"
+          @update:model-value="(gapFillers) => update({ gapFillers })"
+        />
+        <p class="small">
+          A line to say while an answer loads, picked for the question, never the same twice; the answer carries on from
+          it.
+        </p>
       </div>
 
       <div class="col">
         <p class="eyebrow">Kept on this computer</p>
-        <SSwitch :model-value="settings.keepTranscripts" label="Keep transcripts" @update:model-value="(keepTranscripts) => update({ keepTranscripts })" />
-        <SSwitch :model-value="settings.keepRecordings" label="Keep recordings" @update:model-value="(keepRecordings) => update({ keepRecordings })" />
+        <SSwitch
+          :model-value="settings.keepTranscripts"
+          label="Keep transcripts"
+          @update:model-value="(keepTranscripts) => update({ keepTranscripts })"
+        />
+        <SSwitch
+          :model-value="settings.keepRecordings"
+          label="Keep recordings"
+          @update:model-value="(keepRecordings) => update({ keepRecordings })"
+        />
         <p class="small">Both off by default, encrypted, never sent anywhere.</p>
 
         <p class="eyebrow section">Hotkeys</p>

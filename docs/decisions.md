@@ -326,6 +326,14 @@ Built in Shahin's unattended run ("anything left before deployment", 2026-11-10 
 |---|---|
 | 2026-11-13 | **Installs skip install scripts: `npm ci --ignore-scripts`, then `npx install-electron`** (README, "Getting started"; Shahin chose to record it, 2026-11-13). On a computer without Visual Studio's C++ tools, `npm ci` failed: better-sqlite3-multiple-ciphers carries a `binding.gyp`, so npm runs node-gyp for it although its prebuilt binaries ship in the package (§9's row said nothing compiles; nothing needs to, but npm tries). With scripts skipped the prebuilt binary loads, in Node and in Electron. Only two other packages have install scripts, per the lockfile: electron-winstaller (Squirrel; the app builds NSIS) and fsevents (macOS). Electron 45's binary comes from `install-electron`, which `npm run dev` and `npm start` already run first. Not chosen: `ignore-scripts=true` in `.npmrc`, which would also stop `npm run dev` running its `predev` |
 
+## 28. Taken in session on 2026-11-13, gap fillers (backend Q47; open to revision)
+
+| Date | Decision |
+|---|---|
+| 2026-11-13 | **The line sits between Heard and the answer**, outside the answer's scroll, as v1 put it, labelled "Say while it loads". The server's text, as text, never HTML (v1's rule) |
+| 2026-11-13 | **It goes as v1's did, by answer ids**: the next answer to start claims it, and that answer's first text, end, cancel or failure takes it down; an older answer's never does. Clear, practice, a reconnect's snapshot and the session's end take it down too. The overlay drops it after 30 s on its own, v1's fallback, so a lost answer can't leave it up |
+| 2026-11-13 | **The switch is a setting** (`gapFillers`, on by default, Settings → During a session), sent with the session's preferences when it is off or when there are preferences anyway, and sent at once to a running session when it changes (`SetPreferences {GapFillers}` alone) |
+
 ## 27. Taken in session on 2026-11-13, the interview's type (backend Q47; open to revision)
 
 | Date | Decision |

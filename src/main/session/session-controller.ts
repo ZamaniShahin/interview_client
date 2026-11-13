@@ -28,6 +28,8 @@ export type SessionCommand =
   | Exclude<OverlayCommand, { type: 'view' | 'capture' | 'reattachScreenshot' }>
   | { type: 'attachScreenshot'; id: string; bytes: Uint8Array }
   | { type: 'screenshotQuery'; id: string; bytes: Uint8Array; hint: string | null }
+  /** The setting changed mid-session (Q47): from the next answer on. Main's, never the overlay's. */
+  | { type: 'setGapFillers'; on: boolean }
   | PracticeCommand;
 
 export interface SessionDriver {
@@ -147,6 +149,11 @@ export class SessionController {
       default:
         return this.send(command);
     }
+  }
+
+  /** Gap fillers switched on or off in Settings (Q47): the running session hears it from its next answer on. */
+  setGapFillers(on: boolean): Promise<CommandResult> {
+    return this.send({ type: 'setGapFillers', on });
   }
 
   /** A practice command (the Practice page's), sent as any command is: accepted, it keeps the session in use. */

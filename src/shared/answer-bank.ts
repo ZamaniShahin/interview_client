@@ -92,7 +92,9 @@ export const instructionsSchema = z.string().max(maxInstructionsChars);
  * The preferences as a session sends them (`SetPreferences`): the instructions, and the bank's enabled entries in its
  * order, the most the server takes; the server fits the first ones into its prompt. Nothing to send is null.
  */
-export function preferencesToSend(view: PreferencesView): Omit<SetPreferencesRequest, 'CommandId'> | null {
+export function preferencesToSend(
+  view: PreferencesView,
+): Omit<SetPreferencesRequest, 'CommandId' | 'GapFillers'> | null {
   const enabled = view.bank.filter((entry) => entry.enabled).slice(0, maxBankEntries);
   if (!view.instructions.trim() && enabled.length === 0) return null;
   return {

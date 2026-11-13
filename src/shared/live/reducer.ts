@@ -104,6 +104,7 @@ function endSession(state: LiveViewState, reason: string): LiveViewState {
     phase: 'ended',
     endReason: reason,
     answers: state.answers.map((a) => (a.ending === 'writing' ? { ...a, ending: 'stopped' as const } : a)),
+    gapFiller: null,
   };
 }
 
@@ -130,6 +131,8 @@ function applySnapshot(state: LiveViewState, s: SessionSnapshot): LiveViewState 
     // Where the practice is; its questions and feedback so far stay as they were drawn.
     practice: practiceWithStatus(state.practice, s.Practice),
     lastSeq: Math.max(state.lastSeq, s.LastSeq),
+    // A line was for a moment that has passed by the time a (re)connect is drawn again.
+    gapFiller: null,
   };
 }
 
@@ -181,6 +184,11 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
     case 'speechStarted':
       return next;
 
+    // A line to say while the answer loads (Q47): up at once, as text; an empty one takes it down. The next answer to
+    // start claims it.
+    case 'gapFiller':
+      return { ...next, gapFiller: event.e.Text?.trim() ? { text: event.e.Text, answerId: null } : null };
+
     case 'answerStart': {
       const answer: AnswerView = {
         id: event.e.AnswerId,
@@ -203,23 +211,33 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
         ],
         // When an answer starts, Heard starts over: the question moved into the answer.
         heard: { finished: '', live: '' },
+        // The line up is this answer's, unless one before it claimed it already.
+        gapFiller:
+          next.gapFiller && next.gapFiller.answerId === null
+            ? { ...next.gapFiller, answerId: event.e.AnswerId }
+            : next.gapFiller,
         // Someone looking back stays where they are (§7.1, History).
       };
     }
 
+    // Its answer's first text, or its end, takes the line down; an older answer's never does.
     case 'answerDelta':
-      return updateAnswer(next, event.e.AnswerId, (a) =>
+      return updateAnswer(withoutFillerOf(next, event.e.AnswerId), event.e.AnswerId, (a) =>
         a.ending === 'writing' ? { ...a, text: a.text + event.e.Text } : a,
       );
 
     case 'answerDone':
-      return updateAnswer(next, event.e.AnswerId, (a) => (a.ending === 'writing' ? { ...a, ending: 'done' } : a));
+      return updateAnswer(withoutFillerOf(next, event.e.AnswerId), event.e.AnswerId, (a) =>
+        a.ending === 'writing' ? { ...a, ending: 'done' } : a,
+      );
 
     case 'answerCancelled':
-      return updateAnswer(next, event.e.AnswerId, (a) => (a.ending === 'writing' ? { ...a, ending: 'stopped' } : a));
+      return updateAnswer(withoutFillerOf(next, event.e.AnswerId), event.e.AnswerId, (a) =>
+        a.ending === 'writing' ? { ...a, ending: 'stopped' } : a,
+      );
 
     case 'answerFailed':
-      return updateAnswer(next, event.e.AnswerId, (a) =>
+      return updateAnswer(withoutFillerOf(next, event.e.AnswerId), event.e.AnswerId, (a) =>
         event.e.Code === ErrorCodes.Ai.OutputBlocked
           ? // What it had shown disappears (backend decision, 2026-11-06).
             { ...a, text: '', ending: 'hidden', failureMessage: null }
@@ -235,6 +253,7 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
         heard: { finished: '', live: '' },
         notice: null,
         attachments: { ...next.attachments, ids: [] },
+        gapFiller: null,
       };
 
     case 'attachments':
@@ -242,7 +261,8 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
 
     // Practice (the server's 3.3, drawn by the Practice page).
     case 'mockState':
-      return { ...next, practice: practiceWithStatus(next.practice, event.e.Status) };
+      // Practice pauses the copilot: a line for its answer has nothing to wait for.
+      return { ...next, practice: practiceWithStatus(next.practice, event.e.Status), gapFiller: null };
 
     case 'mockQuestion':
       return { ...next, practice: withQuestion(next.practice, turnOf(event.e)) };
@@ -282,6 +302,11 @@ function applyEvent(state: LiveViewState, event: LiveEvent): LiveViewState {
     case 'sessionEnded':
       return endSession({ ...next, ending: null }, event.e.Reason);
   }
+}
+
+/** The line goes once the answer that claimed it streams or ends (Q47). */
+function withoutFillerOf(state: LiveViewState, answerId: string): LiveViewState {
+  return state.gapFiller?.answerId === answerId ? { ...state, gapFiller: null } : state;
 }
 
 /** The events that show the session is in use: something heard, or an answer asked for. */

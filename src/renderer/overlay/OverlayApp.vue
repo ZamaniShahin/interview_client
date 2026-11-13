@@ -15,6 +15,7 @@ import AnswerCard from './components/AnswerCard.vue';
 import AskBar from './components/AskBar.vue';
 import AttachmentTray from './components/AttachmentTray.vue';
 import HeardPanel from './components/HeardPanel.vue';
+import GapFillerLine from './components/GapFillerLine.vue';
 import MoreMenu from './components/MoreMenu.vue';
 import OverlayBanner from './components/OverlayBanner.vue';
 import OverlayBar from './components/OverlayBar.vue';
@@ -197,6 +198,9 @@ function confirm(): void {
       :can-clear="!!(s.heard.finished || s.heard.live)"
       @clear="live.command({ type: 'clearHeard' })"
     />
+
+    <!-- Outside the answer's scroll, so it shows even with an earlier answer scrolled down (v1's place for it). -->
+    <GapFillerLine v-if="!compact && !ended" :text="s.gapFiller?.text ?? null" />
 
     <AnswerCard
       v-if="live.visible && live.visibleIndex !== null"

@@ -78,6 +78,13 @@ const cannedByMode: Record<AskMode, string> = {
 const deltaEveryMs = 45;
 const charsPerDelta = 14;
 
+/** Lines from the server's gap fillers (v1's), for the preview to show while its answers load. */
+const previewFillers = [
+  'Hmm.... let me think about that for a sec....',
+  'Okay.... one situation comes to mind....',
+  'Alright.... let me start with what it has to do....',
+];
+
 export class PreviewDriver implements SessionDriver {
   private seq = 0;
   private timers: ReturnType<typeof setTimeout>[] = [];
@@ -85,6 +92,7 @@ export class PreviewDriver implements SessionDriver {
   private auto = true;
   private paused = false;
   private interviewType: InterviewType = InterviewTypes.Technical;
+  private gapFillers = true;
   private ended = false;
   private heard = '';
   private lastQuestion = '';
@@ -232,6 +240,9 @@ export class PreviewDriver implements SessionDriver {
         this.interviewType = command.interviewType;
         this.status();
         return { ok: true };
+      case 'setGapFillers':
+        this.gapFillers = command.on;
+        return { ok: true };
       case 'clear':
         this.emit({ name: 'cleared', e: this.stamp() });
         if (this.attached.length > 0) this.takeAttached();
@@ -277,6 +288,16 @@ export class PreviewDriver implements SessionDriver {
       this.lastQuestion = a.question;
       this.heard = '';
       this.answers += 1;
+      // An answer to say goes up with a line to say while it loads, as the server sends one (Q47).
+      if (
+        this.gapFillers &&
+        (a.kind === AnswerKind.Spoken || a.kind === AnswerKind.Typed || a.kind === AnswerKind.Screen)
+      ) {
+        this.emit({
+          name: 'gapFiller',
+          e: { ...this.stamp(), Text: previewFillers[this.answers % previewFillers.length]! },
+        });
+      }
       this.emit({
         name: 'answerStart',
         e: {

@@ -44,7 +44,9 @@ export interface HubDriverDependencies {
   /** The prep doc, sent after the documents (`SetPrepDoc`, 3.10): its name, its text and whether it was cut. */
   prepDoc?: Omit<SetPrepDocRequest, 'CommandId'> | null;
   /** The custom instructions and the bank's enabled entries, sent last (`SetPreferences`, 3.8). */
-  preferences?: Omit<SetPreferencesRequest, 'CommandId'> | null;
+  preferences?: Omit<SetPreferencesRequest, 'CommandId' | 'GapFillers'> | null;
+  /** Gap fillers on or off (Q47), with the preferences; the server has them on until told otherwise. */
+  gapFillers?: boolean;
   /**
    * The interview's type the user chose (Q47), sent first (`SetInterviewType`): the server starts technical, v1's
    * default. Null or left out sends none.
@@ -205,7 +207,17 @@ export class HubDriver implements SessionDriver {
     const prepDoc = this.deps.prepDoc;
     if (prepDoc) await hub.setPrepDoc({ CommandId: randomUUID(), ...prepDoc }).catch(() => undefined);
     const preferences = this.deps.preferences;
-    if (preferences) await hub.setPreferences({ CommandId: randomUUID(), ...preferences }).catch(() => undefined);
+    const gapFillers = this.deps.gapFillers;
+    if (preferences || gapFillers === false) {
+      await hub
+        .setPreferences({
+          CommandId: randomUUID(),
+          CustomInstructions: preferences?.CustomInstructions ?? null,
+          PreparedAnswers: preferences?.PreparedAnswers ?? null,
+          GapFillers: gapFillers ?? null,
+        })
+        .catch(() => undefined);
+    }
   }
 
   /**
@@ -217,6 +229,7 @@ export class HubDriver implements SessionDriver {
     transcriptPartial: (e) => this.emit({ name: 'transcriptPartial', e }),
     transcriptFinal: (e) => this.emit({ name: 'transcriptFinal', e }),
     speechStarted: (e) => this.emit({ name: 'speechStarted', e }),
+    gapFiller: (e) => this.emit({ name: 'gapFiller', e }),
     answerStart: (e) => this.emit({ name: 'answerStart', e }),
     answerDelta: (e) => this.emit({ name: 'answerDelta', e }),
     answerDone: (e) => this.emit({ name: 'answerDone', e }),
@@ -363,6 +376,8 @@ function send(hub: LiveHub, command: SessionCommand, CommandId: string): Promise
       return hub.setMode({ CommandId, Auto: command.auto, Paused: command.paused });
     case 'setInterviewType':
       return hub.setInterviewType({ CommandId, Type: command.interviewType });
+    case 'setGapFillers':
+      return hub.setPreferences({ CommandId, CustomInstructions: null, PreparedAnswers: null, GapFillers: command.on });
     case 'clear':
       return hub.clear({ CommandId });
     case 'clearHeard':

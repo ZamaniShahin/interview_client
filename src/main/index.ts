@@ -274,7 +274,15 @@ let hidingTestWindow: BrowserWindow | null = null;
 /** The sign-in page while the browser has it, for "Open the page again" and "Copy the link" (F1 · 2). */
 let signInUrl: string | null = null;
 
+/** The gap fillers' setting as last applied (Q47): a change goes to a running session at once; none runs, nothing goes. */
+let appliedGapFillers: boolean | null = null;
+
 function applySettings(changed: Settings): void {
+  if (appliedGapFillers !== null && changed.gapFillers !== appliedGapFillers) {
+    void session.setGapFillers(changed.gapFillers);
+  }
+  appliedGapFillers = changed.gapFillers;
+
   // Windows tints each window's frame and its frosted glass by the window's light or dark mode, which Electron takes
   // from nativeTheme: the theme chosen here, then, not Windows' own, or a light Sotto would sit on dark glass.
   nativeTheme.themeSource = changed.theme;
@@ -841,7 +849,7 @@ async function openStore(): Promise<LocalStore> {
 function hubDriver(
   options: Pick<
     HubDriverDependencies,
-    'auto' | 'context' | 'prepDoc' | 'preferences' | 'interviewType' | 'takeOver' | 'onEntitlementsUpdated'
+    'auto' | 'context' | 'prepDoc' | 'preferences' | 'interviewType' | 'gapFillers' | 'takeOver' | 'onEntitlementsUpdated'
   >,
 ): HubDriver {
   const signedIn = auth!;
@@ -973,6 +981,8 @@ async function startSession(request: StartSessionRequest): Promise<CommandResult
       preferences: store ? preferencesToSend(store.preferences()) : null,
       // First of all, TECH or INTRO as the user last chose it (Q47): the server starts technical.
       interviewType: settings.get().interviewType,
+      // With the preferences, gap fillers on or off (Q47).
+      gapFillers: settings.get().gapFillers,
       // Only after the user chose "Start here" on Home, once the server said the session is open elsewhere.
       takeOver: request.takeOver === true,
       // A purchase, a renewal or a refund while the session runs: the account's minutes and plan, read again.

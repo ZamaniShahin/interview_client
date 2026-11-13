@@ -380,6 +380,18 @@ export interface EntitlementsUpdatedEvent {
 }
 
 /**
+ * A line for the user to say while the answer loads (Q47, v1's gap filler), the moment a question is sent: before its
+ * `AnswerStart`, or at a trigger's press when it waits for the interviewer's last words. The next answer to start
+ * claims it, and its first text takes it down; an empty `Text` takes it down at once (nothing was said after all).
+ * `Cleared` takes it down too.
+ */
+export interface GapFillerEvent {
+  Seq: number;
+  AtMs: number;
+  Text: string;
+}
+
+/**
  * A practice answer: what the client transcribed of the user's speech (`Spoken`, with its `Metrics`) or what they
  * typed. The server never hears the user. At most 20,000 characters, of which the first 6,000 are scored; an empty one
  * is asked for again, in `MockState`'s error.
@@ -637,13 +649,15 @@ export interface SetModeRequest {
 }
 
 /**
- * The user's preferences for every answer (docs/03 §3): custom instructions (at most 4,000 characters) and the answer
- * bank's enabled entries (at most 100), in the bank's order. Omitted values stay as they are; an empty one clears.
+ * The user's preferences for every answer (docs/03 §3): custom instructions (at most 4,000 characters), the answer
+ * bank's enabled entries (at most 100), in the bank's order, and whether gap fillers are on (Q47; on unless switched
+ * off). Omitted values stay as they are; an empty one clears.
  */
 export interface SetPreferencesRequest {
   CommandId: Guid;
   CustomInstructions: string | null;
   PreparedAnswers: Array<PreparedAnswer> | null;
+  GapFillers: boolean | null;
 }
 
 /**
@@ -789,6 +803,8 @@ export interface LiveClient {
   /** The question so far, a segment having just finished. */
   transcriptFinal(e: TranscriptUpdate): void;
   speechStarted(e: SpeechStartedEvent): void;
+  /** A line to say while the answer loads, or "" to take it down (Q47). */
+  gapFiller(e: GapFillerEvent): void;
   answerStart(e: AnswerStartEvent): void;
   answerDelta(e: AnswerDeltaEvent): void;
   answerDone(e: AnswerEndEvent): void;
@@ -848,6 +864,7 @@ export const LiveClientMethods = {
   transcriptPartial: "TranscriptPartial",
   transcriptFinal: "TranscriptFinal",
   speechStarted: "SpeechStarted",
+  gapFiller: "GapFiller",
   answerStart: "AnswerStart",
   answerDelta: "AnswerDelta",
   answerDone: "AnswerDone",
@@ -920,6 +937,7 @@ export function registerLiveClient(connection: HubConnectionLike, client: LiveCl
     [LiveClientMethods.transcriptPartial, (e: TranscriptUpdate) => client.transcriptPartial(e)],
     [LiveClientMethods.transcriptFinal, (e: TranscriptUpdate) => client.transcriptFinal(e)],
     [LiveClientMethods.speechStarted, (e: SpeechStartedEvent) => client.speechStarted(e)],
+    [LiveClientMethods.gapFiller, (e: GapFillerEvent) => client.gapFiller(e)],
     [LiveClientMethods.answerStart, (e: AnswerStartEvent) => client.answerStart(e)],
     [LiveClientMethods.answerDelta, (e: AnswerDeltaEvent) => client.answerDelta(e)],
     [LiveClientMethods.answerDone, (e: AnswerEndEvent) => client.answerDone(e)],
