@@ -7,14 +7,14 @@ The client's checkpoints, as a checklist. The numbers are the backend roadmap's 
 **Where it stands (2026-11-14):**
 - done: C0, all of Phase 1 (1.10–1.14) and 2.13, the account and plan screens: everything backend Q35 asked for; then 2.16, a plan given by Sotto, the words for the server's connection limit, and 4.11, the user's data (a copy, and deleting the account);
 - `development` holds the whole of Shahin's unattended run since 2026-11-12 (`ae755b5`), checked there: `npm run check`, the app tests and the end-to-end tests against the local stack; then the screenshot selector's settle time (`263250b`), which those app tests led to; then, the same day, the glass and practice (`c6e269c`), so nothing from before 2026-11-13 is outside `development`;
-- not in `development` yet, waiting on Shahin's word to merge: the work of 2026-11-13 and 2026-11-14, on branches each built on the one before, `feature/dpop` → `feature/spoken-answers` → `feature/gap-fillers` → `feature/no-auto-scroll` → `feature/deep-round-q47-q52` → `feature/recording` → `feature/deep-round-recording` → `bugfix/recording-while-paused` → `bugfix/v1-session-parity` → `feature/deep-round-v1-parity`, so fast-forwarding `development` to the last brings in all of it. They hold:
+- in `development` since 2026-11-14, at Shahin's word (`4262fc3`, `development` fast-forwarded to the last branch): the work of 2026-11-13 and 2026-11-14, on branches each built on the one before, `feature/dpop` → `feature/spoken-answers` → `feature/gap-fillers` → `feature/no-auto-scroll` → `feature/deep-round-q47-q52` → `feature/recording` → `feature/deep-round-recording` → `bugfix/recording-while-paused` → `bugfix/v1-session-parity` → `feature/deep-round-v1-parity`. They hold:
   - DPoP (backend Q44);
   - v1 0.3.0 and 0.4.0's answers: the interview's type, gap fillers and no auto-scroll (backend Q47);
   - recording (3.12, Q51) and its fix for pauses;
   - Word files read as v1 reads them, found when v1's session tests were checked against v2's (2026-11-14);
   - three deep rounds.
 
-  Checked with `npm run check`, the tests twice (3,301). The app tests and the end-to-end tests haven't run since, as port 8080 is held by Adobe Connect on this computer;
+  Checked with `npm run check`, the tests twice (3,301). The app tests and the end-to-end tests haven't run since, as port 8080 was held by Adobe Connect on this computer; it was removed at Shahin's word on 2026-11-14, so they run again;
 - Phase 3 in Shahin's unattended run: 3.6, 3.10 and 3.8 done, then their deep round, then 3.9, 3.13 and 4.1 and their deep round, then 4.2's updates; 3.12 built on 2026-11-13, on Q51's answer. What is left waits on Shahin: 3.7 on Q5, 3.11 on 4.8's wording;
 - then, at Shahin's word, practice (`f4f52f3`, branch `feature/practice-page`, in `development` since 2026-11-12, `692a6e8`): the Practice page, answered by typing, and practice in History (decisions §24); its redraw waits on Claude Design's export (Q50);
 - then, at Shahin's request, the glass (`f380818`, then `1439a27`; branch `feature/glass-ui`, in `development` since 2026-11-12, `cb4f3a4`): each window's background see-through at the opacity set in Settings, the text solid, the overlay on clear glass so the call app behind it can be read, the app window frosted by Windows 11's acrylic, and a more refined look (decisions §23);
