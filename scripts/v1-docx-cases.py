@@ -108,8 +108,9 @@ def main() -> None:
             with zipfile.ZipFile(path) as z:
                 xml = z.read("word/document.xml").decode("utf-8")
             cases.append({"name": f"case {n + 1}", "features": sorted(features), "documentXml": xml, "v1": read(path)})
+    # LF line ends on every system, as the repository keeps text.
     out.write_text(json.dumps({"seed": seed, "pythonDocx": docx.__version__ if hasattr(docx, "__version__") else "?",
-                               "cases": cases}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+                               "cases": cases}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
     print(f"{len(cases)} cases written to {out}")
 
 
