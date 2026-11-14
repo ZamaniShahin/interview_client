@@ -52,11 +52,11 @@ describe('the stereo framer', () => {
 
       expect(frames.every((f) => f.length === frameSamples * 2)).toBe(true);
       expect(frames).toHaveLength(Math.floor(left.length / frameSamples));
-      const out = frames.flatMap((f) => [...f]);
-      for (let i = 0; i < out.length / 2; i++) {
-        expect(out[2 * i]).toBe(left[i]);
-        expect(out[2 * i + 1]).toBe(right[i]);
-      }
+      // Every sample in one pass, the first out of place named. Two expects a sample (a run is some 100,000 of them)
+      // took over two seconds a run, and past vitest's five under the whole suite's load.
+      const out = Int16Array.from(frames.flatMap((f) => [...f]));
+      const wrong = out.findIndex((v, i) => v !== (i % 2 === 0 ? left[i >> 1] : right[i >> 1]));
+      expect(wrong, wrong < 0 ? '' : `sample ${wrong >> 1}, on the ${wrong % 2 === 0 ? 'left' : 'right'}`).toBe(-1);
     },
   );
 

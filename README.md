@@ -99,7 +99,7 @@ A packaged build never runs the preview.
 
 **Practice, 2026-11-12** ([docs/decisions.md](docs/decisions.md) §24): the Practice page, v1's mock interview answered by typing, in a session of its own that hears nothing; practice kept in History with each answer's feedback.
 
-**Recording, 2026-11-13** (3.12; [docs/decisions.md](docs/decisions.md) §30): opt-in in Settings, a live session recorded after its consent box, the call on the left and the microphone on the right; kept encrypted with its interview, saved as a WAV from History; the microphone opened only while recording; REC in the overlay's strip.
+**Recording, 2026-11-13** (3.12; [docs/decisions.md](docs/decisions.md) §30): opt-in in Settings, a live session recorded after its consent box, the call on the left and the microphone on the right; kept encrypted with its interview, saved as a WAV from History; the microphone opened only while recording; REC in the overlay's strip. Since 2026-11-14 nothing is recorded while the session is paused, as v1's Stop records nothing, and REC shows as held meanwhile.
 
 **Not yet:** spoken practice answers and the coach (3.7, Q5); the consent box's final words (3.11, with the legal texts); signing (4.2) and Sentry (4.1); practice redrawn from Claude Design's export (Q50); history's HTML report (v1's history.py).
 
@@ -197,7 +197,7 @@ Built 2026-11-09 for the interviewer's side; the choices are in [docs/decisions.
 - **Prepared-answer match:** port `answer_bank.best_match` (content stems, F1 ≥ 0.6, coverage ≥ 60%). It runs on `AnswerStart` for spoken, typed and trigger questions, and shows the 📌 card.
 - **History:** interviews, Q&A, optional transcripts, debrief results; an HTML report export (port `history.py`).
 - **Documents:** parse, clip the prep doc at 100k characters at a line break (v1 `clip_prep_doc`), and send the text with `SetContext` / `SetPrepDoc`.
-- **Recording** (opt-in, after the consent checkbox): local WAV of loopback + mic, as v1's `recorder.py`.
+- **Recording** (opt-in, after the consent checkbox; built in 3.12, [docs/decisions.md](docs/decisions.md) §30): loopback + mic, as v1's `recorder.py`, but kept encrypted and written as a WAV only when saved from History; nothing while paused, as v1.
 - **First run** (built in 1.14; [docs/decisions.md](docs/decisions.md) §9): v1's setup wizard (its ARCHITECTURE.md "Setup wizard", PROTOCOL.md "First-run setup wizard"), re-made for v2. It opens by itself until it has been finished once, and can be re-run from Help. Its steps:
   1. **What is recorded and sent where**, now including what goes to OpenAI and how long OpenAI may keep it (backend [06](../backend/interview_backend/docs/06-ai-gateway.md) §10 rule 7). The user acknowledges it once, and again when the text changes. This step is needed before any outside user.
   2. **Sign in and register this device.** This replaces v1's key, provider and speech-to-text steps: v2 has no keys or models on the device.

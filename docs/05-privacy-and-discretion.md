@@ -81,7 +81,7 @@ How it works:
   - It is asked **every time**, and never remembered.
   - It is **skipped for practice**: no one else is on the call.
   - The wording waits for legal review, like the notice.
-- **Recording is off by default.** When the user turns it on (after the checkbox), the app records the call, both sides, to audio files on the device. Nothing recorded leaves the device. The microphone is opened for it only while a session is recorded, and the overlay shows REC meanwhile.
+- **Recording is off by default.** When the user turns it on (after the checkbox), the app records the call, both sides, to audio files on the device. Nothing recorded leaves the device. The microphone is opened for it only while a session is recorded, and the overlay shows REC meanwhile. Nothing is recorded while the session is paused, as in v1, and REC shows as held then.
 - **The microphone never leaves the device.** It feeds only:
   - the on-device coach;
   - the echo gate, which keeps the interviewer's voice out of the coach;

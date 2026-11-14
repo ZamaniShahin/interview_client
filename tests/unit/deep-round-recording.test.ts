@@ -1,9 +1,10 @@
 // The deep round over recording (3.12, Q51), 2026-11-13: random lives of recordings, seeded, against a small model of
 // the rules, on a real history and a real folder: sessions recorded for random lengths, some under two seconds, some
-// over interviews that kept answers; frames of the wrong size among the right ones; the session's end in either order
-// (the recorder first, or history first); a new start over a running one; interviews deleted one at a time or all at
-// once; the app restarted (the sweep); recordings saved as WAVs. After every step the folder, history and the model
-// must agree; then every outcome is shown to occur.
+// over interviews that kept answers; frames of the wrong size among the right ones; the session paused and resumed
+// (nothing recorded meanwhile, as v1's Stop; 2026-11-14); the session's end in either order (the recorder first, or
+// history first); a new start over a running one; interviews deleted one at a time or all at once; the app restarted
+// (the sweep); recordings saved as WAVs. After every step the folder, history and the model must agree; then every
+// outcome is shown to occur.
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -38,6 +39,8 @@ interface Kept {
   /** Each frame's fill byte, in order: what its recording must read back as. */
   frames: number[];
   recording: 'running' | 'kept' | 'none';
+  /** Whether frames were heard while it was paused, which its recording must not hold. */
+  pausedOver?: boolean;
 }
 
 let root: string;
@@ -58,7 +61,14 @@ async function live(seed: number, steps = 60): Promise<Set<string>> {
   const history = new HistoryStore(openDatabase(null, null, migrations));
   const recordings = new Recordings({ dir: () => dir, key: async () => key });
   let keeping: number | null = null;
-  const recorder = new CallRecorder({ place: recordings, history: () => history, keeping: () => keeping });
+  // The session's pause, as the server last said it; a new session starts running.
+  let paused = false;
+  const recorder = new CallRecorder({
+    place: recordings,
+    history: () => history,
+    keeping: () => keeping,
+    paused: () => paused,
+  });
   const service = new HistoryService({
     store: () => history,
     running: () => keeping,
@@ -81,7 +91,7 @@ async function live(seed: number, steps = 60): Promise<Set<string>> {
     const seconds = (kept.frames.length * stereoFrameBytes) / chunkBytes;
     if (seconds >= minKeepSeconds) {
       kept.recording = 'kept';
-      outcomes.add('kept');
+      outcomes.add(kept.pausedOver ? 'kept, without what was heard while paused' : 'kept');
     } else {
       kept.recording = 'none';
       kept.frames = [];
@@ -125,6 +135,7 @@ async function live(seed: number, steps = 60): Promise<Set<string>> {
           stopped(before);
           historyEnds(before);
           keeping = id;
+          paused = false;
           model.get(id)!.recording = 'running';
           outcomes.add('a new start ended the last');
           continue;
@@ -136,9 +147,14 @@ async function live(seed: number, steps = 60): Promise<Set<string>> {
       if (answered) history.addAnswer(id, { askedAt: step, kind: AnswerKind.Typed, question: 'Q?', answer: 'A.' });
       model.set(id, { answered, frames: [], recording: 'running' });
       keeping = id;
+      paused = false;
       expect(await recorder.start(id)).toBe(true);
     } else if (action < 0.55) {
-      // Frames, some not whole, while a session runs, or none.
+      // Frames, some not whole, while a session runs, or none; the session paused or resumed first, now and then.
+      if (random() < 0.25) {
+        paused = !paused;
+        if (recorder.running) outcomes.add(paused ? 'paused while recorded' : 'resumed while recorded');
+      }
       const count = Math.floor(random() * (random() < 0.2 ? 60 : 12));
       for (let i = 0; i < count; i++) {
         if (random() < 0.05) {
@@ -148,7 +164,12 @@ async function live(seed: number, steps = 60): Promise<Set<string>> {
         }
         const fill = 1 + Math.floor(random() * 250);
         recorder.write(new Uint8Array(stereoFrameBytes).fill(fill));
-        if (recorder.running) model.get(recorder.interviewId!)!.frames.push(fill);
+        if (!recorder.running) continue;
+        const kept = model.get(recorder.interviewId!)!;
+        if (paused) {
+          kept.pausedOver = true;
+          outcomes.add('a frame heard while paused left out');
+        } else kept.frames.push(fill);
       }
     } else if (action < 0.68) {
       if (recorder.running) endSession();
@@ -244,12 +265,16 @@ describe('the deep round over recording (3.12)', () => {
     expect([...outcomes].sort()).toEqual(
       [
         'kept',
+        'kept, without what was heard while paused',
         'too short, its interview gone',
         'too short, its interview kept for its answers',
         'history ended first',
         'the recorder ended first',
         'a new start ended the last',
         'a frame of the wrong size left out',
+        'paused while recorded',
+        'resumed while recorded',
+        'a frame heard while paused left out',
         'deleted with its interview',
         'cleared with all history',
         'a restart found nothing to sweep',

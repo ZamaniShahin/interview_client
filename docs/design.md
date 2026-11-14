@@ -58,7 +58,7 @@ They are logged as taken in session in the backend's decisions.md, open to revis
 - **Expanded size:** 560 × 760.
 - **A window outside sessions:** 960 × 640, with a sidebar (Q15, decided by Shahin on 2026-11-09).
 - ~~The tray only during a session~~: Shahin chose otherwise on 2026-11-09 (Q16). During a session there is neither a taskbar button nor a tray icon, as in v1, so the app is reached only by its hotkeys.
-- **The status strip** has two rows: the bar (state, listening, More) and the strip (AUTO/MANUAL, pause, TECH/INTRO since 2026-11-13, minutes, tier, and REC while the session is recorded: a quiet dot in the meter's colour, dimmed when the microphone is missing, named for a screen reader, never by a tooltip).
+- **The status strip** has two rows: the bar (state, listening, More) and the strip (AUTO/MANUAL, pause, TECH/INTRO since 2026-11-13, minutes, tier, and REC while the session is recorded: a quiet dot in the meter's colour, dimmed when the microphone is missing, an empty ring and a faint word while paused, since nothing is recorded then; named for a screen reader, never by a tooltip).
 - **History's recordings** (3.12): a "Recording" tag on the interview's row; opened, "Save the recording…" beside Delete, with a line saying how long it is, which side is which, and that the copy here stays encrypted; the delete confirmations name the recording.
 - **Hotkeys:** Ctrl+Enter (settled), plus Ctrl+Shift with Space, A, P, ←/→, M and H.
 - **A long answer** never follows the stream (since 2026-11-13, v1 0.4.0): it opens at its top and stays where you are; text arriving out of view below is offered with "New text below".

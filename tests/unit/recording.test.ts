@@ -30,12 +30,20 @@ function interview(): number {
   return history.start({ startedAt: 1_700_000_000_000, candidate: 'Sam', role: 'Payments', tier: 'smart' });
 }
 
-function recorder(options: { keeping?: () => number | null; failed?: (e: unknown) => void; place?: RecordingPlace } = {}) {
+function recorder(
+  options: {
+    keeping?: () => number | null;
+    failed?: (e: unknown) => void;
+    place?: RecordingPlace;
+    paused?: () => boolean;
+  } = {},
+) {
   return new CallRecorder({
     place: options.place ?? recordings,
     history: () => history,
     keeping: options.keeping ?? (() => null),
     failed: options.failed,
+    paused: options.paused,
     now: () => 1_700_000_000_000,
   });
 }
@@ -224,6 +232,118 @@ describe('a session recorded', () => {
 
     expect(files()).toEqual([]);
     expect(history.recordingOf(id)).toBeNull();
+  });
+});
+
+describe('a session paused (v1 records nothing while paused)', () => {
+  /** A session as frames of 100 ms: `r` heard while running, `p` heard while paused. Its kept frames, in order. */
+  const recordPattern = async (pattern: string) => {
+    const id = interview();
+    let paused = false;
+    const r = recorder({ paused: () => paused });
+    await r.start(id);
+    const recorded: number[] = [];
+    [...pattern].forEach((step, i) => {
+      paused = step === 'p';
+      const fill = (i % 250) + 1;
+      r.write(frame(fill));
+      if (!paused) recorded.push(fill);
+    });
+    const file = history.recordingOf(id)!.file;
+    return { id, file, seconds: r.stop()!, recorded };
+  };
+
+  it.each([
+    ['never paused', 'r'.repeat(25)],
+    ['paused at the start', 'p'.repeat(5) + 'r'.repeat(20)],
+    ['paused at the end', 'r'.repeat(20) + 'p'.repeat(5)],
+    ['paused in the middle, two seconds either side', 'r'.repeat(20) + 'p'.repeat(30) + 'r'.repeat(20)],
+    ['paused in the middle, exactly two seconds in all', 'r'.repeat(10) + 'p'.repeat(30) + 'r'.repeat(10)],
+    ['paused and resumed at every frame', 'rp'.repeat(25)],
+    ['paused one frame in three', 'rrp'.repeat(15)],
+    ['paused for one frame either side', 'p' + 'r'.repeat(20) + 'p'],
+    ['paused many times, briefly', ('r'.repeat(7) + 'p'.repeat(3)).repeat(5)],
+  ])('%s: keeps only what was heard while running, in order, with no gap filled', async (_, pattern) => {
+    const { id, file, seconds, recorded } = await recordPattern(pattern);
+
+    expect(seconds).toBeCloseTo(recorded.length / perSecond, 9);
+    expect(history.recordingOf(id)).toEqual({ file, seconds: expect.closeTo(recorded.length / perSecond, 9) });
+    const kept = Buffer.concat([...recordingAudio(join(dir, file), key)]);
+    expect(kept.length).toBe(recorded.length * stereoFrameBytes);
+    // Each frame read back is one heard while running: no paused frame among them, none of them lost.
+    recorded.forEach((fill, f) => {
+      expect(kept[f * stereoFrameBytes]).toBe(fill);
+      expect(kept[(f + 1) * stereoFrameBytes - 1]).toBe(fill);
+    });
+  });
+
+  it.each([
+    ['paused throughout', 'p'.repeat(25)],
+    ['paused throughout a long session', 'p'.repeat(600)],
+    ['just under two seconds heard, around a long pause', 'r'.repeat(10) + 'p'.repeat(100) + 'r'.repeat(9)],
+    ['a second heard, then paused to the end', 'r'.repeat(10) + 'p'.repeat(50)],
+  ])('%s: under two seconds heard, so nothing is kept', async (_, pattern) => {
+    const { id, seconds } = await recordPattern(pattern);
+
+    expect(seconds).toBeLessThan(minKeepSeconds);
+    expect(files()).toEqual([]);
+    expect(history.recordingOf(id)).toBeNull();
+    // The interview kept nothing else, so it goes too.
+    expect(history.list()).toEqual([]);
+  });
+
+  it('reads the pause at each frame, not once at the start', async () => {
+    const id = interview();
+    const asked: boolean[] = [];
+    let paused = true;
+    const r = recorder({
+      paused: () => {
+        asked.push(paused);
+        return paused;
+      },
+    });
+    await r.start(id);
+
+    for (let i = 0; i < 5; i++) r.write(frame());
+    paused = false;
+    for (let i = 0; i < 20; i++) r.write(frame());
+
+    expect(asked).toEqual([...Array<boolean>(5).fill(true), ...Array<boolean>(20).fill(false)]);
+    expect(r.stop()).toBe(2);
+  });
+
+  it('asks nothing of the pause for frames it would leave out anyway', async () => {
+    const id = interview();
+    const paused = vi.fn(() => false);
+    const r = recorder({ paused });
+
+    r.write(frame());
+    await r.start(id);
+    r.write(new Uint8Array(stereoFrameBytes - 4));
+    r.write(new Uint8Array(0));
+
+    expect(paused).not.toHaveBeenCalled();
+    r.stop();
+  });
+
+  it('a paused session leaves its running recording open: it goes on once resumed, in the same file', async () => {
+    const id = interview();
+    let paused = false;
+    const r = recorder({ paused: () => paused });
+    await r.start(id);
+    const file = history.recordingOf(id)!.file;
+    for (let i = 0; i < 15; i++) r.write(frame(7));
+
+    paused = true;
+    for (let i = 0; i < 40; i++) r.write(frame(9));
+    expect(r.running).toBe(true);
+    expect(files()).toEqual([file]);
+    paused = false;
+    for (let i = 0; i < 15; i++) r.write(frame(8));
+
+    expect(r.stop()).toBe(3);
+    const kept = Buffer.concat([...recordingAudio(join(dir, file), key)]);
+    expect([...new Set(kept)]).toEqual([7, 8]);
   });
 });
 

@@ -17,12 +17,12 @@ import { fakeAppApi } from './fake-app-api';
 enableAutoUnmount(afterEach);
 
 describe("the strip's REC mark", () => {
-  const strip = (recording?: RecordingState) =>
+  const strip = (recording?: RecordingState, paused = false) =>
     mount(StatusStrip, {
       props: {
         auto: true,
         autoAvailable: true,
-        paused: false,
+        paused,
         interviewType: 'technical',
         disabled: false,
         minutesLeft: 30,
@@ -31,13 +31,20 @@ describe("the strip's REC mark", () => {
       },
     });
 
-  it.each<[RecordingState | undefined, string | null, boolean]>([
-    [undefined, null, false],
-    ['off', null, false],
-    ['on', 'Recording the call and your microphone', false],
-    ['call-only', 'Recording the call only: no microphone', true],
-  ])('recording %s shows %j', (recording, label, partial) => {
-    const wrapper = strip(recording);
+  const held = 'Recording paused: nothing is recorded until you resume';
+
+  it.each<[RecordingState | undefined, boolean, string | null, boolean, boolean]>([
+    [undefined, false, null, false, false],
+    [undefined, true, null, false, false],
+    ['off', false, null, false, false],
+    ['off', true, null, false, false],
+    ['on', false, 'Recording the call and your microphone', false, false],
+    ['call-only', false, 'Recording the call only: no microphone', true, false],
+    // Paused, nothing is recorded (v1's Stop), whichever sides the recording has: REC stays in its place, held.
+    ['on', true, held, false, true],
+    ['call-only', true, held, false, true],
+  ])('recording %s, paused %s, shows %j', (recording, paused, label, partial, isHeld) => {
+    const wrapper = strip(recording, paused);
     const rec = wrapper.find('.rec');
 
     expect(rec.exists()).toBe(label !== null);
@@ -45,9 +52,28 @@ describe("the strip's REC mark", () => {
     expect(rec.text()).toBe('REC');
     expect(rec.attributes('aria-label')).toBe(label);
     expect(rec.classes().includes('partial')).toBe(partial);
+    expect(rec.classes().includes('held')).toBe(isHeld);
     // Named, never by a tooltip: a tooltip is a window of its own, and shows in a share.
     expect(wrapper.html()).not.toContain('title=');
   });
+
+  it.each<RecordingState>(['on', 'call-only'])(
+    'recording %s: pausing and resuming changes the mark, never where it sits',
+    async (recording) => {
+      const wrapper = strip(recording);
+      const place = () => wrapper.findAll('.stat').map((s) => s.classes().includes('rec'));
+      const before = place();
+
+      await wrapper.setProps({ paused: true });
+      expect(place()).toEqual(before);
+      expect(wrapper.get('.rec').classes()).toContain('held');
+
+      await wrapper.setProps({ paused: false });
+      expect(place()).toEqual(before);
+      expect(wrapper.get('.rec').classes()).not.toContain('held');
+      expect(wrapper.get('.rec').classes().includes('partial')).toBe(recording === 'call-only');
+    },
+  );
 });
 
 const start = new Date(2026, 10, 13, 9, 5).getTime();

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // What can be changed during a session: AUTO or MANUAL, pause, the interview's type (TECH or INTRO, Q47); and the
 // minutes left, the tier, and REC while this computer records the session (3.12). Controls that can't work right now are disabled, not hidden, so the strip never jumps.
+// REC stays in its place while paused, held: nothing is recorded then (v1's Stop), and the mark must not say otherwise.
 // The type shows what the server last said: a click asks for the other one, and the switch flips on its echo.
 import SButton from '../../shared/components/SButton.vue';
 import SIcon from '../../shared/components/SIcon.vue';
@@ -79,8 +80,14 @@ const emit = defineEmits<{ setAuto: [auto: boolean]; togglePause: []; setIntervi
       <span class="sep" />
       <span
         class="stat rec"
-        :class="{ partial: recording === 'call-only' }"
-        :aria-label="recording === 'on' ? 'Recording the call and your microphone' : 'Recording the call only: no microphone'"
+        :class="{ partial: recording === 'call-only' && !paused, held: paused }"
+        :aria-label="
+          paused
+            ? 'Recording paused: nothing is recorded until you resume'
+            : recording === 'on'
+              ? 'Recording the call and your microphone'
+              : 'Recording the call only: no microphone'
+        "
         ><span class="dot" />REC</span
       >
     </template>
@@ -133,5 +140,14 @@ const emit = defineEmits<{ setAuto: [auto: boolean]; togglePause: []; setIntervi
 }
 .rec.partial .dot {
   background: var(--text-3);
+}
+/* Held while paused: the dot an empty ring and the word faint, still in its place so the strip doesn't jump. */
+.rec.held {
+  color: var(--text-3);
+}
+.rec.held .dot {
+  box-sizing: border-box;
+  border: 1px solid var(--text-3);
+  background: transparent;
 }
 </style>

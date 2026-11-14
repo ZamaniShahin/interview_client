@@ -228,6 +228,8 @@ const callRecorder = new CallRecorder({
   place: recordings,
   history: () => store?.history ?? null,
   keeping: () => recorder?.interviewId ?? null,
+  // v1's Stop: nothing is recorded while the session is paused.
+  paused: () => session.current.paused,
   failed: () =>
     showProblem({
       code: ErrorCodes.Request.Internal,
@@ -237,8 +239,8 @@ const callRecorder = new CallRecorder({
 
 // The call's sound while a session runs (1.11): each frame to the session, which uploads it (1.12), and how capture
 // is going to the overlay (the meter, Q18's warning, a device being reopened). While the session is recorded, the
-// recording's frames (the call and the microphone, stereo) go to the recorder, and the overlay's REC says whether the
-// microphone is in it.
+// recording's frames (the call and the microphone, stereo) go to the recorder, which keeps none while the session is
+// paused, and the overlay's REC says whether the microphone is in it.
 const capture = new AudioCapture({
   open: openCaptureWindow,
   onFrame: (pcm, capturedAtMs) =>

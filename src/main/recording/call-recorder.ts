@@ -1,7 +1,9 @@
 // Records a live session (3.12, Q51): the capture window's stereo frames (the call on the left, the microphone on the
-// right, already lined up on one clock) into the session's recording, kept with its interview in history. Under two
-// seconds kept, a recording is no recording (v1's MIN_KEEP_SECONDS): it goes. A write that fails (a full disk) stops the
-// recording and keeps what was written; the session goes on.
+// right, already lined up on one clock) into the session's recording, kept with its interview in history. Nothing is
+// recorded while the session is paused, as v1's Stop records nothing (its main.py drops the audio while paused): a pause
+// is how a user steps out of the interview, to talk to someone in the room, say. Under two seconds kept, a recording is
+// no recording (v1's MIN_KEEP_SECONDS): it goes. A write that fails (a full disk) stops the recording and keeps what was
+// written; the session goes on.
 import { stereoFrameBytes } from '../../shared/audio/frames';
 import type { RecordingWriter } from './recording-file';
 
@@ -28,6 +30,11 @@ export interface CallRecorderDependencies {
   history: () => RecordingHistory | null;
   /** The interview history is still keeping, if any: an interview it keeps is never dropped from under it. */
   keeping: () => number | null;
+  /**
+   * Whether the session is paused, read at each frame. It is the server's word, as the upload's is (the strip shows
+   * Resume on the same echo), so the recording stops and starts again with what the user sees.
+   */
+  paused?: () => boolean;
   /** The recording stopped early (a write failed); what was written is kept. */
   failed?: (error: unknown) => void;
   now?: () => number;
@@ -79,10 +86,10 @@ export class CallRecorder {
     return true;
   }
 
-  /** One frame of the recording. Anything but a whole stereo frame is left out. */
+  /** One frame of the recording. Anything but a whole stereo frame is left out, and every frame while paused. */
   write(pcm: Uint8Array): void {
     const current = this.current;
-    if (!current || pcm.byteLength !== stereoFrameBytes) return;
+    if (!current || pcm.byteLength !== stereoFrameBytes || this.deps.paused?.()) return;
     try {
       current.writer.append(pcm);
     } catch (error) {
