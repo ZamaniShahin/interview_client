@@ -47,6 +47,10 @@ scripts/         sync-contracts.mjs: copies the hub's contract from the backend.
                  and design-split.mjs (reading a Claude Design export).
 docs/            The product docs (01–08), the design handoff, design.md (and design/canvas/, a copy of the canvas's
                  files), decisions.md, roadmap.md.
+.mcp.json        Chrome DevTools MCP (chrome-devtools-mcp, pinned; Google's usage statistics and CrUX lookups off), for
+                 checks driven by an agent: chrome-devtools-electron attaches to the built app started with
+                 --remote-debugging-port=9333; chrome-devtools opens an isolated Chrome. Pictures it takes are of the
+                 app's own pages (CDP), never of the screen. A new server loads in a new session.
 ```
 
 ## Commands
