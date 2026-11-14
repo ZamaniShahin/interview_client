@@ -30,7 +30,7 @@ One small window floats over the call, always on top. It never takes focus from 
 |---|---|---|
 | Starting | the session is being set up | a moment of "starting…" |
 | Live | listening and answering | the overlay at work |
-| Paused | the user paused it | "paused". Audio is ignored, typed questions still work, and **minutes keep counting** |
+| Paused | the user paused it | "paused". Audio is ignored and not recorded (REC held), typed questions still work, and **minutes keep counting** |
 | Suspended | the app lost its connection | "reconnecting…". The server waits 2 minutes; answers that fall due meanwhile are still written, and arrive on reconnect |
 | Ended | it's over, for a reason (below) | a short, calm message; history keeps what was answered |
 
