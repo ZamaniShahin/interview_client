@@ -104,6 +104,13 @@ describe('the History page (3.9)', () => {
     expect(rows[1]!.text()).toContain('1 answer');
   });
 
+  it('says when support ended an interview (backend docs/12 D.3)', async () => {
+    const { wrapper } = await page([summary({ id: 3, endReason: SessionEndReasons.Support })]);
+    const row = wrapper.findAll('ul[aria-label="Interviews"] li')[0]!;
+    expect(row.text()).toContain('ended by support');
+    expect(row.text()).not.toContain('suspended');
+  });
+
   it('says which debriefs are being written', async () => {
     const { wrapper } = await page([summary()], {}, [1]);
     expect(wrapper.find('ul[aria-label="Interviews"]').text()).toContain('Writing debrief…');

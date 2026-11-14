@@ -15,6 +15,19 @@ describe("the overlay's words", () => {
     expect(endedText(SessionEndReasons.CreditExhausted)).toBe('The session ended: no minutes left.');
   });
 
+  it('says support ended a session, and that another can start (backend docs/12 D.3)', () => {
+    expect(endedText(SessionEndReasons.Support)).toBe('Support ended this session. You can start another.');
+    expect(endedText('support')).toBe(endedText(SessionEndReasons.Support));
+  });
+
+  it('gives every reason its own words, none the fallback', () => {
+    const texts = Object.values(SessionEndReasons).map((reason) => endedText(reason));
+    expect(new Set(texts).size).toBe(texts.length);
+    for (const reason of Object.values(SessionEndReasons).filter((r) => r !== SessionEndReasons.User)) {
+      expect(endedText(reason)).not.toBe('Session ended.');
+    }
+  });
+
   it('still reads calmly for a reason a newer server added', () => {
     expect(endedText('something_new')).toBe('Session ended.');
   });

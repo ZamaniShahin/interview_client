@@ -12,6 +12,7 @@ const endings: Record<string, string> = {
   [SessionEndReasons.CostLimit]: 'The session reached its limit.',
   [SessionEndReasons.Expired]: 'The connection was lost for too long. Start a new session to continue.',
   [SessionEndReasons.Suspended]: 'Your account is suspended.',
+  [SessionEndReasons.Support]: 'Support ended this session. You can start another.',
 };
 
 /** Why the session ended, in plain words. An unknown reason (a newer server) still reads calmly. */

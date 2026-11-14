@@ -152,6 +152,11 @@ export const SessionEndReasons = {
   /** The client didn't come back in time, or the session can't be resumed any more. */
   Expired: "expired",
   Suspended: "suspended",
+  /**
+   * Support ended it from the staff dashboard (docs/12 D.3, Shahin's answer of 2026-11-14). The account isn't
+   * suspended.
+   */
+  Support: "support",
 } as const;
 export type SessionEndReason = (typeof SessionEndReasons)[keyof typeof SessionEndReasons];
 

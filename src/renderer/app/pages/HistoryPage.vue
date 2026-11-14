@@ -146,6 +146,7 @@ const endings: Record<string, string> = {
   [SessionEndReasons.CostLimit]: "ended at the session's limit",
   [SessionEndReasons.Expired]: 'ended when the connection was lost',
   [SessionEndReasons.Suspended]: 'ended when the account was suspended',
+  [SessionEndReasons.Support]: 'ended by support',
 };
 
 function about(interview: InterviewSummary): string {
