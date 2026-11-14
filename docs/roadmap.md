@@ -117,6 +117,12 @@ Tests, deep round over DPoP, the interview type, gap fillers and no auto-scroll 
 
 Tests, deep round over recording (2026-11-13, `92f7bee`, branch `feature/deep-round-recording`, on `feature/recording`): 40 random lives of recordings against a model of the rules, on a real history and a real folder (sessions of random lengths, under two seconds and over answered interviews, frames of the wrong size, the session's end in either order, a new start over a running one, deletes one at a time and all at once, restarts, saves as WAVs), the folder, history and the model agreeing after every step and every kept recording read back frame for frame; 40 random interleavings of capture and recording; every outcome of each shown to occur; 83 tests more (3,178 in all). One fix: a recording asked for before a capture that never started survived the capture's stop, so the next capture (the sound check's, say) would have opened the microphone; the stop now always ends it.
 
+Tests, deep round over the fixes of 2026-11-14 (branch `feature/deep-round-v1-parity`, on `bugfix/v1-session-parity`): the Word reader, recording while paused, and practice never recorded. 68 tests more (3,301 in all); no defect found.
+- **v1's own reader as the judge.** `scripts/v1-docx-cases.py` has python-docx write 60 random documents, and v1's `context_store._extract_docx` read each, run as it is. The app reads every one exactly as v1 does: tabs, line breaks, empty paragraphs and cells, repeated texts, cells of two paragraphs, and cells merged across, down and both.
+- **The documents hold every feature,** and v1's answers every kind of line.
+- **REC in every state:** all 240 states of the rest of the strip, for each of the six ways recording and pausing combine.
+- **A new outcome in the recording lives:** a recording dropped only for what was heard while paused.
+
 ## Phase 4: ready for launch
 
 - [x] **4.1 Hardening** (2026-11-11, `9f47f02`, branch `feature/hardening`, on 3.13's; checked with the unit tests, the app tests, the capture check, and a packaged build checked by `scripts/package-check.mjs` and `scripts/asar-pages-check.mjs`):

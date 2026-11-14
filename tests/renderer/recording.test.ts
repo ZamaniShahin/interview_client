@@ -57,6 +57,42 @@ describe("the strip's REC mark", () => {
     expect(wrapper.html()).not.toContain('title=');
   });
 
+  // The deep round of 2026-11-14: REC in every state the rest of the strip can be in (240 of them), for each of the six
+  // ways recording and pausing combine. Its words follow recording and pausing only, and it always sits last.
+  const others: Record<string, unknown>[] = [];
+  for (const auto of [true, false])
+    for (const autoAvailable of [true, false])
+      for (const interviewType of ['technical', 'intro'] as const)
+        for (const disabled of [true, false])
+          for (const tier of [null, 'fast', 'smart'] as const)
+            for (const minutesLeft of [null, 0, 10, 11, 120])
+              others.push({ auto, autoAvailable, interviewType, disabled, tier, minutesLeft });
+
+  it.each<[RecordingState, boolean, string | null]>([
+    ['off', false, null],
+    ['off', true, null],
+    ['on', false, 'Recording the call and your microphone'],
+    ['call-only', false, 'Recording the call only: no microphone'],
+    ['on', true, held],
+    ['call-only', true, held],
+  ])('recording %s, paused %s: the same mark in all 240 states of the rest of the strip', (recording, paused, label) => {
+    for (const rest of others) {
+      const wrapper = mount(StatusStrip, { props: { ...rest, paused, recording } as InstanceType<typeof StatusStrip>['$props'] });
+      const rec = wrapper.find('.rec');
+
+      expect(rec.exists(), JSON.stringify(rest)).toBe(label !== null);
+      if (label !== null) {
+        expect(rec.attributes('aria-label')).toBe(label);
+        expect(rec.classes().includes('held')).toBe(paused);
+        expect(rec.classes().includes('partial')).toBe(recording === 'call-only' && !paused);
+        expect(wrapper.findAll('.stat').at(-1)!.classes()).toContain('rec');
+      }
+      expect(wrapper.html()).not.toContain('title=');
+      wrapper.unmount();
+    }
+    // 240 mounts: over a second alone, more under the whole suite's load.
+  }, 30_000);
+
   it.each<RecordingState>(['on', 'call-only'])(
     'recording %s: pausing and resuming changes the mark, never where it sits',
     async (recording) => {

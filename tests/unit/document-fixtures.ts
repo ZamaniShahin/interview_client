@@ -136,6 +136,15 @@ export const word = {
 
 /** A Word document whose body is this XML (paragraphs and tables, from {@link word}). */
 export function docxWith(body: string): Uint8Array {
+  return docxOfDocument(
+    '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+      body +
+      '</w:body></w:document>',
+  );
+}
+
+/** A Word document whose word/document.xml is this, whole: python-docx's, say (scripts/v1-docx-cases.py). */
+export function docxOfDocument(documentXml: string): Uint8Array {
   return zipOf({
     '[Content_Types].xml':
       '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -145,9 +154,6 @@ export function docxWith(body: string): Uint8Array {
     '_rels/.rels':
       '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
-    'word/document.xml':
-      '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
-      body +
-      '</w:body></w:document>',
+    'word/document.xml': documentXml,
   });
 }

@@ -41,6 +41,8 @@ interface Kept {
   recording: 'running' | 'kept' | 'none';
   /** Whether frames were heard while it was paused, which its recording must not hold. */
   pausedOver?: boolean;
+  /** Every whole frame heard while it ran, paused or not. */
+  heard?: number;
 }
 
 let root: string;
@@ -93,6 +95,10 @@ async function live(seed: number, steps = 60): Promise<Set<string>> {
       kept.recording = 'kept';
       outcomes.add(kept.pausedOver ? 'kept, without what was heard while paused' : 'kept');
     } else {
+      // Two seconds heard, but not two recorded: the pauses alone made it too short.
+      if (((kept.heard ?? 0) * stereoFrameBytes) / chunkBytes >= minKeepSeconds) {
+        outcomes.add('too short only for what was heard while paused');
+      }
       kept.recording = 'none';
       kept.frames = [];
       outcomes.add(kept.answered ? 'too short, its interview kept for its answers' : 'too short, its interview gone');
@@ -166,6 +172,7 @@ async function live(seed: number, steps = 60): Promise<Set<string>> {
         recorder.write(new Uint8Array(stereoFrameBytes).fill(fill));
         if (!recorder.running) continue;
         const kept = model.get(recorder.interviewId!)!;
+        kept.heard = (kept.heard ?? 0) + 1;
         if (paused) {
           kept.pausedOver = true;
           outcomes.add('a frame heard while paused left out');
@@ -268,6 +275,7 @@ describe('the deep round over recording (3.12)', () => {
         'kept, without what was heard while paused',
         'too short, its interview gone',
         'too short, its interview kept for its answers',
+        'too short only for what was heard while paused',
         'history ended first',
         'the recorder ended first',
         'a new start ended the last',

@@ -21,6 +21,8 @@ npm run dev           # against the backend's local stack
 npm run dev:preview   # no server: a scripted interview and a sample account, for work on the UI
 npm run check         # type-check, lint, test
 node scripts/app-tests.mjs   # the built app's windows under Playwright, against the preview (Windows)
+python -I scripts/v1-docx-cases.py <v1's backend folder> tests/unit/fixtures/v1-docx-cases.json
+                      # random Word files read by v1's own reader: the judge of ours (3.10; needs python-docx)
 ```
 
 Node 24 runs everything. Node 24.15 or later also avoids an engine warning from a build tool (`nopt`, via electron-builder).
