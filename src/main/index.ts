@@ -66,6 +66,7 @@ import { DocumentReader } from './documents/document-reader';
 import { readDocumentFile, refused } from './documents/read-document';
 import { registerIpc } from './ipc/register';
 import { RegionSelector } from './screenshots/region-selector';
+import { pickScreenSource } from './screenshots/screen-source';
 import { ScreenCapture, type CaptureOutcome } from './screenshots/screen-capture';
 import { ScreenshotShelf } from './screenshots/screenshot-shelf';
 import type { ShotImage } from './screenshots/shot-image';
@@ -1202,11 +1203,9 @@ async function grabDisplay(display: Display): Promise<ShotImage> {
       timer = setTimeout(() => reject(new Error('The screen capture timed out.')), grabTimeoutMs);
     }),
   ]).finally(() => clearTimeout(timer));
-  // A source's display id is empty under some capturers (remote desktop, some virtual machines): then only a single
-  // screen is taken, never a guess between several.
-  const source =
-    sources.find((s) => s.display_id !== '' && Number(s.display_id) === display.id) ??
-    (sources.length === 1 ? sources[0] : undefined);
+  // A source's display id is empty under some capturers (remote desktop, some virtual machines, a laptop whose screens
+  // hang off two graphics adapters): then the display's place among the screens decides, only where nothing is a guess.
+  const source = pickScreenSource(sources, display, screen.getAllDisplays(), size);
   if (!source) throw new Error("Couldn't tell which screen to capture.");
   return source.thumbnail;
 }

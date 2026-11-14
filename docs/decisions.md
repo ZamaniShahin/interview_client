@@ -326,6 +326,16 @@ Built in Shahin's unattended run ("anything left before deployment", 2026-11-10 
 |---|---|
 | 2026-11-13 | **Installs skip install scripts: `npm ci --ignore-scripts`, then `npx install-electron`** (README, "Getting started"; Shahin chose to record it, 2026-11-13). On a computer without Visual Studio's C++ tools, `npm ci` failed: better-sqlite3-multiple-ciphers carries a `binding.gyp`, so npm runs node-gyp for it although its prebuilt binaries ship in the package (§9's row said nothing compiles; nothing needs to, but npm tries). With scripts skipped the prebuilt binary loads, in Node and in Electron. Only two other packages have install scripts, per the lockfile: electron-winstaller (Squirrel; the app builds NSIS) and fsevents (macOS). Electron 45's binary comes from `install-electron`, which `npm run dev` and `npm start` already run first. Not chosen: `ignore-scripts=true` in `.npmrc`, which would also stop `npm run dev` running its `predev` |
 
+## 33. Taken in session on 2026-11-14, which screen a screenshot takes (3.6; the deep round; open to revision)
+
+Found in the deep round of 2026-11-14: on Shahin's laptop (Intel UHD and an RTX 3050, the laptop's panel and an external screen) every screenshot failed with "Couldn't tell which screen to capture." Windows gives such a laptop no DirectX duplication, so Electron's capturer takes its GDI path and leaves every screen's `display_id` empty; the app matched screens only by that id, or took the only one.
+
+| Date | Decision |
+|---|---|
+| 2026-11-14 | **When the capturer names no screen, the display's place decides** (`src/main/screenshots/screen-source.ts`). The GDI path numbers the screens `screen:<n>:0` in the system's display order, and Electron lists the displays in the same order on this laptop: the panel (DISPLAY1) first, the external screen second. So the display's place among Electron's displays is its screen's index. A named screen still wins, and one screen is still taken as it is |
+| 2026-11-14 | **Taken only where nothing else is in doubt.** Every screen must have an index, no two the same, as many screens as displays, the display among them, and the picture must fit the display's size (2 pixels' slack). Otherwise the screenshot fails as before: a picture of the wrong screen would go to the AI. The capturer scales each screen into the size asked for, so the size check catches a screen of another shape, not one of the same shape at another resolution: the two orders agreeing is what the rest rests on |
+| 2026-11-14 | **To check by eye on Shahin's laptop**: a screenshot taken from each screen in turn should show that screen. The app tests' screenshots pass on it, but they check that a picture is taken and attached, not which screen it shows |
+
 ## 32. Taken in session on 2026-11-14, a session support ended (backend 4.12; open to revision)
 
 Shahin chose a new published end reason, `support`, for a session ended from the staff dashboard (backend decisions, 2026-11-14).
