@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnswerKind, ErrorCodes } from '../../src/shared/contracts/sotto-contracts';
 import { stereoFrameBytes } from '../../src/shared/audio/frames';
 import { recordingFileName, recordingLength } from '../../src/shared/history';
+import { overlayCommandSchema } from '../../src/shared/ipc';
 import { MemorySecretStore } from '../../src/main/auth/secret-store';
 import { HistoryService } from '../../src/main/history/history-service';
 import { CallRecorder, minKeepSeconds, type RecordingPlace } from '../../src/main/recording/call-recorder';
@@ -344,6 +345,21 @@ describe('a session paused (v1 records nothing while paused)', () => {
     expect(r.stop()).toBe(3);
     const kept = Buffer.concat([...recordingAudio(join(dir, file), key)]);
     expect([...new Set(kept)]).toEqual([7, 8]);
+  });
+});
+
+describe('practice is never recorded (v1: nothing is recorded during practice)', () => {
+  it.each([
+    { type: 'mockStart', count: 1, focus: 'mixed', questions: null },
+    { type: 'mockAnswer', text: 'An answer.' },
+    { type: 'mockNext' },
+    { type: 'mockStop' },
+  ])('a live session, the only one recorded, never turns into practice: the overlay may not send $type', (command) => {
+    expect(overlayCommandSchema.safeParse(command).success).toBe(false);
+  });
+
+  it('while what the overlay may send still goes through', () => {
+    expect(overlayCommandSchema.safeParse({ type: 'setMode', auto: null, paused: true }).success).toBe(true);
   });
 });
 

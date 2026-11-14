@@ -80,8 +80,62 @@ const escapeXml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&
 
 /** A Word document: its paragraphs, then a table of rows of cells. */
 export function docxOf(paragraphs: string[], table: string[][] = []): Uint8Array {
-  const p = (text: string) => `<w:p><w:r><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r></w:p>`;
-  const rows = table.map((row) => `<w:tr>${row.map((cell) => `<w:tc>${p(cell)}</w:tc>`).join('')}</w:tr>`).join('');
+  const rows = table.map((row) => `<w:tr>${row.map((cell) => `<w:tc>${word.p(cell)}</w:tc>`).join('')}</w:tr>`).join('');
+  return docxWith(paragraphs.map((text) => word.p(text)).join('') + (rows ? `<w:tbl>${rows}</w:tbl>` : ''));
+}
+
+/** A cell of {@link word.table}: its paragraphs (or raw XML, a table inside it), and how it is merged. */
+export interface WordCell {
+  text?: string | string[];
+  xml?: string;
+  /** Columns it spans (Word's gridSpan). */
+  colSpan?: number;
+  /** Merged down: the cell that starts the merge, or one that continues the one above (Word's vMerge). */
+  mergeDown?: 'restart' | 'continue';
+}
+
+/** The body XML of a Word document, built as Word writes it. */
+export const word = {
+  /** A paragraph; a tab ("\t") and a line break ("\n") in the text are written as Word's own. */
+  p(text: string): string {
+    const runs = text
+      .split(/(\t|\n)/)
+      .filter((part) => part.length > 0)
+      .map((part) =>
+        part === '\t' ? '<w:tab/>' : part === '\n' ? '<w:br/>' : `<w:t xml:space="preserve">${escapeXml(part)}</w:t>`,
+      )
+      .join('');
+    return `<w:p><w:r>${runs}</w:r></w:p>`;
+  },
+  /** A paragraph holding a page break, between two words. */
+  pageBreak(before: string, after: string): string {
+    return `<w:p><w:r><w:t>${escapeXml(before)}</w:t><w:br w:type="page"/><w:t>${escapeXml(after)}</w:t></w:r></w:p>`;
+  },
+  /** A paragraph with a link in it. */
+  link(before: string, linked: string, after: string): string {
+    return (
+      `<w:p><w:r><w:t xml:space="preserve">${escapeXml(before)}</w:t></w:r>` +
+      `<w:hyperlink w:anchor="here"><w:r><w:t>${escapeXml(linked)}</w:t></w:r></w:hyperlink>` +
+      `<w:r><w:t xml:space="preserve">${escapeXml(after)}</w:t></w:r></w:p>`
+    );
+  },
+  /** A table: rows of cells, each a text or a {@link WordCell}. */
+  table(rows: (string | WordCell)[][]): string {
+    const cell = (c: string | WordCell) => {
+      const spec = typeof c === 'string' ? { text: c } : c;
+      const props =
+        (spec.colSpan && spec.colSpan > 1 ? `<w:gridSpan w:val="${spec.colSpan}"/>` : '') +
+        (spec.mergeDown === 'restart' ? '<w:vMerge w:val="restart"/>' : spec.mergeDown === 'continue' ? '<w:vMerge/>' : '');
+      const texts = spec.text === undefined ? [] : Array.isArray(spec.text) ? spec.text : [spec.text];
+      const content = (spec.xml ?? '') + texts.map((t) => word.p(t)).join('');
+      return `<w:tc>${props ? `<w:tcPr>${props}</w:tcPr>` : ''}${content || '<w:p/>'}</w:tc>`;
+    };
+    return `<w:tbl>${rows.map((row) => `<w:tr>${row.map(cell).join('')}</w:tr>`).join('')}</w:tbl>`;
+  },
+};
+
+/** A Word document whose body is this XML (paragraphs and tables, from {@link word}). */
+export function docxWith(body: string): Uint8Array {
   return zipOf({
     '[Content_Types].xml':
       '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -93,8 +147,7 @@ export function docxOf(paragraphs: string[], table: string[][] = []): Uint8Array
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
     'word/document.xml':
       '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
-      paragraphs.map(p).join('') +
-      (rows ? `<w:tbl>${rows}</w:tbl>` : '') +
+      body +
       '</w:body></w:document>',
   });
 }

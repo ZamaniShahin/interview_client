@@ -123,7 +123,7 @@ A packaged build never runs the preview.
 | macOS audio | **open (Q6)**: Electron's own loopback support if enough, otherwise a small native helper | — | — | Phase 5 |
 | Coach transcription | **on the device**: sherpa-onnx or Vosk, picked by a spike (Q5); the mic never leaves the machine | privacy, zero server cost | cloud STT for the mic | 3.7 |
 | Markdown | **markdown-it** (`html: false`) + **DOMPurify**; **highlight.js**; **Mermaid** (lazy, `securityLevel: "strict"`) | a safe, standard renderer for model output | v1's hand-written renderer | built (1.13): highlight.js 11.12 (20 languages, the canvas's syntax colors), Mermaid 12.2 loaded with the first diagram |
-| Documents | **pdfjs-dist** (PDF text) + **mammoth** (`.docx`, tables included: v1 KNOWN_ISSUES #11); only the extracted text is sent | no PDF parser on the server | parsing on the server | 3.10 |
+| Documents | **pdfjs-dist** (PDF text) + **mammoth** (`.docx`, tables included: v1 KNOWN_ISSUES #11, read as v1 reads them, a row a line); only the extracted text is sent | no PDF parser on the server | parsing on the server | 3.10 |
 | Local data | **SQLite**, encrypted (**better-sqlite3-multiple-ciphers**, SQLCipher-compatible), in main; key in safeStorage. Schema in backend [07](../backend/interview_backend/docs/07-data-model.md) §5 | history and answer bank stay on the device, encrypted | plain JSON / SQLite (v1) | built (1.14): better-sqlite3-multiple-ciphers 13.0.3, the documents, settings and first run; history and the answer bank come later |
 | Validation | **zod** schemas for every IPC payload and local settings | untrusted renderer input | — | added |
 | Packaging | **electron-builder**: NSIS (Windows x64) first, DMG next | used by v1; mature | — | added (unsigned) |

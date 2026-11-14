@@ -472,7 +472,7 @@ describe('a file’s text in the documents window, widened (3.10: pdf.js and mam
 
   it('reads a Word document’s letters and signs as they are', async () => {
     const text = await docxText(docxOf(['Résumé — naïve café', 'C# & C++ < Go > "quotes"']));
-    expect(normalizeText(text)).toBe('Résumé — naïve café\n\nC# & C++ < Go > "quotes"');
+    expect(normalizeText(text)).toBe('Résumé — naïve café\nC# & C++ < Go > "quotes"');
   });
 
   it.each<[string, unknown, 'protected' | 'unreadable']>([

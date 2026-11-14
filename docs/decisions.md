@@ -326,6 +326,16 @@ Built in Shahin's unattended run ("anything left before deployment", 2026-11-10 
 |---|---|
 | 2026-11-13 | **Installs skip install scripts: `npm ci --ignore-scripts`, then `npx install-electron`** (README, "Getting started"; Shahin chose to record it, 2026-11-13). On a computer without Visual Studio's C++ tools, `npm ci` failed: better-sqlite3-multiple-ciphers carries a `binding.gyp`, so npm runs node-gyp for it although its prebuilt binaries ship in the package (§9's row said nothing compiles; nothing needs to, but npm tries). With scripts skipped the prebuilt binary loads, in Node and in Electron. Only two other packages have install scripts, per the lockfile: electron-winstaller (Squirrel; the app builds NSIS) and fsevents (macOS). Electron 45's binary comes from `install-electron`, which `npm run dev` and `npm start` already run first. Not chosen: `ignore-scripts=true` in `.npmrc`, which would also stop `npm run dev` running its `predev` |
 
+## 31. Taken in session on 2026-11-14, Word files read as v1 reads them (3.10; open to revision)
+
+Found when v1's session tests were checked against v2's (backend docs/02 §14). v1's `test_prep_doc.py` reads a Word table a row a line, and Shahin chose to fix v1's gaps.
+
+| Date | Decision |
+|---|---|
+| 2026-11-14 | **A Word file is read as v1's `context_store._extract_docx` reads it.** Paragraphs and tables come in document order. Each paragraph is a line; each table row is a line, its cells joined by " \| ". A cell's text is trimmed, an empty cell left out, and a cell beside one with the same text kept once. That is how v1 keeps a cell merged across columns once: python-docx lists it once per column it spans. A cell merged down goes on each row it covers, as python-docx lists it there too. Until now mammoth's raw text gave each cell a paragraph of its own and a blank line between paragraphs. So a table's rows came apart, and a line break inside a paragraph was lost, running the words either side together |
+| 2026-11-14 | **Read through mammoth's document, not its raw text**: `convertToHtml` hands the whole document to a `transformDocument` hook, which the documents window walks; the HTML is left unused. Same package, same sandboxed window, nothing new loaded |
+| 2026-11-14 | **Two things beyond v1**, so nothing written is lost. A table inside a cell, which v1 drops, keeps its rows as lines of that cell. A line break or a page break inside a paragraph is a line break |
+
 ## 30. Taken in session on 2026-11-13 and 2026-11-14, recording (3.12, backend Q51; open to revision)
 
 Shahin's answer (backend decisions, 2026-11-13): a stereo WAV per interview, the call on the left and the microphone on the right, in the app's data folder, kept until the interview is deleted, opt-in in Settings and only after the consent box; the microphone asked for only while recording is on. As built:

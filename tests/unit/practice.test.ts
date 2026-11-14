@@ -362,6 +362,8 @@ class FakeDriver implements SessionDriver {
   readonly replies = new Map<string, CommandResult>();
   startResult: CommandResult = { ok: true };
   disposed = 0;
+  /** What a session would be sent of the call's sound; a test that listens sets it. */
+  audio?: (pcm: Uint8Array, capturedAtMs: number) => void;
   private seq = 0;
 
   async start(dispatch: (action: LiveAction) => void): Promise<CommandResult> {
@@ -471,6 +473,25 @@ describe("main's practice session", () => {
       { type: 'mockNext' },
       { type: 'mockStop' },
     ]);
+  });
+
+  it('hears nothing, so nothing of it can be recorded: its session is never sent a sound (v1 records no practice)', async () => {
+    // v1's test_mock.py copilot_paused_during_practice: nothing is recorded during practice. Here practice is a session
+    // of its own that captures nothing; recording starts only with a live session (index.ts), and a live session can't
+    // turn into practice (the overlay has no practice command: recording.test.ts).
+    const h = practiceHarness();
+    const heard: number[] = [];
+    h.driver.audio = (pcm) => heard.push(pcm.byteLength);
+
+    await h.run.start(start);
+    h.driver.raise(mockState(0, status()));
+    h.driver.raise(mockQuestion(0, 1, 'Why payments?'));
+    await h.run.answer('Because payments have to add up.');
+    await h.run.next();
+    await h.run.stop();
+    await h.settle();
+
+    expect(heard).toEqual([]);
   });
 
   it('refuses while another session or the sound check runs, without opening one', async () => {

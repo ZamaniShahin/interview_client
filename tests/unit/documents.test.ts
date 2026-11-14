@@ -15,7 +15,7 @@ import {
 } from '../../src/main/documents/read-document';
 import { docxText, failureOf, maxPdfPages, pdfText } from '../../src/renderer/documents/extract';
 import { readTargetSchema, setPrepDocSchema } from '../../src/shared/documents';
-import { docxOf, pdfOf, zipOf } from './document-fixtures';
+import { docxOf, docxWith, pdfOf, word, zipOf, type WordCell } from './document-fixtures';
 
 const text = (s: string) => new TextEncoder().encode(s);
 
@@ -305,7 +305,7 @@ describe("a file's text, as the documents window reads it (3.10: pdf.js and mamm
     expect(text).not.toContain(`Page ${maxPdfPages + 1}`);
   }, 60_000);
 
-  it("reads a Word document's paragraphs and its table, cell by cell", async () => {
+  it("reads a Word document's paragraphs, then its table a row a line, as v1 reads it", async () => {
     const text = await docxText(
       docxOf(
         ['Sam Rivera', 'Payments & <ledgers>'],
@@ -315,7 +315,116 @@ describe("a file's text, as the documents window reads it (3.10: pdf.js and mamm
         ],
       ),
     );
-    expect(normalizeText(text)).toBe('Sam Rivera\n\nPayments & <ledgers>\n\nGo\n\n7 years\n\nKafka\n\n4 years');
+    expect(text).toBe('Sam Rivera\nPayments & <ledgers>\nGo | 7 years\nKafka | 4 years');
+  });
+
+  describe('a Word document, read as v1 reads it (its _extract_docx, 2026-11-14)', () => {
+    const read = (body: string) => docxText(docxWith(body));
+
+    it("v1's own case: paragraphs and tables in order, a row a line, a cell merged across kept once", async () => {
+      // test_prep_doc.py's docx_tables_in_order, its document and its answer as v1 wrote them.
+      const body =
+        word.p('Intro paragraph') +
+        word.table([
+          ['Question', 'Answer'],
+          ['Why Kafka?', 'Replay + ordering.'],
+          [{ text: 'A merged note', colSpan: 2 }],
+        ]) +
+        word.p('Outro paragraph');
+      expect(await read(body)).toBe(
+        'Intro paragraph\nQuestion | Answer\nWhy Kafka? | Replay + ordering.\nA merged note\nOutro paragraph',
+      );
+    });
+
+    it.each<[string, (string | WordCell)[][], string]>([
+      ['two cells', [['Go', '7 years']], 'Go | 7 years'],
+      ['a cell across two of three columns', [[{ text: 'Wide', colSpan: 2 }, 'Narrow']], 'Wide | Narrow'],
+      ['a cell across all three columns', [[{ text: 'All of it', colSpan: 3 }]], 'All of it'],
+      [
+        'a cell merged down two rows: on each, as python-docx lists it',
+        [
+          [{ text: 'Lead', mergeDown: 'restart' }, 'One'],
+          [{ mergeDown: 'continue' }, 'Two'],
+        ],
+        'Lead | One\nLead | Two',
+      ],
+      [
+        'a cell merged down three rows',
+        [
+          [{ text: 'M', mergeDown: 'restart' }, '1'],
+          [{ mergeDown: 'continue' }, '2'],
+          [{ mergeDown: 'continue' }, '3'],
+        ],
+        'M | 1\nM | 2\nM | 3',
+      ],
+      [
+        'a cell merged down at the end of its rows',
+        [
+          ['One', { text: 'Tail', mergeDown: 'restart' }],
+          ['Two', { mergeDown: 'continue' }],
+        ],
+        'One | Tail\nTwo | Tail',
+      ],
+      [
+        'a block merged across and down',
+        [
+          [{ text: 'Block', colSpan: 2, mergeDown: 'restart' }, 'R1'],
+          [{ colSpan: 2, mergeDown: 'continue' }, 'R2'],
+        ],
+        'Block | R1\nBlock | R2',
+      ],
+      [
+        'a merge down that ends, then a cell of its own below it',
+        [
+          [{ text: 'Top', mergeDown: 'restart' }, 'a'],
+          [{ mergeDown: 'continue' }, 'b'],
+          ['Own', 'c'],
+        ],
+        'Top | a\nTop | b\nOwn | c',
+      ],
+      ['empty cells left out', [['', 'Only', '']], 'Only'],
+      ['a row of empty cells, no line at all', [['', ''], ['Next', 'row']], 'Next | row'],
+      ['the same text side by side kept once, as v1 keeps it', [['Yes', 'Yes', 'No']], 'Yes | No'],
+      ['the same text apart kept each time', [['Yes', 'No', 'Yes']], 'Yes | No | Yes'],
+      ['a cell trimmed', [['  padded  ', 'x']], 'padded | x'],
+      ['a cell of two paragraphs, a line break between them', [[{ text: ['first', 'second'] }, 'x']], 'first\nsecond | x'],
+      ['a bar in a cell kept as it is', [['a | b', 'c']], 'a | b | c'],
+      ['letters of any script', [['Résumé', 'naïve 🙂', '日本語']], 'Résumé | naïve 🙂 | 日本語'],
+    ])('a table: %s', async (_, rows, expected) => {
+      expect(await read(word.table(rows))).toBe(expected);
+    });
+
+    it('beyond v1, which drops it: a table inside a cell keeps its rows, as lines of that cell', async () => {
+      const inner = word.table([
+        ['in 1', 'in 2'],
+        ['in 3', 'in 4'],
+      ]);
+      expect(await read(word.table([[{ xml: inner, text: 'after it' }, 'outer']]))).toBe(
+        'in 1 | in 2\nin 3 | in 4\nafter it | outer',
+      );
+    });
+
+    it.each<[string, string, string]>([
+      ['a tab and a line break, as written', word.p('Name:\tSam\nRole: Engineer'), 'Name:\tSam\nRole: Engineer'],
+      ['a page break, never running two words together', word.pageBreak('end', 'start'), 'end\nstart'],
+      ['a link, its words in their place', word.link('See ', 'my site', ' for more'), 'See my site for more'],
+      ['empty paragraphs kept as empty lines inside', word.p('A') + word.p('') + word.p('') + word.p('B'), 'A\n\n\nB'],
+      ['empty paragraphs at either end gone', word.p('') + word.p('Middle') + word.p(''), 'Middle'],
+      ['a table alone', word.table([['Only', 'table']]), 'Only | table'],
+      ['nothing but empty paragraphs', word.p('') + word.p(''), ''],
+      [
+        'paragraphs and tables in the order written',
+        word.p('One') + word.table([['T1']]) + word.p('Two') + word.table([['T2a', 'T2b']]) + word.p('Three'),
+        'One\nT1\nTwo\nT2a | T2b\nThree',
+      ],
+    ])('%s', async (_, body, expected) => {
+      expect(await read(body)).toBe(expected);
+    });
+
+    it('what the app keeps of it: the lines trimmed at their ends, three empty lines or more made one', async () => {
+      const body = word.p('A  ') + word.p('') + word.p('') + word.p('') + word.table([[{ text: ['x  ', 'y'] }, 'z']]);
+      expect(normalizeText(await read(body))).toBe('A\n\nx\ny | z');
+    });
   });
 
   it('throws on a file that is not what it says, and words it as unreadable', async () => {

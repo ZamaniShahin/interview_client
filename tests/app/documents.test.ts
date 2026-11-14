@@ -70,7 +70,8 @@ describe.skipIf(!run)('documents from files in the built app, against the previe
     const editor = row('Job description').locator('textarea');
     await editor.waitFor({ timeout: 20_000 });
 
-    expect(await editor.inputValue()).toBe('Senior Backend Engineer\n\nGo\n\nrequired\n\nKafka\n\nnice to have');
+    // v1's way since 2026-11-14: a line each paragraph, a line each row, its cells joined by " | ".
+    expect(await editor.inputValue()).toBe('Senior Backend Engineer\nGo | required\nKafka | nice to have');
   });
 
   it("says why a file gave nothing: one that isn't what its name says", async () => {
