@@ -526,18 +526,33 @@ describe("main's practice session", () => {
     expect(h.kept).toEqual([]);
   });
 
-  it('ends the session at once when the server refuses the practice, and says why', async () => {
+  it.each<[string, string, string]>([
+    [
+      'no documents',
+      ErrorCodes.Session.NoContext,
+      'Load your résumé or the job description first: practice questions are written from them.',
+    ],
+    // The trial's one practice interview, already used (backend Q48, 2026-11-14): the server's words, as they are.
+    [
+      "the trial's practice used",
+      ErrorCodes.Licensing.QuotaExceeded,
+      'The trial includes one practice interview, already used. Choose a plan to practise more.',
+    ],
+    ['no practice on the plan', ErrorCodes.Licensing.NoEntitlement, "Your plan doesn't include practice interviews."],
+  ])('ends the session at once when the server refuses the practice (%s), and says why', async (_, code, message) => {
     const h = practiceHarness();
-    h.driver.replies.set('mockStart', {
-      ok: false,
-      code: ErrorCodes.Session.NoContext,
-      message: 'Load your résumé or the job description first: practice questions are written from them.',
-    });
-    expect(await h.run.start(start)).toMatchObject({ ok: false, code: ErrorCodes.Session.NoContext });
+    h.driver.replies.set('mockStart', { ok: false, code, message });
+    expect(await h.run.start(start)).toEqual({ ok: false, code, message });
     expect(h.driver.types()).toEqual(['mockStart', 'endSession']);
     expect(h.run.running).toBe(false);
     expect(h.ended()).toBe(1);
-    expect(h.last()).toMatchObject({ phase: 'idle', problem: { code: ErrorCodes.Session.NoContext } });
+    expect(h.kept).toEqual([]);
+    expect(h.last()).toEqual({ ...idlePractice, problem: { code, message } });
+
+    // Refused, it can be asked again: once a plan allows it, it starts.
+    h.driver.replies.delete('mockStart');
+    expect(await h.run.start(start)).toEqual({ ok: true });
+    expect(h.run.running).toBe(true);
   });
 
   it('keeps the practice once its summary comes, then ends the session: no minute after it', async () => {

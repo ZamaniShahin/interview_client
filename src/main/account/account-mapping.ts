@@ -173,7 +173,10 @@ export function toLedgerEntries(ledger: LedgerDto, now: Date): LedgerEntry[] {
     number: entry.number,
     date: shortDate(entry.createdAt, now),
     kind: ledgerKinds[entry.type] ?? entry.type,
-    detail: entry.type.startsWith('debit_') ? `${Math.abs(entry.minutes)} minutes` : '',
+    // "1 minute", never "1 minutes": a session under a minute is charged one (found in the deep round of 2026-11-14).
+    detail: entry.type.startsWith('debit_')
+      ? `${Math.abs(entry.minutes)} ${Math.abs(entry.minutes) === 1 ? 'minute' : 'minutes'}`
+      : '',
     minutes: entry.minutes,
     balanceAfter: entry.balanceAfter,
   }));

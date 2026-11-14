@@ -54,6 +54,29 @@ async function waitFor(what, fn, timeoutMs = 30_000, everyMs = 250) {
 // ---- A scripted browser on Keycloak's pages ----------------------------------------------------------------------
 const b64url = (buf) => Buffer.from(buf).toString('base64url');
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest();
+
+/**
+ * DPoP (RFC 9449; backend Q44, 2026-11-13): the realm binds a desktop sign-in's tokens to a key, so the user this run
+ * makes outside the app gets a key of its own, and every request with its tokens a fresh proof from it.
+ */
+function dpopKey() {
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
+  const { x, y } = publicKey.export({ format: 'jwk' });
+  return { privateKey, jwk: { kty: 'EC', crv: 'P-256', x, y } };
+}
+
+function dpopProof(key, htm, htu, accessToken) {
+  const header = { alg: 'ES256', typ: 'dpop+jwt', jwk: key.jwk };
+  const payload = {
+    htm,
+    htu,
+    iat: Math.floor(Date.now() / 1000),
+    jti: b64url(crypto.randomBytes(24)),
+    ...(accessToken ? { ath: b64url(sha256(accessToken)) } : {}),
+  };
+  const input = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
+  return `${input}.${b64url(crypto.sign('sha256', Buffer.from(input), { key: key.privateKey, dsaEncoding: 'ieee-p1363' }))}`;
+}
 const decodeHtml = (s) =>
   s
     .replace(/&amp;/g, '&')
@@ -168,26 +191,33 @@ async function createUser() {
   }
   if (!page.callback) fail('never came back from the verification');
   const code = new URL(page.callback).searchParams.get('code');
-  const tokenRes = await fetch(
-    discovery.token_endpoint,
-    form({
-      grant_type: 'authorization_code',
-      client_id: CLIENT_ID,
-      code,
-      redirect_uri: redirect,
-      code_verifier: verifier,
-    }),
-  );
+  const key = dpopKey();
+  const exchange = form({
+    grant_type: 'authorization_code',
+    client_id: CLIENT_ID,
+    code,
+    redirect_uri: redirect,
+    code_verifier: verifier,
+  });
+  const tokenRes = await fetch(discovery.token_endpoint, {
+    ...exchange,
+    headers: { ...exchange.headers, dpop: dpopProof(key, 'POST', discovery.token_endpoint) },
+  });
   const tokens = await tokenRes.json();
   if (!tokenRes.ok) fail(`token: ${JSON.stringify(tokens)}`);
   note('user:', email, '| no plan yet: the app starts the trial');
 
   /** The trial from a stand-in computer, removed again after, so the app's computer stays the account's only one. */
   async function trialOutside() {
+    // The token is DPoP-bound: it goes under the DPoP scheme, with a proof for this request.
     const api = (path, init = {}) =>
       fetch(`${API}${path}`, {
         ...init,
-        headers: { authorization: `Bearer ${tokens.access_token}`, ...(init.headers ?? {}) },
+        headers: {
+          authorization: `DPoP ${tokens.access_token}`,
+          dpop: dpopProof(key, init.method ?? 'GET', `${API}${path}`, tokens.access_token),
+          ...(init.headers ?? {}),
+        },
       });
     const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
     const { kty, crv, x, y } = publicKey.export({ format: 'jwk' });
@@ -304,9 +334,15 @@ async function connectPage(part) {
 }
 
 const textOf = (page) => page.eval('document.body.innerText');
+/** Clicks the first enabled button whose words start with `label`, or, when none shows any, whose aria-label does: at the
+ * overlay's narrowest, Pause and Resume show their icon only. */
 const clickButton = (page, label) =>
   page.eval(`(() => {
-    const b = [...document.querySelectorAll('button')].find((b) => !b.disabled && b.innerText.trim().startsWith(${JSON.stringify(label)}));
+    const label = ${JSON.stringify(label)};
+    const buttons = [...document.querySelectorAll('button')].filter((b) => !b.disabled);
+    const b =
+      buttons.find((b) => b.innerText.trim().startsWith(label)) ??
+      buttons.find((b) => (b.getAttribute('aria-label') ?? '').startsWith(label));
     if (!b) return false;
     b.click();
     return true;
@@ -512,6 +548,28 @@ async function run() {
     'times',
   );
 
+  // 3.12 (Q51) and its fix of 2026-11-14: a recording runs with the session, and REC is held while it is paused.
+  step('Recording turned on in Settings, for the next session');
+  must(await clickButton(home, 'Settings'), 'no Settings in the sidebar');
+  await waitFor('the settings', async () => (await textOf(home)).includes('KEPT ON THIS COMPUTER'));
+  must(
+    await home.eval(`(() => {
+      const s = [...document.querySelectorAll('[role="switch"]')].find((s) => (s.getAttribute('aria-label') ?? s.innerText).includes('Keep recordings'));
+      if (!s) return false;
+      if (s.getAttribute('aria-checked') !== 'true') s.click();
+      return true;
+    })()`),
+    'no Keep recordings switch',
+  );
+  await waitFor('recordings to be kept', () =>
+    home.eval(
+      `[...document.querySelectorAll('[role="switch"]')].find((s) => (s.getAttribute('aria-label') ?? s.innerText).includes('Keep recordings'))?.getAttribute('aria-checked') === 'true'`,
+    ),
+  );
+  note('Keep recordings: on');
+  must(await clickButton(home, 'Home'), 'no Home in the sidebar');
+  await waitFor('Home', async () => (await textOf(home)).includes('Start session'));
+
   step('A live session from Home');
   must(
     await home.eval(
@@ -523,6 +581,21 @@ async function run() {
   const overlay = await connectPage('overlay/index.html');
   await waitFor('the session to start', async () => /MANUAL|AUTO/.test(await textOf(overlay)), 20_000);
   note('overlay strip:', (await textOf(overlay)).split('\n').filter(Boolean).slice(0, 6).join(' | '));
+
+  const rec = () =>
+    overlay.eval(
+      `(() => { const r = document.querySelector('.stat.rec'); return r ? { held: r.classList.contains('held'), label: r.getAttribute('aria-label') } : null; })()`,
+    );
+  const recording = await waitFor('REC in the strip', rec, 15_000);
+  must(!recording.held, 'REC is held while the session runs');
+  note('REC:', recording.label);
+  must(await clickButton(overlay, 'Pause'), 'no Pause in the strip');
+  const held = await waitFor('REC held while paused', async () => ((await rec())?.held ? await rec() : null), 10_000);
+  must(held.label === 'Recording paused: nothing is recorded until you resume', `REC paused says: ${held.label}`);
+  note('paused, REC:', held.label);
+  must(await clickButton(overlay, 'Resume'), 'no Resume in the strip');
+  await waitFor('REC recording again', async () => ((await rec())?.held === false ? true : null), 10_000);
+  note('resumed: REC records again');
 
   // 1.11: the call's sound is captured while the session runs, and the strip's meter follows it. The meter holds still
   // at 5, 9, 12 and 7 px until the first frame reaches main, so leaving that proves frames flow; silence lays it at
@@ -595,9 +668,12 @@ async function run() {
     10_000,
   );
   note('capture window closed');
+  if (process.env.APP_DRIVE_DEBUG)
+    note('targets now:', JSON.stringify((await targets(9222)).map((t) => [t.type, t.url, t.id])));
+  // Close closes this very page: the click comes a moment after the answer, or the window would be gone before it.
   must(
     await overlay.eval(
-      `(() => { const b = [...document.querySelectorAll('.ended-foot button')].find((b) => b.innerText.includes('Close')); b?.click(); return !!b; })()`,
+      `(() => { const b = [...document.querySelectorAll('.ended-foot button')].find((b) => b.innerText.includes('Close')); if (b) setTimeout(() => b.click(), 50); return !!b; })()`,
     ),
     'no Close',
   );
@@ -607,6 +683,25 @@ async function run() {
     10_000,
   );
   note('overlay closed; the app window is back:', await home.eval('document.visibilityState'));
+
+  step("History keeps the session's recording");
+  must(await clickButton(home, 'History'), 'no History in the sidebar');
+  const kept = await waitFor(
+    'the interview with its recording',
+    async () => {
+      const text = await textOf(home);
+      return text.includes('Recording') ? text : null;
+    },
+    15_000,
+  );
+  note(
+    'History:',
+    kept
+      .split('\n')
+      .filter((l) => /Recording|Interview|min/.test(l))
+      .slice(0, 4)
+      .join(' | '),
+  );
 
   step('The ledger after the session');
   must(await clickButton(home, 'Account'), 'no Account in the sidebar');

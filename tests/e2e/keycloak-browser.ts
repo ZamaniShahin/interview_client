@@ -16,7 +16,11 @@ interface Page {
 }
 
 const decodeHtml = (text: string) =>
-  text.replace(/&amp;/g, '&').replace(/&#x3D;/g, '=').replace(/&#61;/g, '=').replace(/&quot;/g, '"');
+  text
+    .replace(/&amp;/g, '&')
+    .replace(/&#x3D;/g, '=')
+    .replace(/&#61;/g, '=')
+    .replace(/&quot;/g, '"');
 
 /** Signs a new user up from the authorization URL the client opened, and ends at the client's loopback. */
 export async function signUpInBrowser(authorizationUrl: string, signUp: SignUp): Promise<void> {
@@ -44,7 +48,9 @@ export async function signUpInBrowser(authorizationUrl: string, signUp: SignUp):
   });
   if (browser.cameBack) throw new Error('Signed in without verifying the email: verifyEmail is not enforced.');
   if (!/verify your email|email verification/i.test(page.html)) {
-    throw new Error(`Unexpected page after registering (HTTP ${page.status}): ${pageErrors(page.html).join(' | ') || page.url}`);
+    throw new Error(
+      `Unexpected page after registering (HTTP ${page.status}): ${pageErrors(page.html).join(' | ') || page.url}`,
+    );
   }
 
   page = await browser.open(await verificationLink(signUp));
@@ -126,7 +132,10 @@ async function verificationLink({ mailpit, email }: SignUp): Promise<string> {
     };
     const message = list.messages?.find((m) => m.To?.some((to) => to.Address === email));
     if (message) {
-      const full = (await (await fetch(`${mailpit}/api/v1/message/${message.ID}`)).json()) as { Text?: string; HTML?: string };
+      const full = (await (await fetch(`${mailpit}/api/v1/message/${message.ID}`)).json()) as {
+        Text?: string;
+        HTML?: string;
+      };
       const link =
         /https?:\/\/\S*action-token\S*/.exec(full.Text ?? '')?.[0] ??
         /https?:\/\/[^"'\s<>]*action-token[^"'\s<>]*/.exec(decodeHtml(full.HTML ?? ''))?.[0];
@@ -136,4 +145,82 @@ async function verificationLink({ mailpit, email }: SignUp): Promise<string> {
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
   throw new Error('No verification email reached Mailpit within 30 s.');
+}
+
+/**
+ * A staff access token for the local stack's staff host (the backend's 4.9 and 4.12), signed in as the staff realm's
+ * seeded `admin` with the password the backend's AppHost generated, through `admin-portal` with PKCE, as
+ * tools/staff.mjs --local-admin does. The loopback code is read from Keycloak's redirect; nothing listens there.
+ */
+export async function staffAccessToken({
+  keycloak,
+  password,
+}: {
+  keycloak: string;
+  password: string;
+}): Promise<string> {
+  const issuer = `${keycloak}/realms/sotto-staff`;
+  const redirectUri = `http://127.0.0.1:${49152 + Math.floor(Math.random() * 10_000)}/callback`;
+  const verifier = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
+  const challenge = Buffer.from(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))).toString(
+    'base64url',
+  );
+  const authorize = new URL(`${issuer}/protocol/openid-connect/auth`);
+  authorize.search = new URLSearchParams({
+    client_id: 'admin-portal',
+    response_type: 'code',
+    redirect_uri: redirectUri,
+    scope: 'openid',
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    state: 'e2e',
+  }).toString();
+
+  const cookies = new Map<string, string>();
+  const keep = (response: Response) => {
+    for (const cookie of response.headers.getSetCookie()) {
+      const [pair] = cookie.split(';');
+      const eq = pair!.indexOf('=');
+      cookies.set(pair!.slice(0, eq).trim(), pair!.slice(eq + 1).trim());
+    }
+  };
+  const cookieHeader = () => [...cookies].map(([name, value]) => `${name}=${value}`).join('; ');
+
+  const login = await fetch(authorize, { redirect: 'manual', headers: { cookie: cookieHeader() } });
+  keep(login);
+  const action = formAction(await login.text(), 'kc-form-login');
+  if (!action) throw new Error(`No staff sign-in form (HTTP ${login.status}).`);
+  let response = await fetch(new URL(action, authorize).href, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: cookieHeader() },
+    body: new URLSearchParams({ username: 'admin', password, credentialId: '' }).toString(),
+  });
+  keep(response);
+  let location = response.headers.get('location');
+  for (let hop = 0; hop < 5 && location && !location.startsWith(redirectUri); hop++) {
+    response = await fetch(new URL(location, authorize).href, {
+      redirect: 'manual',
+      headers: { cookie: cookieHeader() },
+    });
+    keep(response);
+    location = response.headers.get('location');
+  }
+  const code = location?.startsWith(redirectUri) ? new URL(location).searchParams.get('code') : null;
+  if (!code) throw new Error(`The staff sign-in never came back with a code (HTTP ${response.status}).`);
+
+  const token = await fetch(`${issuer}/protocol/openid-connect/token`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: 'admin-portal',
+      code,
+      redirect_uri: redirectUri,
+      code_verifier: verifier,
+    }).toString(),
+  });
+  const body = (await token.json()) as { access_token?: string; error?: string };
+  if (!token.ok || !body.access_token) throw new Error(`The staff token was refused: ${body.error ?? token.status}.`);
+  return body.access_token;
 }
