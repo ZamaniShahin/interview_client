@@ -80,7 +80,8 @@ Built by Claude in Shahin's unattended run ("anything left before deployment", 2
   - v1's selector, ported: the display under the pointer frozen into a window that never takes focus and is left out of captures; a click takes it all, a drag an area, Esc or a right-click nothing; only where Windows leaves protected windows out of captures (build 19041 and later);
   - the screenshot button and Ctrl+Shift+G: in AUTO asked about at once with what was typed as its note, in MANUAL attached for the next answer; the attached ones over the ask bar, and under each answer the ones it read, to attach again;
   - the images in main's memory only, never on disk, and attached again after the session moves to another server (decisions §15);
-  - fixed on 2026-11-12 (`263250b`, branch `bugfix/selector-settle`): the selector takes no press for its first 400 ms, so a double-click on the screenshot button, or a stray click as it appears, never takes the whole screen; checked with the app tests, 30 of 30, three runs in a row.
+  - fixed on 2026-11-12 (`263250b`, branch `bugfix/selector-settle`): the selector takes no press for its first 400 ms, so a double-click on the screenshot button, or a stray click as it appears, never takes the whole screen; checked with the app tests, 30 of 30, three runs in a row;
+  - fixed on 2026-11-14 (`2eb8251`, branch `feature/deep-round-app`; decisions §33): on a laptop with two graphics adapters and two screens, every screenshot failed, since the capturer names no screen there. The display's place now decides, only where nothing else is in doubt. Checked with the app tests, 38 of 38, on that laptop; which screen each picture shows is Shahin's to see.
 - [ ] 3.7 The speech coach, on the device (engine: Q5).
 - [x] **3.8 The prepared-answer match 📌, on the device** (2026-11-11, `7dffc62`, branch `feature/answer-bank`, on 3.10's; with the preferences of the server's 3.2; checked with the unit and renderer tests, the app tests, 23 of 23, and the end-to-end tests against the local stack, 4 of 4):
   - Prepare's custom instructions and answer bank, kept on this computer (the `answer_bank` table of docs/07 §5, by migration 2), held to v1's entry rules;
@@ -129,6 +130,12 @@ Tests, deep round over the fixes of 2026-11-14 (`62be328`, branch `feature/deep-
 - **The documents hold every feature,** and v1's answers every kind of line.
 - **REC in every state:** all 240 states of the rest of the strip, for each of the six ways recording and pausing combine.
 - **A new outcome in the recording lives:** a recording dropped only for what was heard while paused.
+
+Tests, deep round over the work of 2026-11-13 and 2026-11-14 (2026-11-14, `d0c119a` and its fix `2eb8251`, branch `feature/deep-round-app`, on `feature/staff-dashboard`; with the backend's round over its staff dashboard): DPoP, recording and its pause, a session support ends, and the trial's one practice. 224 tests more (3,530 in all), the end-to-end tests 7 of 7, the app tests 38 of 38. Two fixes: screenshots on a laptop with two graphics adapters (3.6 above), and the ledger's "1 minute" for a session under a minute.
+- **The built app through its own windows** (`scripts/app-drive.mjs`, against the local stack): its outside sign-in now proves its key with DPoP; recording turned on, REC in the strip, held by Pause and recording again on Resume, the session kept in History with its recording. All its steps passed.
+- **End to end:** support ends a live session from the staff API and the app says so, then starts another; the trial's second practice is refused in the server's words; nothing said while paused is heard.
+- **120 random worlds of screens**: one to four displays, the capturer naming its screens or not, in any order, numbered with gaps, each spoiled one way at a time. The true screen when nothing is spoiled, never another screen otherwise. One test states the limit: two screens of one shape can't be told apart if the capturer's order isn't Electron's.
+- **Every way a session ends** in History's words, and every way a practice's start is refused on the Practice page and in main.
 
 ## Phase 4: ready for launch
 
